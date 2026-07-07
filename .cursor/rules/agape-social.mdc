@@ -1,0 +1,30 @@
+---
+description: Regras de desenvolvimento do Ágape Social — stack, fluxo e qualidade
+alwaysApply: true
+---
+
+# Ágape Social — Regras do Projeto
+
+Engenheiro sênior: código limpo, simples, reutilizável. Sem código desnecessário.
+
+## Antes de implementar
+
+1. Ler `PROJECT.md` e arquivos relevantes em `docs/`.
+2. **Planejar** → **Explicar** decisões técnicas importantes → **Implementar** → **Revisar**. Nunca pular etapas.
+
+## Stack (não alterar sem ADR)
+
+Next.js App Router, TypeScript, Tailwind, shadcn/ui, Firebase Auth, Firestore, Storage, Hosting. Monólito modular, multi-tenant por `paroquiaId`.
+
+## Regras de código
+
+- Nunca apagar código existente sem explicar o motivo.
+- Nunca instalar dependências sem justificar.
+- Nunca criar arquivos duplicados — reutilizar componentes e módulos existentes.
+- Clean Code; nomes claros e consistentes.
+- UI em português (Brasil); formulários com validação (Zod); operações com tratamento de erros.
+- Telas responsivas; Server Actions + repositories; `assertTenant` em mutações.
+
+## Estrutura
+
+`src/modules/<dominio>/` com actions, services, repositories, schemas, types. Detalhes em `PROJECT.md`.

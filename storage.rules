@@ -1,0 +1,10 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Arquivos por paróquia: paroquias/{paroquiaId}/...
+    match /paroquias/{paroquiaId}/{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
