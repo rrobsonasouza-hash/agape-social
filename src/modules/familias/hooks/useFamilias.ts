@@ -1,17 +1,20 @@
+"use client";
+
+import { useCallback } from "react";
+
 import { FamiliaService } from "../services/familia.service";
 import { FamiliaFormData } from "../schemas/familia.schema";
 
 const service = new FamiliaService();
 
 export function useFamilias() {
+  const listar = useCallback(async () => {
+    return service.listar();
+  }, []);
 
-  async function listar() {
-    return await service.listar();
-  }
-
-  async function criar(data: FamiliaFormData) {
-    return await service.criar(data);
-  }
+  const criar = useCallback(async (data: FamiliaFormData) => {
+    return service.criar(data);
+  }, []);
 
   return {
     listar,
