@@ -1,11 +1,59 @@
+import {
+  Users,
+  Package,
+  Gift,
+  HeartHandshake,
+} from "lucide-react";
+
+import { DashboardCard } from "@/components/dashboard/DashboardCard";
+import { WelcomeCard } from "@/components/dashboard/WelcomeCard";
+
 export default function DashboardPage() {
   return (
-    <section className="space-y-2">
-      <h1 className="text-2xl font-semibold tracking-tight">Painel</h1>
-      <p className="text-muted-foreground">
-        Estrutura base pronta. Os módulos de negócio serão implementados nas
-        próximas fases.
-      </p>
-    </section>
+    <div className="space-y-6">
+
+      <div>
+        <h1 className="text-3xl font-bold">
+          Dashboard
+        </h1>
+
+        <p className="text-gray-500">
+          Bem-vindo ao Ágape Social.
+        </p>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <DashboardCard
+          title="Famílias Ativas"
+          value={0}
+          description="Famílias cadastradas"
+          icon={Users}
+        />
+
+        <DashboardCard
+          title="Produtos"
+          value={0}
+          description="Itens em estoque"
+          icon={Package}
+        />
+
+        <DashboardCard
+          title="Cestas Entregues"
+          value={0}
+          description="Neste mês"
+          icon={Gift}
+        />
+
+        <DashboardCard
+          title="Voluntários"
+          value={0}
+          description="Ativos"
+          icon={HeartHandshake}
+        />
+      </div>
+
+      <WelcomeCard />
+
+    </div>
   );
 }
