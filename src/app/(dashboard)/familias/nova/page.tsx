@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { Button } from "@/components/forms/Button";
 import { Card } from "@/components/forms/Card";
 import { TextField } from "@/components/forms/TextField";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 import {
   familiaSchema,
@@ -18,7 +19,6 @@ import { useFamilias } from "@/modules/familias/hooks/useFamilias";
 
 export default function NovaFamiliaPage() {
   const router = useRouter();
-
   const { criar } = useFamilias();
 
   const {
@@ -36,96 +36,76 @@ export default function NovaFamiliaPage() {
 
   async function salvar(data: FamiliaFormData) {
     try {
-      console.clear();
-
-      console.log("========== NOVO CADASTRO ==========");
-      console.log("Dados recebidos:");
-      console.table(data);
-
-      const resultado = await criar(data);
-
-      console.log("Documento criado:");
-      console.log(resultado);
+      await criar(data);
 
       toast.success("Família cadastrada com sucesso!");
 
       router.push("/familias");
-    } catch (error: any) {
-      console.error("========== ERRO ==========");
-      console.error(error);
+    } catch (error) {
+      console.error("Erro ao cadastrar a família:", error);
 
-      if (error?.code) {
-        console.error("Código:", error.code);
-      }
+      const mensagem =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível cadastrar a família.";
 
-      if (error?.message) {
-        console.error("Mensagem:", error.message);
-
-        alert(
-          `Erro do Firebase\n\nCódigo: ${error.code}\n\nMensagem:\n${error.message}`
-        );
-
-        toast.error(error.message);
-      } else {
-        alert("Ocorreu um erro desconhecido. Veja o Console (F12).");
-        toast.error("Erro desconhecido.");
-      }
+      toast.error(mensagem);
     }
   }
 
-  function erroFormulario(errors: unknown) {
-    console.log("===== ERROS DE VALIDAÇÃO =====");
-    console.log(errors);
-
-    toast.error("Existem campos obrigatórios não preenchidos.");
+  function erroFormulario() {
+    toast.error("Revise os campos obrigatórios do formulário.");
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Nova Família</h1>
-
-        <p className="text-gray-500">
-          Cadastro da família atendida.
-        </p>
-      </div>
+      <PageHeader
+        title="Nova Família"
+        description="Cadastre uma nova família atendida pela Pastoral Social."
+      />
 
       <form
         onSubmit={handleSubmit(salvar, erroFormulario)}
+        className="space-y-6"
         noValidate
       >
-        <Card title="Dados do Responsável">
+        <Card title="Dados do responsável">
           <div className="grid gap-4 md:grid-cols-2">
             <TextField
-              label="Nome"
+              label="Nome do responsável"
+              placeholder="Nome completo"
               {...register("nomeResponsavel")}
               error={errors.nomeResponsavel?.message}
             />
 
             <TextField
               label="CPF"
+              placeholder="000.000.000-00"
               {...register("cpf")}
               error={errors.cpf?.message}
             />
 
             <TextField
               label="Telefone"
+              placeholder="(00) 00000-0000"
               {...register("telefone")}
               error={errors.telefone?.message}
             />
 
             <TextField
               label="E-mail"
+              type="email"
+              placeholder="email@exemplo.com"
               {...register("email")}
               error={errors.email?.message}
             />
           </div>
         </Card>
 
-        <div className="mt-8 flex justify-end gap-3">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button
             type="button"
-            className="bg-gray-500 hover:bg-gray-600"
+            className="bg-slate-500 hover:bg-slate-600"
             onClick={() => router.push("/familias")}
           >
             Cancelar

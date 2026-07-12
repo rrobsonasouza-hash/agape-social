@@ -16,8 +16,32 @@ export function useFamilias() {
     return service.criar(data);
   }, []);
 
+  const buscarPorId = useCallback(async (id: string) => {
+    return service.buscarPorId(id);
+  }, []);
+
+  const atualizar = useCallback(
+    async (id: string, data: FamiliaFormData) => {
+      return service.atualizar(id, data);
+    },
+    []
+  );
+
+  const alterarStatus = useCallback(
+    async (
+      id: string,
+      status: "ATIVA" | "INATIVA"
+    ) => {
+      return service.alterarStatus(id, status);
+    },
+    []
+  );
+
   return {
     listar,
     criar,
+    buscarPorId,
+    atualizar,
+    alterarStatus,
   };
 }
