@@ -19,8 +19,6 @@ import {
   UsuarioDocumento,
   UsuarioFormData,
 } from "@/modules/usuarios/types/usuario-documento";
-import { useAuditoria } from "@/modules/auditoria/hooks/useAuditoria";
-import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { maskTelefone } from "@/lib/formatters/masks";
 
 const inicial: UsuarioFormData = {
@@ -44,8 +42,6 @@ const perfis: Role[] = [
 
 export default function UsuariosPage() {
   const { listar, criar, atualizar, alterarStatus } = useUsuarios();
-  const { registrar } = useAuditoria();
-  const { usuario: usuarioAtual } = useAuth();
   const [usuarios, setUsuarios] = useState<UsuarioDocumento[]>([]);
   const [form, setForm] = useState<UsuarioFormData>(inicial);
   const [editandoId, setEditandoId] = useState("");
@@ -103,21 +99,10 @@ export default function UsuariosPage() {
     event.preventDefault();
     setSalvando(true);
     try {
-      let entidadeId = editandoId;
       if (editandoId) await atualizar(editandoId, form);
-      else entidadeId = (await criar(form)).id;
-      await registrar({
-        acao: editandoId ? "EDIÇÃO" : "CADASTRO",
-        entidade: "USUÁRIOS",
-        entidadeId,
-        descricao: `${editandoId ? "Perfil atualizado" : "Perfil pré-cadastrado"}: ${form.nome} (${roleLabels[form.role]}).`,
-        usuarioId: usuarioAtual?.uid || "",
-        usuarioNome: usuarioAtual?.nome || "Usuário",
-        usuarioEmail: usuarioAtual?.email || "",
-        paroquiaId: form.paroquiaId,
-      });
+      else await criar(form);
       toast.success(
-        editandoId ? "Perfil atualizado." : "Perfil pré-cadastrado.",
+        editandoId ? "Perfil atualizado." : "Usuário criado. Enviamos a definição de senha por e-mail.",
       );
       setExibirForm(false);
       setEditandoId("");
@@ -139,16 +124,6 @@ export default function UsuariosPage() {
     const status = usuario.status === "INATIVO" ? "ATIVO" : "INATIVO";
     try {
       await alterarStatus(usuario.id, status);
-      await registrar({
-        acao: status === "ATIVO" ? "ATIVAÇÃO" : "DESATIVAÇÃO",
-        entidade: "USUÁRIOS",
-        entidadeId: usuario.id,
-        descricao: `Perfil ${usuario.nome} alterado para ${status.toLowerCase()}.`,
-        usuarioId: usuarioAtual?.uid || "",
-        usuarioNome: usuarioAtual?.nome || "Usuário",
-        usuarioEmail: usuarioAtual?.email || "",
-        paroquiaId: usuario.paroquiaId,
-      });
       toast.success(
         status === "ATIVO" ? "Perfil ativado." : "Perfil desativado.",
       );
@@ -230,15 +205,13 @@ export default function UsuariosPage() {
         <div className="flex gap-3">
           <ShieldCheck className="mt-0.5 shrink-0" size={20} />
           <p>
-            <strong>Cadastro seguro em duas etapas:</strong> aqui você define o
-            perfil e as permissões. Enquanto a credencial do Firebase não for
-            vinculada pelo ambiente administrativo, o usuário permanece como
-            “Aguardando credencial” e não recebe acesso.
+            <strong>Cadastro seguro:</strong> ao salvar, o Ágape cria a credencial,
+            aplica o perfil de acesso e envia ao usuário um e-mail para definir a senha.
           </p>
         </div>
       </div>
       {exibirForm && (
-        <Card title={editandoId ? "Editar usuário" : "Pré-cadastrar usuário"}>
+        <Card title={editandoId ? "Editar usuário" : "Cadastrar usuário"}>
           <form onSubmit={salvar} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <label className="text-sm font-medium">
@@ -362,7 +335,7 @@ export default function UsuariosPage() {
           columns={colunas}
           getRowKey={(item) => item.id}
           loading={carregando}
-          emptyTitle="Nenhum usuário pré-cadastrado"
+          emptyTitle="Nenhum usuário cadastrado"
           emptyDescription="Cadastre os responsáveis pela operação da pastoral."
         />
       </Card>
