@@ -7,11 +7,20 @@ export const familiaSchema = z.object({
 
   cpf: z
     .string()
-    .min(11, "CPF inválido."),
+    .refine(
+      (valor) => valor.replace(/\D/g, "").length === 11,
+      "CPF inválido."
+    ),
 
   telefone: z
     .string()
-    .min(10, "Telefone inválido."),
+    .refine(
+      (valor) => {
+        const digitos = valor.replace(/\D/g, "");
+        return digitos.length === 10 || digitos.length === 11;
+      },
+      "Telefone inválido."
+    ),
 
   email: z
     .string()
@@ -19,7 +28,6 @@ export const familiaSchema = z.object({
     .optional()
     .or(z.literal("")),
 
-  // Campos que ainda serão implementados na tela
   cep: z.string().optional().default(""),
   logradouro: z.string().optional().default(""),
   numero: z.string().optional().default(""),
@@ -28,6 +36,9 @@ export const familiaSchema = z.object({
   cidade: z.string().optional().default(""),
   estado: z.string().optional().default(""),
 
+  latitude: z.number().min(-90).max(90).nullable().default(null),
+  longitude: z.number().min(-180).max(180).nullable().default(null),
+
   quantidadeMoradores: z.coerce.number().default(1),
 
   rendaFamiliar: z.coerce.number().default(0),
@@ -35,6 +46,10 @@ export const familiaSchema = z.object({
   observacoes: z.string().optional().default(""),
 
   status: z.enum(["ATIVA", "INATIVA"]),
+  beneficioBloqueado: z.boolean().optional().default(false),
+  faltasConsecutivas: z.coerce.number().int().min(0).optional().default(0),
+  motivoBloqueio: z.string().optional().default(""),
 });
 
-export type FamiliaFormData = z.infer<typeof familiaSchema>;
+export type FamiliaFormInput = z.input<typeof familiaSchema>;
+export type FamiliaFormData = z.output<typeof familiaSchema>;

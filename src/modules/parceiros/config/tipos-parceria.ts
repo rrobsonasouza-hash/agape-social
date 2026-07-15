@@ -1,0 +1,15 @@
+export const tiposParceria = [
+  "Doação de alimentos e cestas",
+  "Doação de roupas e itens essenciais",
+  "Apoio financeiro",
+  "Prestação de serviços",
+  "Atendimento de saúde",
+  "Assistência jurídica",
+  "Capacitação e geração de renda",
+  "Educação e reforço escolar",
+  "Logística e transporte",
+  "Espaço e infraestrutura",
+  "Comunicação e divulgação",
+  "Eventos e campanhas",
+  "Outros",
+] as const;

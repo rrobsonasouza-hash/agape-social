@@ -6,16 +6,19 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
 
 import { Button } from "@/components/forms/Button";
-import { Card } from "@/components/forms/Card";
+import { FormSection } from "@/components/forms/FormSection";
 import { TextField } from "@/components/forms/TextField";
+import { TextAreaField } from "@/components/forms/TextAreaField";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 import {
   familiaSchema,
   FamiliaFormData,
+  FamiliaFormInput,
 } from "@/modules/familias/schemas/familia.schema";
 
 import { useFamilias } from "@/modules/familias/hooks/useFamilias";
+import { EnderecoFamiliaFields } from "@/modules/familias/components/EnderecoFamiliaFields";
 
 export default function NovaFamiliaPage() {
   const router = useRouter();
@@ -24,13 +27,29 @@ export default function NovaFamiliaPage() {
   const {
     register,
     handleSubmit,
+    getValues,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
-  } = useForm<FamiliaFormData>({
+  } = useForm<FamiliaFormInput, unknown, FamiliaFormData>({
     resolver: zodResolver(familiaSchema),
     defaultValues: {
       status: "ATIVA",
+      cep: "",
+      logradouro: "",
+      numero: "",
+      complemento: "",
+      bairro: "",
+      cidade: "",
+      estado: "",
+      latitude: null,
+      longitude: null,
       quantidadeMoradores: 1,
       rendaFamiliar: 0,
+      observacoes: "",
+      beneficioBloqueado: false,
+      faltasConsecutivas: 0,
+      motivoBloqueio: "",
     },
   });
 
@@ -69,7 +88,10 @@ export default function NovaFamiliaPage() {
         className="space-y-6"
         noValidate
       >
-        <Card title="Dados do responsável">
+        <FormSection
+          title="Dados do responsável"
+          description="Informações de identificação e contato."
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <TextField
               label="Nome do responsável"
@@ -81,6 +103,7 @@ export default function NovaFamiliaPage() {
             <TextField
               label="CPF"
               placeholder="000.000.000-00"
+              mask="cpf"
               {...register("cpf")}
               error={errors.cpf?.message}
             />
@@ -88,6 +111,7 @@ export default function NovaFamiliaPage() {
             <TextField
               label="Telefone"
               placeholder="(00) 00000-0000"
+              mask="telefone"
               {...register("telefone")}
               error={errors.telefone?.message}
             />
@@ -100,7 +124,52 @@ export default function NovaFamiliaPage() {
               error={errors.email?.message}
             />
           </div>
-        </Card>
+        </FormSection>
+
+        <FormSection
+          title="Endereço"
+          description="Localização atual da família."
+        >
+          <EnderecoFamiliaFields
+            register={register}
+            errors={errors}
+            getValues={getValues}
+            setValue={setValue}
+            watch={watch}
+          />
+        </FormSection>
+
+        <FormSection
+          title="Situação familiar"
+          description="Composição e contexto socioeconômico."
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <TextField
+              label="Quantidade de moradores"
+              type="number"
+              min={1}
+              {...register("quantidadeMoradores")}
+              error={errors.quantidadeMoradores?.message}
+            />
+            <TextField
+              label="Renda familiar"
+              type="number"
+              min={0}
+              step="0.01"
+              {...register("rendaFamiliar")}
+              error={errors.rendaFamiliar?.message}
+            />
+          </div>
+          <div className="mt-4">
+            <TextAreaField
+              label="Observações"
+              rows={5}
+              {...register("observacoes")}
+              error={errors.observacoes?.message}
+              placeholder="Registre informações relevantes sobre a família."
+            />
+          </div>
+        </FormSection>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button

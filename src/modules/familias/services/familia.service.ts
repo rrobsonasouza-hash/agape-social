@@ -1,11 +1,23 @@
 import { FamiliaRepository } from "../repositories/familia.repository";
-import { FamiliaFormData } from "../schemas/familia.schema";
+import {
+  familiaSchema,
+  FamiliaFormData,
+} from "../schemas/familia.schema";
 
 export class FamiliaService {
   private repository = new FamiliaRepository();
 
   async criar(data: FamiliaFormData) {
-    return this.repository.criar(data);
+    const dadosValidados = familiaSchema.parse(data);
+    const familiaExistente = await this.repository.buscarPorCpf(
+      dadosValidados.cpf
+    );
+
+    if (familiaExistente) {
+      throw new Error("Já existe uma família cadastrada com este CPF.");
+    }
+
+    return this.repository.criar(dadosValidados);
   }
 
   async listar() {
@@ -25,7 +37,16 @@ export class FamiliaService {
       throw new Error("Identificador da família não informado.");
     }
 
-    return this.repository.atualizar(id, data);
+    const dadosValidados = familiaSchema.parse(data);
+    const familiaExistente = await this.repository.buscarPorCpf(
+      dadosValidados.cpf
+    );
+
+    if (familiaExistente && familiaExistente.id !== id) {
+      throw new Error("Já existe uma família cadastrada com este CPF.");
+    }
+
+    return this.repository.atualizar(id, dadosValidados);
   }
 
   async alterarStatus(

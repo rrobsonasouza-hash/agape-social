@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
+import { ProtectedArea } from "@/components/auth/ProtectedArea";
 
 export default function DashboardLayout({
   children,
@@ -7,13 +8,13 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <ProtectedArea><div className="flex min-h-screen bg-gray-100">
 
       <Sidebar />
 
       <main className="flex-1">
 
-        <Topbar userName="Robson Souza" />
+        <Topbar />
 
         <div className="p-8">
           {children}
@@ -21,6 +22,6 @@ export default function DashboardLayout({
 
       </main>
 
-    </div>
+    </div></ProtectedArea>
   );
 }

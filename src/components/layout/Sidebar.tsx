@@ -11,6 +11,10 @@ import {
   ClipboardList,
   BarChart3,
   Settings,
+  MapPinned,
+  Route,
+  Handshake,
+  ShieldCheck,
 } from "lucide-react";
 
 const menu = [
@@ -50,6 +54,21 @@ const menu = [
     icon: ClipboardList,
   },
   {
+    title: "Parceiros",
+    href: "/parceiros",
+    icon: Handshake,
+  },
+  {
+    title: "Áreas Pastorais",
+    href: "/areas-pastorais",
+    icon: MapPinned,
+  },
+  {
+    title: "Rotas",
+    href: "/rotas",
+    icon: Route,
+  },
+  {
     title: "Relatórios",
     href: "/relatorios",
     icon: BarChart3,
@@ -58,6 +77,11 @@ const menu = [
     title: "Administração",
     href: "/administracao",
     icon: Settings,
+  },
+  {
+    title: "Usuários",
+    href: "/usuarios",
+    icon: ShieldCheck,
   },
 ];
 

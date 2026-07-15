@@ -19,17 +19,18 @@ import {
 export class DashboardRepository {
   async buscarResumo(): Promise<DashboardResumo> {
     const familiasRef = collection(db, "familias");
+    const voluntariosRef = collection(db, "voluntarios");
 
     const inicioMes = new Date();
     inicioMes.setDate(1);
     inicioMes.setHours(0, 0, 0, 0);
 
-    const consultaAtivas = query(
+    const consultaFamiliasAtivas = query(
       familiasRef,
       where("status", "==", "ATIVA")
     );
 
-    const consultaInativas = query(
+    const consultaFamiliasInativas = query(
       familiasRef,
       where("status", "==", "INATIVA")
     );
@@ -49,22 +50,38 @@ export class DashboardRepository {
       limit(5)
     );
 
+    const consultaVoluntariosAtivos = query(
+      voluntariosRef,
+      where("status", "==", "ATIVO")
+    );
+
+    const consultaVoluntariosInativos = query(
+      voluntariosRef,
+      where("status", "==", "INATIVO")
+    );
+
     const [
-      totalSnapshot,
-      ativasSnapshot,
-      inativasSnapshot,
+      totalFamiliasSnapshot,
+      familiasAtivasSnapshot,
+      familiasInativasSnapshot,
       cadastrosMesSnapshot,
-      ultimasSnapshot,
+      ultimasFamiliasSnapshot,
+      totalVoluntariosSnapshot,
+      voluntariosAtivosSnapshot,
+      voluntariosInativosSnapshot,
     ] = await Promise.all([
       getCountFromServer(familiasRef),
-      getCountFromServer(consultaAtivas),
-      getCountFromServer(consultaInativas),
+      getCountFromServer(consultaFamiliasAtivas),
+      getCountFromServer(consultaFamiliasInativas),
       getCountFromServer(consultaCadastrosMes),
       getDocs(consultaUltimasFamilias),
+      getCountFromServer(voluntariosRef),
+      getCountFromServer(consultaVoluntariosAtivos),
+      getCountFromServer(consultaVoluntariosInativos),
     ]);
 
     const ultimasFamilias: UltimaFamilia[] =
-      ultimasSnapshot.docs.map((documento) => {
+      ultimasFamiliasSnapshot.docs.map((documento) => {
         const dados = documento.data();
 
         return {
@@ -85,13 +102,26 @@ export class DashboardRepository {
 
     return {
       familiasAtivas:
-        ativasSnapshot.data().count,
+        familiasAtivasSnapshot.data().count,
+
       familiasInativas:
-        inativasSnapshot.data().count,
+        familiasInativasSnapshot.data().count,
+
       totalFamilias:
-        totalSnapshot.data().count,
+        totalFamiliasSnapshot.data().count,
+
       familiasCadastradasMes:
         cadastrosMesSnapshot.data().count,
+
+      voluntariosAtivos:
+        voluntariosAtivosSnapshot.data().count,
+
+      voluntariosInativos:
+        voluntariosInativosSnapshot.data().count,
+
+      totalVoluntarios:
+        totalVoluntariosSnapshot.data().count,
+
       ultimasFamilias,
     };
   }

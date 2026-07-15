@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 
 import { siteConfig } from "@/config/site";
+import { AuthProvider } from "@/modules/auth/hooks/useAuth";
 
 import "./globals.css";
 
@@ -34,7 +35,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen font-sans`}
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
 
         <Toaster
           position="top-right"

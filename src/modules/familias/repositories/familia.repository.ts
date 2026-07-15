@@ -4,8 +4,11 @@ import {
   doc,
   getDoc,
   getDocs,
+  limit,
+  query,
   serverTimestamp,
   updateDoc,
+  where,
 } from "firebase/firestore";
 
 import { db } from "@/lib/firebase/firestore";
@@ -44,6 +47,25 @@ export class FamiliaRepository {
     };
   }
 
+  async buscarPorCpf(cpf: string): Promise<FamiliaDocumento | null> {
+    const consulta = query(
+      collection(db, "familias"),
+      where("cpf", "==", cpf),
+      limit(1)
+    );
+    const snapshot = await getDocs(consulta);
+    const documento = snapshot.docs[0];
+
+    if (!documento) {
+      return null;
+    }
+
+    return {
+      id: documento.id,
+      ...(documento.data() as FamiliaFormData),
+    };
+  }
+
   async atualizar(id: string, data: FamiliaFormData) {
     const referencia = doc(db, "familias", id);
 
@@ -61,6 +83,20 @@ export class FamiliaRepository {
 
     await updateDoc(referencia, {
       status,
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  async atualizarControleBeneficio(
+    id: string,
+    dados: {
+      beneficioBloqueado: boolean;
+      faltasConsecutivas: number;
+      motivoBloqueio: string;
+    }
+  ) {
+    await updateDoc(doc(db, "familias", id), {
+      ...dados,
       updatedAt: serverTimestamp(),
     });
   }

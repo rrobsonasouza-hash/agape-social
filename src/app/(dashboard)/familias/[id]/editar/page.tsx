@@ -1,38 +1,45 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
 
 import { Button } from "@/components/forms/Button";
-import { Card } from "@/components/forms/Card";
+import { FormSection } from "@/components/forms/FormSection";
 import { TextField } from "@/components/forms/TextField";
+import { TextAreaField } from "@/components/forms/TextAreaField";
+import { PageHeader } from "@/components/ui/PageHeader";
 
 import {
   familiaSchema,
   FamiliaFormData,
+  FamiliaFormInput,
 } from "@/modules/familias/schemas/familia.schema";
 
 import { useFamilias } from "@/modules/familias/hooks/useFamilias";
+import { EnderecoFamiliaFields } from "@/modules/familias/components/EnderecoFamiliaFields";
 
 export default function EditarFamiliaPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
 
   const { buscarPorId, atualizar } = useFamilias();
+  const [carregando, setCarregando] = useState(true);
 
   const {
     register,
     handleSubmit,
+    getValues,
     reset,
+    setValue,
+    watch,
     formState: {
       errors,
       isSubmitting,
-      isLoading,
     },
-  } = useForm<FamiliaFormData>({
+  } = useForm<FamiliaFormInput, unknown, FamiliaFormData>({
     resolver: zodResolver(familiaSchema),
     defaultValues: {
       nomeResponsavel: "",
@@ -46,10 +53,15 @@ export default function EditarFamiliaPage() {
       bairro: "",
       cidade: "",
       estado: "",
+      latitude: null,
+      longitude: null,
       quantidadeMoradores: 1,
       rendaFamiliar: 0,
       observacoes: "",
       status: "ATIVA",
+      beneficioBloqueado: false,
+      faltasConsecutivas: 0,
+      motivoBloqueio: "",
     },
   });
 
@@ -76,16 +88,23 @@ export default function EditarFamiliaPage() {
           bairro: familia.bairro || "",
           cidade: familia.cidade || "",
           estado: familia.estado || "",
+          latitude: familia.latitude ?? null,
+          longitude: familia.longitude ?? null,
           quantidadeMoradores:
             Number(familia.quantidadeMoradores) || 1,
           rendaFamiliar:
             Number(familia.rendaFamiliar) || 0,
           observacoes: familia.observacoes || "",
           status: familia.status || "ATIVA",
+          beneficioBloqueado: familia.beneficioBloqueado ?? false,
+          faltasConsecutivas: familia.faltasConsecutivas ?? 0,
+          motivoBloqueio: familia.motivoBloqueio ?? "",
         });
       } catch (error) {
         console.error("Erro ao carregar família:", error);
         toast.error("Não foi possível carregar a família.");
+      } finally {
+        setCarregando(false);
       }
     }
 
@@ -110,7 +129,7 @@ export default function EditarFamiliaPage() {
     toast.error("Revise os campos do formulário.");
   }
 
-  if (isLoading) {
+  if (carregando) {
     return (
       <div className="py-16 text-center text-slate-500">
         Carregando dados da família...
@@ -124,17 +143,15 @@ export default function EditarFamiliaPage() {
       className="space-y-6"
       noValidate
     >
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          Editar Família
-        </h1>
+      <PageHeader
+        title="Editar Família"
+        description="Atualize os dados cadastrais e sociais da família."
+      />
 
-        <p className="mt-1 text-slate-500">
-          Atualize os dados cadastrais e sociais da família.
-        </p>
-      </div>
-
-      <Card title="Dados do responsável">
+      <FormSection
+        title="Dados do responsável"
+        description="Informações de identificação e contato."
+      >
         <div className="grid gap-4 md:grid-cols-2">
           <TextField
             label="Nome do responsável"
@@ -144,12 +161,14 @@ export default function EditarFamiliaPage() {
 
           <TextField
             label="CPF"
+            mask="cpf"
             {...register("cpf")}
             error={errors.cpf?.message}
           />
 
           <TextField
             label="Telefone"
+            mask="telefone"
             {...register("telefone")}
             error={errors.telefone?.message}
           />
@@ -161,56 +180,25 @@ export default function EditarFamiliaPage() {
             error={errors.email?.message}
           />
         </div>
-      </Card>
+      </FormSection>
 
-      <Card title="Endereço">
-        <div className="grid gap-4 md:grid-cols-2">
-          <TextField
-            label="CEP"
-            {...register("cep")}
-            error={errors.cep?.message}
-          />
+      <FormSection
+        title="Endereço"
+        description="Localização atual da família."
+      >
+        <EnderecoFamiliaFields
+          register={register}
+          errors={errors}
+          getValues={getValues}
+          setValue={setValue}
+          watch={watch}
+        />
+      </FormSection>
 
-          <TextField
-            label="Logradouro"
-            {...register("logradouro")}
-            error={errors.logradouro?.message}
-          />
-
-          <TextField
-            label="Número"
-            {...register("numero")}
-            error={errors.numero?.message}
-          />
-
-          <TextField
-            label="Complemento"
-            {...register("complemento")}
-            error={errors.complemento?.message}
-          />
-
-          <TextField
-            label="Bairro"
-            {...register("bairro")}
-            error={errors.bairro?.message}
-          />
-
-          <TextField
-            label="Cidade"
-            {...register("cidade")}
-            error={errors.cidade?.message}
-          />
-
-          <TextField
-            label="Estado"
-            maxLength={2}
-            {...register("estado")}
-            error={errors.estado?.message}
-          />
-        </div>
-      </Card>
-
-      <Card title="Situação familiar">
+      <FormSection
+        title="Situação familiar"
+        description="Composição, contexto socioeconômico e status."
+      >
         <div className="grid gap-4 md:grid-cols-2">
           <TextField
             label="Quantidade de moradores"
@@ -250,25 +238,16 @@ export default function EditarFamiliaPage() {
           </div>
         </div>
 
-        <div className="mt-4 space-y-2">
-          <label className="block text-sm font-medium text-slate-700">
-            Observações
-          </label>
-
-          <textarea
+        <div className="mt-4">
+          <TextAreaField
+            label="Observações"
             rows={5}
             {...register("observacoes")}
-            className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            error={errors.observacoes?.message}
             placeholder="Registre informações relevantes sobre a família."
           />
-
-          {errors.observacoes?.message && (
-            <p className="text-sm text-red-600">
-              {errors.observacoes.message}
-            </p>
-          )}
         </div>
-      </Card>
+      </FormSection>
 
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button

@@ -3,8 +3,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Primeira barreira de segurança: nenhum dado pastoral pode ser acessado
+    // anonimamente. O isolamento por paróquia será aplicado quando os documentos
+    // existentes receberem paroquiaId na etapa multi-paróquia.
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
 
   }

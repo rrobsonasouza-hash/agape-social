@@ -11,5 +11,10 @@ export interface DashboardResumo {
   familiasInativas: number;
   totalFamilias: number;
   familiasCadastradasMes: number;
+
+  voluntariosAtivos: number;
+  voluntariosInativos: number;
+  totalVoluntarios: number;
+
   ultimasFamilias: UltimaFamilia[];
 }
