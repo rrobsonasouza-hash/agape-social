@@ -15,6 +15,7 @@ import {
   Route,
   Handshake,
   ShieldCheck,
+  History,
 } from "lucide-react";
 
 const menu = [
@@ -82,6 +83,11 @@ const menu = [
     title: "Usuários",
     href: "/usuarios",
     icon: ShieldCheck,
+  },
+  {
+    title: "Auditoria",
+    href: "/auditoria",
+    icon: History,
   },
 ];
 
