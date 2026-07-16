@@ -8,7 +8,8 @@ async function requisicaoAdministrativa(url: string, method: string, body: unkno
   const token = await auth.currentUser?.getIdToken();
   if (!token) throw new Error("Sessão expirada. Entre novamente.");
   const resposta = await fetch(url, { method, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
-  const resultado = await resposta.json();
+  const tipo = resposta.headers.get("content-type") || "";
+  const resultado = tipo.includes("application/json") ? await resposta.json() : { erro: resposta.ok ? "Resposta inválida do servidor." : `Serviço indisponível (${resposta.status}). Tente novamente após alguns instantes.` };
   if (!resposta.ok) throw new Error(resultado.erro || "Não foi possível concluir a operação.");
   return resultado as { id: string };
 }
