@@ -2,13 +2,113 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Primeira barreira de segurança: nenhum dado pastoral pode ser acessado
-    // anonimamente. O isolamento por paróquia será aplicado quando os documentos
-    // existentes receberem paroquiaId na etapa multi-paróquia.
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    function signedIn() {
+      return request.auth != null;
     }
 
+    function profile() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function active() {
+      return signedIn() && profile().status == 'ATIVO';
+    }
+
+    function hasRole(allowedRoles) {
+      return active() && profile().role in allowedRoles;
+    }
+
+    function admin() {
+      return hasRole(['admin_plataforma', 'admin_paroquia']);
+    }
+
+    function coordinator() {
+      return hasRole(['admin_plataforma', 'admin_paroquia', 'coordenador']);
+    }
+
+    function operator() {
+      return hasRole(['admin_plataforma', 'admin_paroquia', 'coordenador', 'operador']);
+    }
+
+    function fieldAgent() {
+      return hasRole(['admin_plataforma', 'admin_paroquia', 'coordenador', 'operador', 'voluntario']);
+    }
+
+    match /usuarios/{userId} {
+      allow get: if active() && (request.auth.uid == userId || admin());
+      allow list: if admin();
+      // Escritas são realizadas exclusivamente pela API administrativa.
+      allow create, update, delete: if false;
+    }
+
+    match /auditoria/{entryId} {
+      allow read: if admin();
+      // A trilha é imutável no navegador e escrita somente no servidor.
+      allow write: if false;
+    }
+
+    match /familias/{documentId} {
+      allow read: if active();
+      allow write: if operator();
+    }
+
+    match /doadores/{documentId} {
+      allow read: if active();
+      allow write: if operator();
+    }
+
+    match /documentos/{documentId} {
+      allow read: if active();
+      allow write: if operator();
+    }
+
+    match /voluntarios/{documentId} {
+      allow read: if active();
+      allow write: if coordinator();
+    }
+
+    match /parceiros/{documentId} {
+      allow read: if active();
+      allow write: if coordinator();
+    }
+
+    match /areasPastorais/{documentId} {
+      allow read: if active();
+      allow write: if coordinator();
+    }
+
+    match /paroquias/{documentId} {
+      allow read: if active();
+      allow write: if admin();
+    }
+
+    match /visitas/{documentId} {
+      allow read: if active();
+      allow write: if fieldAgent();
+    }
+
+    match /distribuicoesCestas/{documentId} {
+      allow read: if active();
+      allow write: if fieldAgent();
+    }
+
+    match /configuracoes/{documentId} {
+      allow read: if active();
+      allow write: if operator();
+    }
+
+    match /campanhasCestas/{documentId} {
+      allow read: if active();
+      allow write: if operator();
+    }
+
+    match /movimentacoesCestas/{documentId} {
+      allow read: if active();
+      allow write: if operator();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
   }
 }
