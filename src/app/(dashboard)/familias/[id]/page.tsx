@@ -33,6 +33,7 @@ import { useFamilias } from "@/modules/familias/hooks/useFamilias";
 import { FamiliaDocumento } from "@/modules/familias/types/familia-documento";
 import { useDocumentos } from "@/modules/documentos/hooks/useDocumentos";
 import { Documento } from "@/modules/documentos/types/documento.types";
+import { UploadDocumentos } from "@/modules/documentos/components/UploadDocumentos";
 import { calcularDistanciaKm } from "@/lib/geo/distance";
 import { pontoEstaNoPoligono } from "@/lib/geo/point-in-polygon";
 import { useParoquia } from "@/modules/paroquias/hooks/useParoquia";
@@ -612,6 +613,12 @@ export default function DetalhesFamiliaPage() {
         title="Documentos"
         description="RG, CPF, comprovante de residência e outros arquivos."
       >
+        <UploadDocumentos
+          entidadeId={params.id}
+          onConcluido={async () =>
+            setDocumentos(await listarPorEntidade("FAMILIA", params.id))
+          }
+        />
         {documentos.length > 0 ? (
           <ul className="divide-y divide-slate-100">
             {documentos.map((documento) => (
