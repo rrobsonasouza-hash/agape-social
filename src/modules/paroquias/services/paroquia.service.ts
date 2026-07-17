@@ -11,4 +11,8 @@ export class ParoquiaService {
   async salvarPrincipal(data: ParoquiaFormData) {
     return this.repository.salvarPrincipal(paroquiaSchema.parse(data));
   }
+
+  listar() { return this.repository.listar(); }
+  criar(data: ParoquiaFormData) { return this.repository.criar(paroquiaSchema.parse(data)); }
+  alterarStatus(id: string, ativa: boolean) { return this.repository.alterarStatus(id, ativa); }
 }

@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { resolverParoquia } from "@/lib/supabase/tenant";
 
 const tiposMime = ["application/pdf", "image/jpeg", "image/png"];
 async function contexto(request: NextRequest, escrita = false) {
   const usuario = await exigirUsuarioAtivo(request);
   if (escrita && !["admin_plataforma", "admin_paroquia", "coordenador", "operador"].includes(usuario.role)) throw new Error("FORBIDDEN");
-  const supabase = supabaseAdmin();
-  const { data: paroquia, error } = await supabase.from("paroquias").select("id").eq("slug", "paroquia-nossa-senhora-aparecida").single();
-  if (error || !paroquia) throw new Error("Paróquia não encontrada no Supabase.");
-  return { usuario, supabase, paroquiaId: paroquia.id as string };
+  const { supabase, paroquiaId } = await resolverParoquia(usuario.paroquiaId);
+  return { usuario, supabase, paroquiaId };
 }
 
 export async function GET(request: NextRequest) {

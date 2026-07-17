@@ -20,6 +20,8 @@ import {
   UsuarioFormData,
 } from "@/modules/usuarios/types/usuario-documento";
 import { maskTelefone } from "@/lib/formatters/masks";
+import { useParoquia } from "@/modules/paroquias/hooks/useParoquia";
+import { ParoquiaDocumento } from "@/modules/paroquias/types/paroquia-documento";
 
 const inicial: UsuarioFormData = {
   nome: "",
@@ -42,7 +44,9 @@ const perfis: Role[] = [
 
 export default function UsuariosPage() {
   const { listar, criar, atualizar, alterarStatus } = useUsuarios();
+  const { listar: listarParoquias } = useParoquia(false);
   const [usuarios, setUsuarios] = useState<UsuarioDocumento[]>([]);
+  const [paroquias, setParoquias] = useState<ParoquiaDocumento[]>([]);
   const [form, setForm] = useState<UsuarioFormData>(inicial);
   const [editandoId, setEditandoId] = useState("");
   const [pesquisa, setPesquisa] = useState("");
@@ -62,6 +66,7 @@ export default function UsuariosPage() {
   useEffect(() => {
     void carregar();
   }, [carregar]);
+  useEffect(() => { listarParoquias().then(setParoquias).catch(() => toast.error("Não foi possível carregar as paróquias.")); }, [listarParoquias]);
   const filtrados = useMemo(() => {
     const termo = pesquisa.toLowerCase().trim();
     return termo
@@ -92,7 +97,8 @@ export default function UsuariosPage() {
   }
   function novo() {
     setEditandoId("");
-    setForm(inicial);
+    const paroquia = paroquias.find((item) => item.ativa) ?? paroquias[0];
+    setForm(paroquia ? { ...inicial, paroquiaId: paroquia.id, paroquiaNome: paroquia.nome } : inicial);
     setExibirForm(true);
   }
   async function salvar(event: FormEvent) {
@@ -263,27 +269,12 @@ export default function UsuariosPage() {
                   ))}
                 </select>
               </label>
-              <label className="text-sm font-medium">
-                Identificador da paróquia
-                <input
-                  className="mt-2 w-full rounded-lg border px-4 py-3 font-normal"
-                  value={form.paroquiaId}
-                  onChange={(e) =>
-                    setForm({ ...form, paroquiaId: e.target.value })
-                  }
-                  required
-                />
-              </label>
-              <label className="text-sm font-medium">
-                Nome da paróquia
-                <input
-                  className="mt-2 w-full rounded-lg border px-4 py-3 font-normal"
-                  value={form.paroquiaNome}
-                  onChange={(e) =>
-                    setForm({ ...form, paroquiaNome: e.target.value })
-                  }
-                  required
-                />
+              <label className="text-sm font-medium md:col-span-2">
+                Paróquia
+                <select className="mt-2 w-full rounded-lg border bg-white px-4 py-3 font-normal" value={form.paroquiaId} onChange={(e) => { const paroquia = paroquias.find((item) => item.id === e.target.value); setForm({ ...form, paroquiaId: e.target.value, paroquiaNome: paroquia?.nome || "" }); }} required>
+                  {form.paroquiaId === "principal" && <option value="principal">{form.paroquiaNome}</option>}
+                  {paroquias.filter((item) => item.ativa || item.id === form.paroquiaId).map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}
+                </select>
               </label>
             </div>
             <label className="block text-sm font-medium">

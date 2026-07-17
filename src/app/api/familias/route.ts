@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { resolverParoquia } from "@/lib/supabase/tenant";
 
 const PERFIS_ESCRITA = ["admin_plataforma", "admin_paroquia", "coordenador", "operador"];
 
@@ -10,15 +10,7 @@ async function contexto(request: NextRequest, escrita = false) {
   const usuario = await exigirUsuarioAtivo(request);
   if (escrita && !PERFIS_ESCRITA.includes(usuario.role)) throw new Error("FORBIDDEN");
 
-  const supabase = supabaseAdmin();
-  const { data: paroquia, error } = await supabase
-    .from("paroquias")
-    .select("id")
-    .eq("slug", "paroquia-nossa-senhora-aparecida")
-    .single();
-
-  if (error || !paroquia) throw error ?? new Error("Paróquia não encontrada.");
-  return { supabase, paroquiaId: paroquia.id as string };
+  return resolverParoquia(usuario.paroquiaId);
 }
 
 function respostaErro(error: unknown) {

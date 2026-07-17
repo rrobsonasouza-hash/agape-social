@@ -2,14 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 import { exigirAdministrador, exigirUsuarioAtivo } from "@/lib/auth/admin-request";
-import { supabaseAdmin } from "@/lib/supabase/admin";
-
-async function paroquiaPrincipal() {
-  const supabase = supabaseAdmin();
-  const { data, error } = await supabase.from("paroquias").select("id").eq("slug", "paroquia-nossa-senhora-aparecida").single();
-  if (error || !data) throw error ?? new Error("Paróquia não encontrada.");
-  return { supabase, paroquiaId: data.id as string };
-}
+import { resolverParoquia } from "@/lib/supabase/tenant";
 
 function erro(error: unknown) {
   const mensagem = error instanceof Error ? error.message : "Erro interno.";
@@ -20,9 +13,9 @@ function erro(error: unknown) {
 
 export async function GET(request: NextRequest) {
   try {
-    await exigirAdministrador(request);
+    const usuario = await exigirAdministrador(request);
     const limite = Math.min(Math.max(Number(new URL(request.url).searchParams.get("limite")) || 200, 1), 500);
-    const { supabase, paroquiaId } = await paroquiaPrincipal();
+    const { supabase, paroquiaId } = await resolverParoquia(usuario.paroquiaId);
     const { data, error } = await supabase.from("auditoria").select("id,dados,created_at").eq("paroquia_id", paroquiaId).order("created_at", { ascending: false }).limit(limite);
     if (error) throw error;
     return NextResponse.json((data ?? []).map((item) => ({ id: item.id, ...(item.dados as Record<string, unknown>), data: (item.dados as { data?: string })?.data ?? item.created_at })));
@@ -33,7 +26,7 @@ export async function POST(request: NextRequest) {
   try {
     const usuario = await exigirUsuarioAtivo(request);
     const entrada = await request.json();
-    const { supabase, paroquiaId } = await paroquiaPrincipal();
+    const { supabase, paroquiaId } = await resolverParoquia(usuario.paroquiaId);
     const dados = { ...entrada, usuarioId: usuario.uid, usuarioNome: usuario.nome, usuarioEmail: usuario.email, paroquiaId: usuario.paroquiaId, data: new Date().toISOString() };
     const id = randomUUID();
     const { error } = await supabase.from("auditoria").insert({ id, paroquia_id: paroquiaId, dados });

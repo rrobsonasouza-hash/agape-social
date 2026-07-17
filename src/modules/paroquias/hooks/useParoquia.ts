@@ -20,8 +20,12 @@ export function useParoquia(carregarAutomaticamente = true) {
 
   const salvarPrincipal = useCallback(async (data: ParoquiaFormData) => {
     await service.salvarPrincipal(data);
-    setParoquia({ id: "principal", ...data });
+    setParoquia((atual) => ({ id: atual?.id || "principal", ...data }));
   }, []);
+
+  const listar = useCallback(() => service.listar(), []);
+  const criar = useCallback((data: ParoquiaFormData) => service.criar(data), []);
+  const alterarStatus = useCallback((id: string, ativa: boolean) => service.alterarStatus(id, ativa), []);
 
   useEffect(() => {
     if (!carregarAutomaticamente) return;
@@ -36,5 +40,8 @@ export function useParoquia(carregarAutomaticamente = true) {
     carregandoParoquia,
     buscarPrincipal,
     salvarPrincipal,
+    listar,
+    criar,
+    alterarStatus,
   };
 }
