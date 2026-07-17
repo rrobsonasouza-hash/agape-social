@@ -1,35 +1,22 @@
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  serverTimestamp,
-} from "firebase/firestore";
-
-import { db } from "@/lib/firebase/firestore";
+import { auth } from "@/lib/firebase/auth";
 import { AreaPastoralFormData } from "../schemas/area-pastoral.schema";
 import { AreaPastoralDocumento } from "../types/area-pastoral-documento";
 
+async function requisicao<T>(url: string, init?: RequestInit): Promise<T> {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error("Sessão expirada.");
+  const resposta = await fetch(url, { ...init, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...init?.headers } });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados.erro || "Não foi possível concluir a operação.");
+  return dados as T;
+}
+
 export class AreaPastoralRepository {
   async criar(data: AreaPastoralFormData): Promise<string> {
-    const referencia = await addDoc(collection(db, "areasPastorais"), {
-      ...data,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-    return referencia.id;
+    return (await requisicao<{ id: string }>("/api/areas-pastorais", { method: "POST", body: JSON.stringify(data) })).id;
   }
-
-  async listar(): Promise<AreaPastoralDocumento[]> {
-    const snapshot = await getDocs(collection(db, "areasPastorais"));
-    return snapshot.docs.map((documento) => ({
-      id: documento.id,
-      ...(documento.data() as AreaPastoralFormData),
-    }));
-  }
-
+  listar(): Promise<AreaPastoralDocumento[]> { return requisicao<AreaPastoralDocumento[]>("/api/areas-pastorais"); }
   async remover(id: string): Promise<void> {
-    await deleteDoc(doc(db, "areasPastorais", id));
+    await requisicao(`/api/areas-pastorais/${encodeURIComponent(id)}`, { method: "DELETE" });
   }
 }

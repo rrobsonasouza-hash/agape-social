@@ -58,3 +58,10 @@ export async function atualizarRegistro(request: NextRequest, tabela: string, pe
   if (error) throw error;
   return { id };
 }
+
+export async function removerRegistro(request: NextRequest, tabela: string, perfis: string[], id: string) {
+  const { supabase, paroquiaId } = await contextoOperacional(request, perfis, true);
+  const { error } = await supabase.from(tabela).delete().eq("id", id).eq("paroquia_id", paroquiaId);
+  if (error) throw error;
+  return { id };
+}

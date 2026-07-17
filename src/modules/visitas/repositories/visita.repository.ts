@@ -1,59 +1,23 @@
-import {
-  addDoc,
-  collection,
-  doc,
-  getDocs,
-  query,
-  serverTimestamp,
-  updateDoc,
-  where,
-} from "firebase/firestore";
-
-import { db } from "@/lib/firebase/firestore";
+import { auth } from "@/lib/firebase/auth";
 import { StatusVisita, VisitaFormData } from "../schemas/visita.schema";
 import { VisitaDocumento } from "../types/visita-documento";
 
-function ordenar(visitas: VisitaDocumento[]) {
-  return visitas.sort((a, b) =>
-    `${b.data}T${b.horario}`.localeCompare(`${a.data}T${a.horario}`)
-  );
-}
-
-function mapear(snapshot: Awaited<ReturnType<typeof getDocs>>): VisitaDocumento[] {
-  return ordenar(
-    snapshot.docs.map((documento) => ({
-      id: documento.id,
-      ...(documento.data() as VisitaFormData),
-    }))
-  );
+async function requisicao<T>(url: string, init?: RequestInit): Promise<T> {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error("Sessão expirada.");
+  const resposta = await fetch(url, { ...init, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...init?.headers } });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados.erro || "Não foi possível concluir a operação.");
+  return dados as T;
 }
 
 export class VisitaRepository {
   async criar(data: VisitaFormData): Promise<string> {
-    const referencia = await addDoc(collection(db, "visitas"), {
-      ...data,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-    return referencia.id;
+    return (await requisicao<{ id: string }>("/api/visitas", { method: "POST", body: JSON.stringify(data) })).id;
   }
-
-  async listar(): Promise<VisitaDocumento[]> {
-    return mapear(await getDocs(collection(db, "visitas")));
-  }
-
-  async listarPorFamilia(familiaId: string): Promise<VisitaDocumento[]> {
-    const consulta = query(
-      collection(db, "visitas"),
-      where("familiaId", "==", familiaId)
-    );
-    return mapear(await getDocs(consulta));
-  }
-
+  listar(): Promise<VisitaDocumento[]> { return requisicao<VisitaDocumento[]>("/api/visitas"); }
+  listarPorFamilia(familiaId: string): Promise<VisitaDocumento[]> { return requisicao<VisitaDocumento[]>(`/api/visitas?familiaId=${encodeURIComponent(familiaId)}`); }
   async alterarStatus(id: string, status: StatusVisita): Promise<void> {
-    await updateDoc(doc(db, "visitas", id), {
-      status,
-      updatedAt: serverTimestamp(),
-    });
+    await requisicao(`/api/visitas/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ status }) });
   }
 }
