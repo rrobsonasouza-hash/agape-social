@@ -34,7 +34,6 @@ const inicial: UsuarioFormData = {
   observacoes: "",
 };
 const perfis: Role[] = [
-  "admin_plataforma",
   "admin_paroquia",
   "coordenador",
   "operador",
