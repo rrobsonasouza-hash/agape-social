@@ -1,103 +1,49 @@
-import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  limit,
-  query,
-  serverTimestamp,
-  updateDoc,
-  where,
-} from "firebase/firestore";
-
-import { db } from "@/lib/firebase/firestore";
+import { auth } from "@/lib/firebase/auth";
 import { FamiliaFormData } from "../schemas/familia.schema";
 import { FamiliaDocumento } from "../types/familia-documento";
 
+async function token() {
+  const valor = await auth.currentUser?.getIdToken();
+  if (!valor) throw new Error("Sessão expirada.");
+  return valor;
+}
+
+async function requisicao<T>(url: string, init?: RequestInit): Promise<T> {
+  const resposta = await fetch(url, {
+    ...init,
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${await token()}`, ...init?.headers },
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados.erro || "Não foi possível concluir a operação.");
+  return dados as T;
+}
+
 export class FamiliaRepository {
-  async criar(data: FamiliaFormData) {
-    return addDoc(collection(db, "familias"), {
-      ...data,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+  criar(data: FamiliaFormData) {
+    return requisicao<{ id: string }>("/api/familias", { method: "POST", body: JSON.stringify(data) });
   }
 
-  async listar(): Promise<FamiliaDocumento[]> {
-    const snapshot = await getDocs(collection(db, "familias"));
-
-    return snapshot.docs.map((documento) => ({
-      id: documento.id,
-      ...(documento.data() as FamiliaFormData),
-    }));
+  listar(): Promise<FamiliaDocumento[]> {
+    return requisicao<FamiliaDocumento[]>("/api/familias");
   }
 
-  async buscarPorId(id: string): Promise<FamiliaDocumento | null> {
-    const referencia = doc(db, "familias", id);
-    const snapshot = await getDoc(referencia);
-
-    if (!snapshot.exists()) {
-      return null;
-    }
-
-    return {
-      id: snapshot.id,
-      ...(snapshot.data() as FamiliaFormData),
-    };
+  buscarPorId(id: string): Promise<FamiliaDocumento | null> {
+    return requisicao<FamiliaDocumento | null>(`/api/familias/${encodeURIComponent(id)}`);
   }
 
-  async buscarPorCpf(cpf: string): Promise<FamiliaDocumento | null> {
-    const consulta = query(
-      collection(db, "familias"),
-      where("cpf", "==", cpf),
-      limit(1)
-    );
-    const snapshot = await getDocs(consulta);
-    const documento = snapshot.docs[0];
-
-    if (!documento) {
-      return null;
-    }
-
-    return {
-      id: documento.id,
-      ...(documento.data() as FamiliaFormData),
-    };
+  buscarPorCpf(cpf: string): Promise<FamiliaDocumento | null> {
+    return requisicao<FamiliaDocumento | null>(`/api/familias?cpf=${encodeURIComponent(cpf)}`);
   }
 
-  async atualizar(id: string, data: FamiliaFormData) {
-    const referencia = doc(db, "familias", id);
-
-    await updateDoc(referencia, {
-      ...data,
-      updatedAt: serverTimestamp(),
-    });
+  atualizar(id: string, data: FamiliaFormData) {
+    return requisicao<{ id: string }>(`/api/familias/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(data) });
   }
 
-  async alterarStatus(
-    id: string,
-    status: "ATIVA" | "INATIVA"
-  ) {
-    const referencia = doc(db, "familias", id);
-
-    await updateDoc(referencia, {
-      status,
-      updatedAt: serverTimestamp(),
-    });
+  alterarStatus(id: string, status: "ATIVA" | "INATIVA") {
+    return requisicao<{ id: string }>(`/api/familias/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ status }) });
   }
 
-  async atualizarControleBeneficio(
-    id: string,
-    dados: {
-      beneficioBloqueado: boolean;
-      faltasConsecutivas: number;
-      motivoBloqueio: string;
-    }
-  ) {
-    await updateDoc(doc(db, "familias", id), {
-      ...dados,
-      updatedAt: serverTimestamp(),
-    });
+  atualizarControleBeneficio(id: string, dados: { beneficioBloqueado: boolean; faltasConsecutivas: number; motivoBloqueio: string }) {
+    return requisicao<{ id: string }>(`/api/familias/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(dados) });
   }
 }
