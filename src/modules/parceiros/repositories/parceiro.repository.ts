@@ -1,13 +1,21 @@
-import { addDoc, collection, doc, getDoc, getDocs, limit, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
-import { db } from "@/lib/firebase/firestore";
+import { auth } from "@/lib/firebase/auth";
 import { ParceiroFormData } from "../schemas/parceiro.schema";
 import { ParceiroDocumento } from "../types/parceiro-documento";
 
+async function requisicao<T>(url: string, init?: RequestInit): Promise<T> {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error("Sessão expirada.");
+  const resposta = await fetch(url, { ...init, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...init?.headers } });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados.erro || "Não foi possível concluir a operação.");
+  return dados as T;
+}
+
 export class ParceiroRepository {
-  async criar(data: ParceiroFormData) { return addDoc(collection(db, "parceiros"), { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() }); }
-  async listar(): Promise<ParceiroDocumento[]> { const snapshot = await getDocs(collection(db, "parceiros")); return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as ParceiroFormData) })); }
-  async buscarPorId(id: string): Promise<ParceiroDocumento | null> { const snapshot = await getDoc(doc(db, "parceiros", id)); return snapshot.exists() ? { id: snapshot.id, ...(snapshot.data() as ParceiroFormData) } : null; }
-  async buscarPorCnpj(cnpj: string): Promise<ParceiroDocumento | null> { const snapshot = await getDocs(query(collection(db, "parceiros"), where("cnpj", "==", cnpj), limit(1))); const item = snapshot.docs[0]; return item ? { id: item.id, ...(item.data() as ParceiroFormData) } : null; }
-  async atualizar(id: string, data: ParceiroFormData) { await updateDoc(doc(db, "parceiros", id), { ...data, updatedAt: serverTimestamp() }); }
-  async alterarStatus(id: string, status: "ATIVO" | "INATIVO") { await updateDoc(doc(db, "parceiros", id), { status, updatedAt: serverTimestamp() }); }
+  criar(data: ParceiroFormData) { return requisicao<{ id: string }>("/api/parceiros", { method: "POST", body: JSON.stringify(data) }); }
+  listar(): Promise<ParceiroDocumento[]> { return requisicao<ParceiroDocumento[]>("/api/parceiros"); }
+  buscarPorId(id: string): Promise<ParceiroDocumento | null> { return requisicao<ParceiroDocumento | null>(`/api/parceiros/${encodeURIComponent(id)}`); }
+  buscarPorCnpj(cnpj: string): Promise<ParceiroDocumento | null> { return requisicao<ParceiroDocumento | null>(`/api/parceiros?busca=${encodeURIComponent(cnpj)}`); }
+  atualizar(id: string, data: ParceiroFormData) { return requisicao<{ id: string }>(`/api/parceiros/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) }); }
+  alterarStatus(id: string, status: "ATIVO" | "INATIVO") { return requisicao<{ id: string }>(`/api/parceiros/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ status }) }); }
 }
