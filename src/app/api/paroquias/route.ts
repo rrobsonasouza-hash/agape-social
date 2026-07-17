@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exigirAdministrador, exigirUsuarioAtivo } from "@/lib/auth/admin-request";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { resolverParoquia } from "@/lib/supabase/tenant";
+import { resolverParoquia, resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
 
 function slug(nome: string) { return nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
 function erro(error: unknown) { const mensagem = error instanceof Error ? error.message : "Erro interno."; return NextResponse.json({ erro: mensagem }, { status: mensagem === "FORBIDDEN" ? 403 : 500 }); }
@@ -9,7 +9,7 @@ function erro(error: unknown) { const mensagem = error instanceof Error ? error.
 export async function GET(request: NextRequest) {
   try {
     const usuario = await exigirUsuarioAtivo(request);
-    if (new URL(request.url).searchParams.get("atual") === "1") { const { paroquia } = await resolverParoquia(usuario.paroquiaId); return NextResponse.json([paroquia]); }
+    if (new URL(request.url).searchParams.get("atual") === "1") { const { paroquia } = await resolverParoquiaDaRequisicao(request, usuario); return NextResponse.json([paroquia]); }
     if (usuario.role === "admin_plataforma") { const { data, error } = await supabaseAdmin().from("paroquias").select("*").order("nome"); if (error) throw error; return NextResponse.json(data); }
     const { paroquia } = await resolverParoquia(usuario.paroquiaId);
     return NextResponse.json([paroquia]);

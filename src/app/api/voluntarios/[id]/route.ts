@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
-import { resolverParoquia } from "@/lib/supabase/tenant";
+import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
 
 const PERFIS_ESCRITA = ["admin_plataforma", "admin_paroquia", "coordenador"];
 
 async function contexto(request: NextRequest, escrita = false) {
   const usuario = await exigirUsuarioAtivo(request);
   if (escrita && !PERFIS_ESCRITA.includes(usuario.role)) throw new Error("FORBIDDEN");
-  return resolverParoquia(usuario.paroquiaId);
+  return resolverParoquiaDaRequisicao(request, usuario);
 }
 
 function respostaErro(error: unknown) {

@@ -2,12 +2,12 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
-import { resolverParoquia } from "@/lib/supabase/tenant";
+import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
 
 export async function contextoOperacional(request: NextRequest, perfisEscrita: string[], escrita = false) {
   const usuario = await exigirUsuarioAtivo(request);
   if (escrita && !perfisEscrita.includes(usuario.role)) throw new Error("FORBIDDEN");
-  const { supabase, paroquiaId } = await resolverParoquia(usuario.paroquiaId);
+  const { supabase, paroquiaId } = await resolverParoquiaDaRequisicao(request, usuario);
   return { usuario, supabase, paroquiaId };
 }
 
@@ -15,6 +15,7 @@ export function respostaErroOperacional(error: unknown) {
   const mensagem = error instanceof Error ? error.message : "Erro interno.";
   if (mensagem === "UNAUTHENTICATED") return NextResponse.json({ erro: "Sessão expirada." }, { status: 401 });
   if (mensagem === "FORBIDDEN") return NextResponse.json({ erro: "Sem permissão para esta operação." }, { status: 403 });
+  if (mensagem === "PARISH_REQUIRED") return NextResponse.json({ erro: "Selecione uma paróquia na Central de Administração." }, { status: 409 });
   return NextResponse.json({ erro: mensagem }, { status: 500 });
 }
 

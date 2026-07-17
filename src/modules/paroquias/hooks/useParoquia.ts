@@ -26,6 +26,9 @@ export function useParoquia(carregarAutomaticamente = true) {
   const listar = useCallback(() => service.listar(), []);
   const criar = useCallback((data: ParoquiaFormData) => service.criar(data), []);
   const alterarStatus = useCallback((id: string, ativa: boolean) => service.alterarStatus(id, ativa), []);
+  const selecionar = useCallback((id: string) => service.selecionar(id), []);
+  const buscarContexto = useCallback(() => service.buscarContexto(), []);
+  const limparContexto = useCallback(() => service.limparContexto(), []);
 
   useEffect(() => {
     if (!carregarAutomaticamente) return;
@@ -43,5 +46,8 @@ export function useParoquia(carregarAutomaticamente = true) {
     listar,
     criar,
     alterarStatus,
+    selecionar,
+    buscarContexto,
+    limparContexto,
   };
 }

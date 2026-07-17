@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
-import { resolverParoquia } from "@/lib/supabase/tenant";
+import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
 
 const tiposMime = ["application/pdf", "image/jpeg", "image/png"];
 async function contexto(request: NextRequest, escrita = false) {
   const usuario = await exigirUsuarioAtivo(request);
   if (escrita && !["admin_plataforma", "admin_paroquia", "coordenador", "operador"].includes(usuario.role)) throw new Error("FORBIDDEN");
-  const { supabase, paroquiaId } = await resolverParoquia(usuario.paroquiaId);
+  const { supabase, paroquiaId } = await resolverParoquiaDaRequisicao(request, usuario);
   return { usuario, supabase, paroquiaId };
 }
 

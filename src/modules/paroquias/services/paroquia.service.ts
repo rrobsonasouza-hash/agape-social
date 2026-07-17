@@ -15,4 +15,7 @@ export class ParoquiaService {
   listar() { return this.repository.listar(); }
   criar(data: ParoquiaFormData) { return this.repository.criar(paroquiaSchema.parse(data)); }
   alterarStatus(id: string, ativa: boolean) { return this.repository.alterarStatus(id, ativa); }
+  selecionar(id: string) { return this.repository.selecionar(id); }
+  buscarContexto() { return this.repository.buscarContexto(); }
+  limparContexto() { return this.repository.limparContexto(); }
 }

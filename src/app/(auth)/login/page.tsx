@@ -20,11 +20,11 @@ export default function LoginPage() {
   const [senha, setSenha] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  useEffect(() => { if (!carregando && usuario) router.replace("/dashboard"); }, [carregando, router, usuario]);
+  useEffect(() => { if (!carregando && usuario) router.replace(usuario.role === "admin_plataforma" ? "/central" : "/dashboard"); }, [carregando, router, usuario]);
 
   async function entrar(event: FormEvent) {
     event.preventDefault(); setEnviando(true);
-    try { await entrarComEmail(email, senha); router.replace("/dashboard"); }
+    try { await entrarComEmail(email, senha); }
     catch (error) { toast.error(mensagemErro((error as { code?: string }).code)); }
     finally { setEnviando(false); }
   }

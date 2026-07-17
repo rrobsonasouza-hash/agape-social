@@ -23,4 +23,7 @@ export class ParoquiaRepository {
   async salvarPrincipal(data: ParoquiaFormData): Promise<void> { const atual = await this.buscarPrincipal(); if (!atual) throw new Error("Paróquia não encontrada."); await requisicao(`/api/paroquias/${atual.id}`, { method: "PUT", body: JSON.stringify(data) }); }
   async criar(data: ParoquiaFormData): Promise<string> { return (await requisicao<{ id: string }>("/api/paroquias", { method: "POST", body: JSON.stringify(data) })).id; }
   async alterarStatus(id: string, ativa: boolean): Promise<void> { await requisicao(`/api/paroquias/${id}`, { method: "PATCH", body: JSON.stringify({ ativa }) }); }
+  async selecionar(id: string): Promise<ParoquiaDocumento> { const resultado = await requisicao<{ paroquia: LinhaParoquia }>("/api/contexto-paroquia", { method: "POST", body: JSON.stringify({ paroquiaId: id }) }); return mapear(resultado.paroquia); }
+  async buscarContexto(): Promise<ParoquiaDocumento | null> { const resultado = await requisicao<{ paroquia: LinhaParoquia | null }>("/api/contexto-paroquia"); return resultado.paroquia ? mapear(resultado.paroquia) : null; }
+  async limparContexto(): Promise<void> { await requisicao("/api/contexto-paroquia", { method: "DELETE" }); }
 }
