@@ -1,92 +1,39 @@
-import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  updateDoc,
-} from "firebase/firestore";
-
-import { db } from "@/lib/firebase/firestore";
-
+import { auth } from "@/lib/firebase/auth";
 import { VoluntarioFormData } from "../schemas/voluntario.schema";
 import { VoluntarioDocumento } from "../types/voluntario-documento";
 
+async function token() {
+  const valor = await auth.currentUser?.getIdToken();
+  if (!valor) throw new Error("Sessão expirada.");
+  return valor;
+}
+
+async function requisicao<T>(url: string, init?: RequestInit): Promise<T> {
+  const resposta = await fetch(url, { ...init, headers: { "Content-Type": "application/json", Authorization: `Bearer ${await token()}`, ...init?.headers } });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados.erro || "Não foi possível concluir a operação.");
+  return dados as T;
+}
+
 export class VoluntarioRepository {
-
   async criar(data: VoluntarioFormData) {
-
-    const documento = await addDoc(
-      collection(db, "voluntarios"),
-      {
-        ...data,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }
-    );
-
-    return documento.id;
-
+    const resultado = await requisicao<{ id: string }>("/api/voluntarios", { method: "POST", body: JSON.stringify(data) });
+    return resultado.id;
   }
 
-  async listar(): Promise<VoluntarioDocumento[]> {
-
-    const snapshot = await getDocs(
-      collection(db, "voluntarios")
-    );
-
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...(doc.data() as VoluntarioFormData),
-    }));
-
+  listar(): Promise<VoluntarioDocumento[]> {
+    return requisicao<VoluntarioDocumento[]>("/api/voluntarios");
   }
 
-  async buscarPorId(id: string): Promise<VoluntarioDocumento | null> {
-
-    const referencia = doc(db, "voluntarios", id);
-
-    const documento = await getDoc(referencia);
-
-    if (!documento.exists()) {
-      return null;
-    }
-
-    return {
-      id: documento.id,
-      ...(documento.data() as VoluntarioFormData),
-    };
-
+  buscarPorId(id: string): Promise<VoluntarioDocumento | null> {
+    return requisicao<VoluntarioDocumento | null>(`/api/voluntarios/${encodeURIComponent(id)}`);
   }
 
-  async atualizar(
-    id: string,
-    data: Partial<VoluntarioFormData>
-  ) {
-
-    await updateDoc(
-      doc(db, "voluntarios", id),
-      {
-        ...data,
-        updatedAt: new Date(),
-      }
-    );
-
+  atualizar(id: string, data: Partial<VoluntarioFormData>) {
+    return requisicao<{ id: string }>(`/api/voluntarios/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) });
   }
 
-  async alterarStatus(
-    id: string,
-    status: "ATIVO" | "INATIVO"
-  ) {
-
-    await updateDoc(
-      doc(db, "voluntarios", id),
-      {
-        status,
-        updatedAt: new Date(),
-      }
-    );
-
+  alterarStatus(id: string, status: "ATIVO" | "INATIVO") {
+    return this.atualizar(id, { status });
   }
-
 }
