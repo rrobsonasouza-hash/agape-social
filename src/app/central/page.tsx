@@ -10,9 +10,8 @@ import { useParoquia } from "@/modules/paroquias/hooks/useParoquia";
 import { ParoquiaDocumento } from "@/modules/paroquias/types/paroquia-documento";
 
 export default function CentralPage() {
-  const router = useRouter(); const { usuario, carregando } = useAuth(); const { listar, selecionar, limparContexto } = useParoquia(false); const [paroquias, setParoquias] = useState<ParoquiaDocumento[]>([]); const [abrindo, setAbrindo] = useState("");
+  const router = useRouter(); const { usuario, carregando } = useAuth(); const { listar, selecionar } = useParoquia(false); const [paroquias, setParoquias] = useState<ParoquiaDocumento[]>([]); const [abrindo, setAbrindo] = useState("");
   useEffect(() => { if (!carregando && !usuario) router.replace("/login"); else if (!carregando && usuario?.role !== "admin_plataforma") router.replace("/dashboard"); }, [carregando, router, usuario]);
-  useEffect(() => { if (usuario?.role === "admin_plataforma") void limparContexto(); }, [limparContexto, usuario]);
   useEffect(() => { if (usuario?.role === "admin_plataforma") listar().then(setParoquias).catch(() => toast.error("Não foi possível carregar as paróquias.")); }, [listar, usuario]);
   async function entrar(item: ParoquiaDocumento) { setAbrindo(item.id); try { await selecionar(item.id); router.push("/dashboard"); } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível acessar a paróquia."); setAbrindo(""); } }
   if (carregando || usuario?.role !== "admin_plataforma") return <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-500">Verificando acesso...</div>;
