@@ -1,37 +1,13 @@
-import { addDoc, collection, doc, getDoc, getDocs, serverTimestamp, setDoc, writeBatch } from "firebase/firestore";
-import { db } from "@/lib/firebase/firestore";
+import { auth } from "@/lib/firebase/auth";
 import { CampanhaCestasData, MovimentacaoCestasData } from "../schemas/cestas.schema";
 import { CampanhaCestas, ItemCestaPadrao, MovimentacaoCestas } from "../types/cestas.types";
-
+async function requisicao<T>(url: string, init?: RequestInit): Promise<T> { const token = await auth.currentUser?.getIdToken(); if (!token) throw new Error("Sessão expirada."); const resposta = await fetch(url, { ...init, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...init?.headers } }); const dados = await resposta.json(); if (!resposta.ok) throw new Error(dados.erro || "Não foi possível concluir a operação."); return dados as T; }
 export class CestasRepository {
-  async salvarComposicao(itens: ItemCestaPadrao[]) {
-    await setDoc(doc(db, "configuracoes", "cestaPadrao"), { itens, updatedAt: serverTimestamp() });
-  }
-  async buscarComposicao(): Promise<ItemCestaPadrao[]> {
-    const snapshot = await getDoc(doc(db, "configuracoes", "cestaPadrao"));
-    return snapshot.exists() ? (snapshot.data().itens as ItemCestaPadrao[]) ?? [] : [];
-  }
-  async criarCampanha(data: CampanhaCestasData) {
-    return addDoc(collection(db, "campanhasCestas"), { ...data, createdAt: serverTimestamp() });
-  }
-  async listarCampanhas(): Promise<CampanhaCestas[]> {
-    const snapshot = await getDocs(collection(db, "campanhasCestas"));
-    return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as CampanhaCestasData) }));
-  }
-  async criarMovimentacao(data: MovimentacaoCestasData) {
-    return addDoc(collection(db, "movimentacoesCestas"), { ...data, createdAt: serverTimestamp() });
-  }
-  async listarMovimentacoes(): Promise<MovimentacaoCestas[]> {
-    const snapshot = await getDocs(collection(db, "movimentacoesCestas"));
-    return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as MovimentacaoCestasData) }));
-  }
-
-  async criarMovimentacoes(data: MovimentacaoCestasData[]) {
-    const lote = writeBatch(db);
-    data.forEach((movimento) => {
-      const referencia = doc(collection(db, "movimentacoesCestas"));
-      lote.set(referencia, { ...movimento, createdAt: serverTimestamp() });
-    });
-    await lote.commit();
-  }
+  salvarComposicao(itens: ItemCestaPadrao[]) { return requisicao("/api/cestas/configuracao", { method: "PUT", body: JSON.stringify(itens) }); }
+  buscarComposicao(): Promise<ItemCestaPadrao[]> { return requisicao("/api/cestas/configuracao"); }
+  criarCampanha(data: CampanhaCestasData) { return requisicao<{ id: string }>("/api/cestas/campanhas", { method: "POST", body: JSON.stringify(data) }); }
+  listarCampanhas(): Promise<CampanhaCestas[]> { return requisicao("/api/cestas/campanhas"); }
+  criarMovimentacao(data: MovimentacaoCestasData) { return requisicao<{ id: string }>("/api/cestas/movimentacoes", { method: "POST", body: JSON.stringify(data) }); }
+  listarMovimentacoes(): Promise<MovimentacaoCestas[]> { return requisicao("/api/cestas/movimentacoes"); }
+  criarMovimentacoes(data: MovimentacaoCestasData[]) { return requisicao("/api/cestas/movimentacoes", { method: "POST", body: JSON.stringify(data) }); }
 }

@@ -1,32 +1,11 @@
-import { addDoc, collection, doc, getDoc, getDocs, query, serverTimestamp, updateDoc, where, writeBatch } from "firebase/firestore";
-import { db } from "@/lib/firebase/firestore";
+import { auth } from "@/lib/firebase/auth";
 import { DistribuicaoData, StatusDistribuicao } from "../schemas/distribuicao.schema";
 import { DistribuicaoDocumento } from "../types/distribuicao-documento";
-
+async function requisicao<T>(url: string, init?: RequestInit): Promise<T> { const token = await auth.currentUser?.getIdToken(); if (!token) throw new Error("Sessão expirada."); const resposta = await fetch(url, { ...init, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...init?.headers } }); const dados = await resposta.json(); if (!resposta.ok) throw new Error(dados.erro || "Não foi possível concluir a operação."); return dados as T; }
 export class DistribuicaoRepository {
-  async agendar(data: DistribuicaoData) {
-    return addDoc(collection(db, "distribuicoesCestas"), { ...data, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-  }
-  async buscarPorId(id: string): Promise<DistribuicaoDocumento | null> {
-    const snapshot = await getDoc(doc(db, "distribuicoesCestas", id));
-    return snapshot.exists() ? { id: snapshot.id, ...(snapshot.data() as DistribuicaoData) } : null;
-  }
-  async listarPorData(data: string): Promise<DistribuicaoDocumento[]> {
-    const snapshot = await getDocs(query(collection(db, "distribuicoesCestas"), where("data", "==", data)));
-    return snapshot.docs.map((item) => ({ id: item.id, ...(item.data() as DistribuicaoData) })).sort((a, b) => a.familiaNome.localeCompare(b.familiaNome));
-  }
-  async alterarStatus(id: string, status: StatusDistribuicao) {
-    await updateDoc(doc(db, "distribuicoesCestas", id), { status, updatedAt: serverTimestamp() });
-  }
-
-  async agendarMuitas(registros: DistribuicaoData[]) {
-    for (let inicio = 0; inicio < registros.length; inicio += 450) {
-      const lote = writeBatch(db);
-      registros.slice(inicio, inicio + 450).forEach((registro) => {
-        const referencia = doc(collection(db, "distribuicoesCestas"));
-        lote.set(referencia, { ...registro, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-      });
-      await lote.commit();
-    }
-  }
+  agendar(data: DistribuicaoData) { return requisicao<{ id: string }>("/api/distribuicoes", { method: "POST", body: JSON.stringify(data) }); }
+  buscarPorId(id: string): Promise<DistribuicaoDocumento | null> { return requisicao(`/api/distribuicoes/${encodeURIComponent(id)}`); }
+  listarPorData(data: string): Promise<DistribuicaoDocumento[]> { return requisicao(`/api/distribuicoes?data=${encodeURIComponent(data)}`); }
+  alterarStatus(id: string, status: StatusDistribuicao) { return requisicao(`/api/distribuicoes/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ status }) }); }
+  agendarMuitas(registros: DistribuicaoData[]) { return registros.length ? requisicao("/api/distribuicoes", { method: "POST", body: JSON.stringify(registros) }) : Promise.resolve(); }
 }
