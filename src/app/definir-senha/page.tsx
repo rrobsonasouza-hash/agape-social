@@ -1,0 +1,12 @@
+"use client";
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
+import { supabase } from "@/lib/supabase/client";
+
+export default function DefinirSenhaPage() {
+  const router = useRouter(); const [senha, setSenha] = useState(""); const [confirmacao, setConfirmacao] = useState(""); const [pronto, setPronto] = useState(false); const [salvando, setSalvando] = useState(false);
+  useEffect(() => { supabase.auth.getSession().then(({ data }) => setPronto(Boolean(data.session))); const { data } = supabase.auth.onAuthStateChange((evento) => { if (evento === "PASSWORD_RECOVERY" || evento === "SIGNED_IN") setPronto(true); }); return () => data.subscription.unsubscribe(); }, []);
+  async function salvar(event: FormEvent) { event.preventDefault(); if (senha.length < 8) return toast.error("A senha deve ter pelo menos 8 caracteres."); if (senha !== confirmacao) return toast.error("As senhas não coincidem."); setSalvando(true); const { error } = await supabase.auth.updateUser({ password: senha }); setSalvando(false); if (error) return toast.error(error.message); toast.success("Senha definida com sucesso."); await supabase.auth.signOut(); router.replace("/login"); }
+  return <main className="flex min-h-screen items-center justify-center bg-slate-100 p-6"><section className="w-full max-w-md rounded-2xl border bg-white p-8 shadow-xl"><h1 className="text-2xl font-bold text-blue-700">Definir senha</h1><p className="mt-2 text-sm text-slate-500">Crie sua senha de acesso ao Ágape Social.</p>{pronto ? <form onSubmit={salvar} className="mt-6 space-y-4"><label className="block text-sm font-medium">Nova senha<input type="password" minLength={8} value={senha} onChange={(e) => setSenha(e.target.value)} className="mt-2 w-full rounded-lg border px-4 py-3" required /></label><label className="block text-sm font-medium">Confirmar senha<input type="password" minLength={8} value={confirmacao} onChange={(e) => setConfirmacao(e.target.value)} className="mt-2 w-full rounded-lg border px-4 py-3" required /></label><button disabled={salvando} className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white disabled:opacity-60">{salvando ? "Salvando..." : "Definir senha"}</button></form> : <div className="mt-6 rounded-lg bg-amber-50 p-4 text-sm text-amber-900">Abra esta página pelo link recebido no e-mail. Se o link expirou, solicite uma nova recuperação de senha.</div>}</section></main>;
+}
