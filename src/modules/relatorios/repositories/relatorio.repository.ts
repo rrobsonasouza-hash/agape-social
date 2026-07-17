@@ -1,9 +1,10 @@
-import { collection, getDocs } from "firebase/firestore";
-
-import { db } from "@/lib/firebase/firestore";
+import { CestasRepository } from "@/modules/cestas/repositories/cestas.repository";
 import { CampanhaCestas, MovimentacaoCestas } from "@/modules/cestas/types/cestas.types";
+import { DistribuicaoRepository } from "@/modules/distribuicoes/repositories/distribuicao.repository";
 import { DistribuicaoDocumento } from "@/modules/distribuicoes/types/distribuicao-documento";
+import { FamiliaRepository } from "@/modules/familias/repositories/familia.repository";
 import { FamiliaDocumento } from "@/modules/familias/types/familia-documento";
+import { VisitaRepository } from "@/modules/visitas/repositories/visita.repository";
 import { VisitaDocumento } from "@/modules/visitas/types/visita-documento";
 
 export interface DadosRelatorio {
@@ -14,19 +15,19 @@ export interface DadosRelatorio {
   visitas: VisitaDocumento[];
 }
 
-async function listar<T>(nome: string): Promise<T[]> {
-  const snapshot = await getDocs(collection(db, nome));
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }) as T);
-}
-
 export class RelatorioRepository {
+  private familias = new FamiliaRepository();
+  private distribuicoes = new DistribuicaoRepository();
+  private cestas = new CestasRepository();
+  private visitas = new VisitaRepository();
+
   async carregar(): Promise<DadosRelatorio> {
     const [familias, distribuicoes, movimentos, campanhas, visitas] = await Promise.all([
-      listar<FamiliaDocumento>("familias"),
-      listar<DistribuicaoDocumento>("distribuicoesCestas"),
-      listar<MovimentacaoCestas>("movimentacoesCestas"),
-      listar<CampanhaCestas>("campanhasCestas"),
-      listar<VisitaDocumento>("visitas"),
+      this.familias.listar(),
+      this.distribuicoes.listarPorData(""),
+      this.cestas.listarMovimentacoes(),
+      this.cestas.listarCampanhas(),
+      this.visitas.listar(),
     ]);
     return { familias, distribuicoes, movimentos, campanhas, visitas };
   }

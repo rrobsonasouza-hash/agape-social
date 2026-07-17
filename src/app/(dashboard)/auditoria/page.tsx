@@ -10,7 +10,7 @@ import { AuditoriaDocumento } from "@/modules/auditoria/types/auditoria-document
 
 function dataHora(valor: AuditoriaDocumento["data"]) {
   if (!valor) return "Processando...";
-  const data = valor instanceof Date ? valor : valor.toDate?.();
+  const data = typeof valor === "string" ? new Date(valor) : valor instanceof Date ? valor : valor.toDate?.();
   return data ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(data) : "—";
 }
 

@@ -8,7 +8,7 @@ export interface AuditoriaDocumento {
   usuarioNome: string;
   usuarioEmail: string;
   paroquiaId: string;
-  data?: { toDate?: () => Date } | Date | null;
+  data?: { toDate?: () => Date } | Date | string | null;
 }
 
 export type AuditoriaEntrada = Omit<AuditoriaDocumento, "id" | "data">;
