@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "node:crypto";
 import { exigirAdministrador } from "@/lib/auth/admin-request";
 import { adminDb } from "@/lib/firebase/admin";
 import { supabaseAdmin } from "@/lib/supabase/admin";
@@ -12,15 +13,15 @@ export async function POST(request: NextRequest) {
     const supabase = supabaseAdmin(); const snapshot = await adminDb().collection("usuarios").get();
     const { data: usuariosAuth, error: erroLista } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 }); if (erroLista) throw erroLista;
     const porEmail = new Map(usuariosAuth.users.map((item) => [item.email?.toLowerCase(), item]));
-    const resultado = { total: snapshot.size, convidados: 0, existentes: 0, perfisSincronizados: 0, falhas: [] as string[] };
+    const resultado = { total: snapshot.size, criados: 0, existentes: 0, perfisSincronizados: 0, falhas: [] as string[] };
     for (const documento of snapshot.docs) {
-      const perfil = documento.data() as PerfilFirebase; const email = perfil.email?.trim().toLowerCase();
+      const perfil = documento.data() as PerfilFirebase; const email = perfil.email?.normalize("NFKC").replace(/\s/g, "").toLowerCase();
       if (!email || !perfil.role) { resultado.falhas.push(`${documento.id}: perfil sem e-mail ou função.`); continue; }
       try {
         let usuarioAuth = porEmail.get(email);
         if (!usuarioAuth) {
-          const convite = await supabase.auth.admin.inviteUserByEmail(email, { data: { nome: perfil.nome || email.split("@")[0] }, redirectTo: `${request.nextUrl.origin}/definir-senha` });
-          if (convite.error) throw convite.error; usuarioAuth = convite.data.user; resultado.convidados += 1;
+          const criacao = await supabase.auth.admin.createUser({ email, password: randomBytes(32).toString("base64url"), email_confirm: true, user_metadata: { nome: perfil.nome || email.split("@")[0] } });
+          if (criacao.error) throw criacao.error; usuarioAuth = criacao.data.user; resultado.criados += 1;
         } else resultado.existentes += 1;
         const { paroquiaId } = await resolverParoquia(perfil.paroquiaId || "principal");
         const status = ["PENDENTE", "ATIVO", "INATIVO"].includes(perfil.status || "") ? perfil.status : "ATIVO";
