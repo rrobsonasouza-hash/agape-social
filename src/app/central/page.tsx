@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { sair } from "@/lib/firebase/auth";
+import { sair } from "@/lib/auth/client-session";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useParoquia } from "@/modules/paroquias/hooks/useParoquia";
 import { ParoquiaDocumento } from "@/modules/paroquias/types/paroquia-documento";

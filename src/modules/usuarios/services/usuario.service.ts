@@ -1,11 +1,10 @@
-import { auth } from "@/lib/firebase/auth";
-import { enviarRecuperacaoSenha } from "@/lib/firebase/auth";
+import { enviarRecuperacaoSenha, obterTokenAcesso } from "@/lib/auth/client-session";
 import { usuarioSchema } from "../schemas/usuario.schema";
 import { UsuarioRepository } from "../repositories/usuario.repository";
 import { UsuarioFormData } from "../types/usuario-documento";
 
 async function requisicaoAdministrativa(url: string, method: string, body: unknown) {
-  const token = await auth.currentUser?.getIdToken();
+  const token = await obterTokenAcesso();
   if (!token) throw new Error("Sessão expirada. Entre novamente.");
   const resposta = await fetch(url, { method, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
   const tipo = resposta.headers.get("content-type") || "";

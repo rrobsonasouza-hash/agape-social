@@ -3,13 +3,14 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { entrarComEmail, enviarRecuperacaoSenha } from "@/lib/firebase/auth";
+import { entrar as entrarComEmail, enviarRecuperacaoSenha } from "@/lib/auth/client-session";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 
 function mensagemErro(codigo?: string) {
   if (codigo === "auth/invalid-credential") return "E-mail ou senha inválidos.";
   if (codigo === "auth/too-many-requests") return "Muitas tentativas. Aguarde alguns minutos.";
   if (codigo === "auth/user-disabled") return "Este usuário está desativado.";
+  if (codigo === "invalid_credentials") return "E-mail ou senha inválidos.";
   return "Não foi possível entrar. Verifique os dados e tente novamente.";
 }
 

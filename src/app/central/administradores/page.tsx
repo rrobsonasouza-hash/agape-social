@@ -3,12 +3,12 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { auth, enviarRecuperacaoSenha } from "@/lib/firebase/auth";
+import { enviarRecuperacaoSenha, obterTokenAcesso } from "@/lib/auth/client-session";
 import { maskTelefone } from "@/lib/formatters/masks";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 
 type Administrador = { id: string; nome: string; email: string; telefone?: string; status: "ATIVO" | "INATIVO" };
-async function requisicao<T>(url: string, init?: RequestInit): Promise<T> { const token = await auth.currentUser?.getIdToken(); if (!token) throw new Error("Sessão expirada."); const resposta = await fetch(url, { ...init, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }); const dados = await resposta.json(); if (!resposta.ok) throw new Error(dados.erro || "Não foi possível concluir a operação."); return dados as T; }
+async function requisicao<T>(url: string, init?: RequestInit): Promise<T> { const token = await obterTokenAcesso(); const resposta = await fetch(url, { ...init, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }); const dados = await resposta.json(); if (!resposta.ok) throw new Error(dados.erro || "Não foi possível concluir a operação."); return dados as T; }
 
 export default function AdministradoresPlataformaPage() {
   const router = useRouter(); const { usuario, carregando } = useAuth(); const [administradores, setAdministradores] = useState<Administrador[]>([]); const [form, setForm] = useState({ nome: "", email: "", telefone: "" }); const [salvando, setSalvando] = useState(false);

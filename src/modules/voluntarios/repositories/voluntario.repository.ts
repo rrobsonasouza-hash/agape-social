@@ -1,9 +1,9 @@
-import { auth } from "@/lib/firebase/auth";
+import { obterTokenAcesso } from "@/lib/auth/client-session";
 import { VoluntarioFormData } from "../schemas/voluntario.schema";
 import { VoluntarioDocumento } from "../types/voluntario-documento";
 
 async function token() {
-  const valor = await auth.currentUser?.getIdToken();
+  const valor = await obterTokenAcesso();
   if (!valor) throw new Error("Sessão expirada.");
   return valor;
 }

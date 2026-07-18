@@ -5,7 +5,7 @@ import { podeAcessarRota } from "@/config/permissions";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { useParoquia } from "@/modules/paroquias/hooks/useParoquia";
 import { usePermissoes } from "@/modules/permissoes/hooks/usePermissoes";
-import { sair } from "@/lib/firebase/auth";
+import { sair } from "@/lib/auth/client-session";
 export function ProtectedArea({ children }: { children: React.ReactNode }) {
   const { usuario, carregando, erroAcesso } = useAuth(); const { buscarContexto } = useParoquia(false); const { permissoes, carregando: carregandoPermissoes } = usePermissoes(); const router = useRouter(); const pathname = usePathname();
   useEffect(() => { if (!carregando && !usuario && !erroAcesso) router.replace("/login"); }, [carregando, erroAcesso, router, usuario]);

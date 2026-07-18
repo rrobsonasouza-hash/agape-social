@@ -1,11 +1,11 @@
-import { auth } from "@/lib/firebase/auth";
+import { obterTokenAcesso } from "@/lib/auth/client-session";
 import { ParoquiaFormData } from "../schemas/paroquia.schema";
 import { ParoquiaDocumento } from "../types/paroquia-documento";
 
 type LinhaParoquia = { id: string; nome: string; ativa?: boolean; endereco?: Record<string, string>; latitude: number; longitude: number; raio_atuacao_km: number };
 
 async function requisicao<T>(url: string, init?: RequestInit): Promise<T> {
-  const token = await auth.currentUser?.getIdToken();
+  const token = await obterTokenAcesso();
   if (!token) throw new Error("Sessão expirada.");
   const resposta = await fetch(url, { ...init, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...init?.headers } });
   const dados = await resposta.json();

@@ -1,7 +1,7 @@
-import { auth } from "@/lib/firebase/auth";
+import { obterTokenAcesso } from "@/lib/auth/client-session";
 import { DistribuicaoData, StatusDistribuicao } from "../schemas/distribuicao.schema";
 import { DistribuicaoDocumento } from "../types/distribuicao-documento";
-async function requisicao<T>(url: string, init?: RequestInit): Promise<T> { const token = await auth.currentUser?.getIdToken(); if (!token) throw new Error("Sessão expirada."); const resposta = await fetch(url, { ...init, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...init?.headers } }); const dados = await resposta.json(); if (!resposta.ok) throw new Error(dados.erro || "Não foi possível concluir a operação."); return dados as T; }
+async function requisicao<T>(url: string, init?: RequestInit): Promise<T> { const token = await obterTokenAcesso(); const resposta = await fetch(url, { ...init, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...init?.headers } }); const dados = await resposta.json(); if (!resposta.ok) throw new Error(dados.erro || "Não foi possível concluir a operação."); return dados as T; }
 export class DistribuicaoRepository {
   agendar(data: DistribuicaoData) { return requisicao<{ id: string }>("/api/distribuicoes", { method: "POST", body: JSON.stringify(data) }); }
   buscarPorId(id: string): Promise<DistribuicaoDocumento | null> { return requisicao(`/api/distribuicoes/${encodeURIComponent(id)}`); }

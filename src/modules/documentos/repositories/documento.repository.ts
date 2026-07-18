@@ -1,7 +1,7 @@
-import { auth } from "@/lib/firebase/auth";
+import { obterTokenAcesso } from "@/lib/auth/client-session";
 import { Documento, EntidadeDocumento, NovoDocumento } from "../types/documento.types";
 
-async function token() { const valor = await auth.currentUser?.getIdToken(); if (!valor) throw new Error("Sessão expirada."); return valor; }
+async function token() { return obterTokenAcesso(); }
 async function respostaJson(resposta: Response) { const dados = await resposta.json(); if (!resposta.ok) throw new Error(dados.erro || "Operação não concluída."); return dados; }
 
 export class DocumentoRepository {

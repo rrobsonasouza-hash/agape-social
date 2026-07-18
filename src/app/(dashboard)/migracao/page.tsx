@@ -4,10 +4,10 @@ import { Database, ShieldCheck, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { Card } from "@/components/forms/Card";
-import { auth } from "@/lib/firebase/auth";
+import { obterTokenAcesso } from "@/lib/auth/client-session";
 
 type ResultadoAuth = { total: number; criados: number; existentes: number; perfisSincronizados: number; falhas: string[] };
-async function executar(url: string) { const token = await auth.currentUser?.getIdToken(); if (!token) throw new Error("Sessão expirada."); const resposta = await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${token}` } }); const dados = await resposta.json(); if (!resposta.ok) throw new Error(dados.erro); return dados; }
+async function executar(url: string) { const token = await obterTokenAcesso(); const resposta = await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${token}` } }); const dados = await resposta.json(); if (!resposta.ok) throw new Error(dados.erro); return dados; }
 
 export default function MigracaoPage() {
   const [executando, setExecutando] = useState(false); const [resultado, setResultado] = useState<Record<string, number> | null>(null); const [executandoAuth, setExecutandoAuth] = useState(false); const [resultadoAuth, setResultadoAuth] = useState<ResultadoAuth | null>(null);

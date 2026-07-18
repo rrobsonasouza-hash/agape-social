@@ -1,9 +1,9 @@
-import { auth } from "@/lib/firebase/auth";
+import { obterTokenAcesso } from "@/lib/auth/client-session";
 import { ParceiroFormData } from "../schemas/parceiro.schema";
 import { ParceiroDocumento } from "../types/parceiro-documento";
 
 async function requisicao<T>(url: string, init?: RequestInit): Promise<T> {
-  const token = await auth.currentUser?.getIdToken();
+  const token = await obterTokenAcesso();
   if (!token) throw new Error("Sessão expirada.");
   const resposta = await fetch(url, { ...init, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...init?.headers } });
   const dados = await resposta.json();
