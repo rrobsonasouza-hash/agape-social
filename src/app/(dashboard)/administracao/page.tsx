@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Search } from "lucide-react";
+import { Download, Search } from "lucide-react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 
@@ -13,6 +13,7 @@ import { MapaOpenStreetMap } from "@/components/maps/MapaOpenStreetMap";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useEndereco } from "@/modules/enderecos/hooks/useEndereco";
 import { useParoquia } from "@/modules/paroquias/hooks/useParoquia";
+import { obterTokenAcesso } from "@/lib/auth/client-session";
 import {
   paroquiaSchema,
   ParoquiaFormData,
@@ -37,6 +38,7 @@ export default function AdministracaoPage() {
   const { buscarPorCep, consultandoCep } = useEndereco();
   const { buscarPrincipal, salvarPrincipal } = useParoquia(false);
   const [carregando, setCarregando] = useState(true);
+  const [exportando, setExportando] = useState(false);
 
   const {
     register,
@@ -103,6 +105,19 @@ export default function AdministracaoPage() {
     }
   }
 
+  async function baixarBackup() {
+    setExportando(true);
+    try {
+      const token = await obterTokenAcesso();
+      const resposta = await fetch("/api/backup", { headers: { Authorization: `Bearer ${token}` } });
+      if (!resposta.ok) { const dados = await resposta.json(); throw new Error(dados.erro || "Não foi possível gerar o backup."); }
+      const arquivo = await resposta.blob(); const disposicao = resposta.headers.get("content-disposition") || ""; const nome = disposicao.match(/filename="([^"]+)"/)?.[1] || `backup-agape-${new Date().toISOString().slice(0, 10)}.json`;
+      const url = URL.createObjectURL(arquivo); const link = document.createElement("a"); link.href = url; link.download = nome; document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+      toast.success("Backup gerado com sucesso.");
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível gerar o backup."); }
+    finally { setExportando(false); }
+  }
+
   if (carregando) {
     return <div className="py-16 text-center text-slate-500">Carregando configuração...</div>;
   }
@@ -159,6 +174,13 @@ export default function AdministracaoPage() {
           </Button>
         </div>
       </form>
+
+      <FormSection title="Backup da paróquia" description="Baixe uma cópia dos cadastros e históricos desta unidade. Senhas e chaves nunca são incluídas.">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="max-w-2xl text-sm text-slate-600">Guarde o arquivo em local seguro, pois ele contém dados pessoais das famílias, voluntários, doadores e usuários.</p>
+          <button type="button" onClick={() => void baixarBackup()} disabled={exportando} className="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-3 font-semibold text-white transition hover:bg-slate-900 disabled:opacity-60"><Download size={18} />{exportando ? "Gerando..." : "Baixar backup"}</button>
+        </div>
+      </FormSection>
     </div>
   );
 }
