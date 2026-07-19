@@ -4,7 +4,7 @@ import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
 
 const schema = z.object({ nome: z.string().trim().min(2), categoriaId: z.uuid(), preco: z.coerce.number().min(0), estoque: z.coerce.number().int().min(0) });
-const editarSchema = schema.extend({ id: z.uuid(), ativo: z.boolean().optional() });
+const editarSchema = schema.omit({ estoque: true }).extend({ id: z.uuid(), ativo: z.boolean().optional() });
 const permitidos = ["admin_plataforma", "admin_paroquia", "atendente_secretaria"];
 function respostaErro(error: unknown) { const mensagem = error instanceof Error ? error.message : "Erro interno."; return NextResponse.json({ erro: mensagem }, { status: mensagem === "UNAUTHENTICATED" ? 401 : mensagem === "FORBIDDEN" ? 403 : 400 }); }
 
@@ -19,6 +19,6 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  try { const usuario = await exigirUsuarioAtivo(request); if (!["admin_plataforma", "admin_paroquia"].includes(usuario.role)) throw new Error("FORBIDDEN"); const dados = editarSchema.parse(await request.json()); const { supabase, paroquiaId } = await resolverParoquiaDaRequisicao(request, usuario); const categoria = await supabase.from("secretaria_categorias_produtos").select("id,nome").eq("id", dados.categoriaId).eq("paroquia_id", paroquiaId).eq("ativa", true).single(); if (categoria.error) throw new Error("Selecione uma categoria ativa."); const { data, error } = await supabase.from("secretaria_produtos").update({ nome: dados.nome, categoria_id: categoria.data.id, categoria: categoria.data.nome, preco: dados.preco, estoque: dados.estoque, ...(dados.ativo !== undefined ? { ativo: dados.ativo } : {}), updated_at: new Date().toISOString() }).eq("id", dados.id).eq("paroquia_id", paroquiaId).select("id").single(); if (error) throw error; return NextResponse.json({ id: data.id }); }
+  try { const usuario = await exigirUsuarioAtivo(request); if (!["admin_plataforma", "admin_paroquia"].includes(usuario.role)) throw new Error("FORBIDDEN"); const dados = editarSchema.parse(await request.json()); const { supabase, paroquiaId } = await resolverParoquiaDaRequisicao(request, usuario); const categoria = await supabase.from("secretaria_categorias_produtos").select("id,nome").eq("id", dados.categoriaId).eq("paroquia_id", paroquiaId).eq("ativa", true).single(); if (categoria.error) throw new Error("Selecione uma categoria ativa."); const { data, error } = await supabase.from("secretaria_produtos").update({ nome: dados.nome, categoria_id: categoria.data.id, categoria: categoria.data.nome, preco: dados.preco, ...(dados.ativo !== undefined ? { ativo: dados.ativo } : {}), updated_at: new Date().toISOString() }).eq("id", dados.id).eq("paroquia_id", paroquiaId).select("id").single(); if (error) throw error; return NextResponse.json({ id: data.id }); }
   catch (error) { return respostaErro(error); }
 }
