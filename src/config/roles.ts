@@ -6,6 +6,7 @@ export const roles = {
   voluntario: "voluntario",
   leitor: "leitor",
   atendenteSecretaria: "atendente_secretaria",
+  tesoureiro: "tesoureiro",
 } as const;
 
 export type Role = (typeof roles)[keyof typeof roles];
@@ -18,4 +19,5 @@ export const roleLabels: Record<Role, string> = {
   voluntario: "Voluntário",
   leitor: "Leitor",
   atendente_secretaria: "Atendente da secretaria",
+  tesoureiro: "Tesoureiro",
 };

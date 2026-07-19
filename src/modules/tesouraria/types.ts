@@ -1,0 +1,4 @@
+export interface ContaFinanceira { id: string; nome: string; tipo: "CAIXA"|"BANCO"|"CONTA_PAGAMENTO"; banco: string; agencia: string; numeroConta: string; saldoInicial: number; saldo: number; ativa: boolean; }
+export interface CategoriaFinanceira { id: string; nome: string; natureza: "RECEITA"|"DESPESA"; ativa: boolean; }
+export interface MovimentacaoFinanceira { id: string; contaId: string; contaNome: string; categoriaId: string|null; categoriaNome: string; tipo: "ENTRADA"|"SAIDA"; valor: number; data: string; descricao: string; origem: string; status: "CONFIRMADA"|"CANCELADA"; }
+export interface ResumoTesouraria { saldoTotal: number; entradasMes: number; saidasMes: number; resultadoMes: number; contas: ContaFinanceira[]; categorias: CategoriaFinanceira[]; movimentacoes: MovimentacaoFinanceira[]; }
