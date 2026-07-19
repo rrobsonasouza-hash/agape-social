@@ -5,7 +5,7 @@ import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
 const tipos=["BATISMO","CASAMENTO","PRIMEIRA_COMUNHAO","CRISMA","SEGUNDA_VIA","INTENCAO_MISSA","OUTROS"] as const;
 const statuses=["RECEBIDA","EM_ANDAMENTO","AGUARDANDO_DOCUMENTOS","PRONTA","CONCLUIDA","CANCELADA"] as const;
-const criar=z.object({tipo:z.enum(tipos),solicitanteNome:z.string().trim().min(3),telefone:z.string().trim().max(20),interessadoNome:z.string().trim().max(120),prazo:z.string().nullable(),observacoes:z.string().trim().max(1000),valor:z.number().min(0)});
+const criar=z.object({tipo:z.enum(tipos),solicitanteNome:z.string().trim().min(3),telefone:z.string().trim().max(20).refine(v=>!v||[10,11].includes(v.replace(/\D/g,"").length),"Informe um telefone válido com DDD."),interessadoNome:z.string().trim().max(120),prazo:z.string().nullable(),observacoes:z.string().trim().max(1000),valor:z.number().min(0)});
 const alterar=z.discriminatedUnion("acao",[z.object({acao:z.literal("STATUS"),id:z.uuid(),status:z.enum(statuses),observacao:z.string().trim().max(300)}),z.object({acao:z.literal("PAGAR"),id:z.uuid(),contaId:z.uuid()})]);
 const permitidos=["admin_plataforma","admin_paroquia","atendente_secretaria"];
 function erro(e:unknown){const original=e instanceof Error?e.message:e&&typeof e==="object"&&"message" in e?String(e.message):"Erro interno.";return NextResponse.json({erro:original},{status:original==="UNAUTHENTICATED"?401:original==="FORBIDDEN"?403:400});}
