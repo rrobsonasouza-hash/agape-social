@@ -21,7 +21,7 @@ export default function LoginPage() {
   const [senha, setSenha] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  useEffect(() => { if (!carregando && usuario) router.replace(usuario.role === "admin_plataforma" ? "/central" : "/dashboard"); }, [carregando, router, usuario]);
+  useEffect(() => { if (!carregando && usuario) router.replace(usuario.role === "admin_plataforma" ? "/central" : usuario.role === "atendente_secretaria" ? "/secretaria" : "/dashboard"); }, [carregando, router, usuario]);
 
   async function entrar(event: FormEvent) {
     event.preventDefault(); setEnviando(true);

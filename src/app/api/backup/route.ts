@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { exigirAdministrador } from "@/lib/auth/admin-request";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
 
-const tabelasOperacionais = ["familias", "voluntarios", "doadores", "parceiros", "visitas", "areas_pastorais", "campanhas_cestas", "movimentacoes_cestas", "distribuicoes_cestas", "configuracoes", "auditoria"] as const;
+const tabelasOperacionais = ["familias", "voluntarios", "doadores", "parceiros", "visitas", "areas_pastorais", "campanhas_cestas", "movimentacoes_cestas", "distribuicoes_cestas", "configuracoes", "auditoria", "secretaria_produtos", "secretaria_vendas"] as const;
 
 function nomeArquivo(nome: string) {
   const slug = nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");

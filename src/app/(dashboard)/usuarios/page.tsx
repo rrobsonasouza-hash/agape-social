@@ -39,6 +39,7 @@ const perfis: Role[] = [
   "operador",
   "voluntario",
   "leitor",
+  "atendente_secretaria",
 ];
 
 export default function UsuariosPage() {

@@ -20,6 +20,7 @@ export const permissoesPadrao: PermissoesPorPerfil = {
 };
 
 export function podeAcessarRota(role: Role, rota: string, personalizadas: PermissoesPorPerfil = permissoesPadrao) {
+  if (role === "atendente_secretaria") return rota === "/secretaria" || rota.startsWith("/secretaria/");
   if (role === "admin_plataforma") return true;
   if (role === "admin_paroquia") return !rota.startsWith("/paroquias");
   const permitidas = personalizadas[role];

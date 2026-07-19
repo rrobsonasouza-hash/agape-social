@@ -5,6 +5,7 @@ export const roles = {
   operador: "operador",
   voluntario: "voluntario",
   leitor: "leitor",
+  atendenteSecretaria: "atendente_secretaria",
 } as const;
 
 export type Role = (typeof roles)[keyof typeof roles];
@@ -16,4 +17,5 @@ export const roleLabels: Record<Role, string> = {
   operador: "Operador",
   voluntario: "Voluntário",
   leitor: "Leitor",
+  atendente_secretaria: "Atendente da secretaria",
 };

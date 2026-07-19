@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 
 import { siteConfig } from "@/config/site";
 import { AuthProvider } from "@/modules/auth/hooks/useAuth";
+import { PwaRegistrar } from "@/components/pwa/PwaRegistrar";
 
 import "./globals.css";
 
@@ -23,6 +24,9 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.nome}`,
   },
   description: siteConfig.descricao,
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/agape-icon.svg", apple: "/agape-icon.svg" },
+  appleWebApp: { capable: true, title: "Ágape" },
 };
 
 export default function RootLayout({
@@ -35,7 +39,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen font-sans`}
       >
-        <AuthProvider>{children}</AuthProvider>
+        <PwaRegistrar /><AuthProvider>{children}</AuthProvider>
 
         <Toaster
           position="top-right"

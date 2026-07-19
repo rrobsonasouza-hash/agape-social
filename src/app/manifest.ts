@@ -1,0 +1,2 @@
+import { MetadataRoute } from "next";
+export default function manifest(): MetadataRoute.Manifest { return { name: "Ágape — Secretaria Paroquial", short_name: "Ágape", description: "Atendimento e balcão da Secretaria Paroquial", start_url: "/secretaria", display: "standalone", background_color: "#f1f5f9", theme_color: "#2563eb", lang: "pt-BR", orientation: "portrait", icons: [{ src: "/agape-icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any" }, { src: "/agape-icon.svg", sizes: "any", type: "image/svg+xml", purpose: "maskable" }] }; }

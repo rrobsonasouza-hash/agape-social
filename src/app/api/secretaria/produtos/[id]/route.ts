@@ -1,0 +1,6 @@
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { exigirAdministrador } from "@/lib/auth/admin-request";
+import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
+const schema = z.object({ nome: z.string().trim().min(2).optional(), categoria: z.string().trim().min(2).optional(), preco: z.coerce.number().min(0).optional(), estoque: z.coerce.number().int().min(0).optional(), ativo: z.boolean().optional() });
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) { try { const usuario = await exigirAdministrador(request); const { id } = await context.params; const dados = schema.parse(await request.json()); const { supabase, paroquiaId } = await resolverParoquiaDaRequisicao(request, usuario); const { error } = await supabase.from("secretaria_produtos").update({ ...dados, updated_at: new Date().toISOString() }).eq("id", id).eq("paroquia_id", paroquiaId); if (error) throw error; return NextResponse.json({ id }); } catch (error) { const mensagem = error instanceof Error ? error.message : "Erro interno."; return NextResponse.json({ erro: mensagem }, { status: mensagem === "FORBIDDEN" ? 403 : 400 }); } }
