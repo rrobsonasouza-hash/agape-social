@@ -5,7 +5,12 @@ import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
 
 const bucket = "agape-documentos";
 const tipos = ["image/jpeg", "image/png"];
-function respostaErro(error: unknown) { const mensagem = error instanceof Error ? error.message : "Erro interno."; return NextResponse.json({ erro: mensagem }, { status: mensagem === "UNAUTHENTICATED" ? 401 : mensagem === "FORBIDDEN" ? 403 : 400 }); }
+function mensagemErro(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error && typeof error.message === "string") return error.message;
+  return "Não foi possível processar o logotipo.";
+}
+function respostaErro(error: unknown) { console.error("Erro no logotipo da paróquia:", error); const original = mensagemErro(error); const mensagem = /logo_caminho|schema cache|column.*logo/i.test(original) ? "A estrutura do logotipo ainda não foi criada. Execute a migração 202607190007_logo_paroquia.sql no Supabase." : /bucket.*not found/i.test(original) ? "O armazenamento de documentos ainda não está configurado no Supabase." : original; return NextResponse.json({ erro: mensagem }, { status: mensagem === "UNAUTHENTICATED" ? 401 : mensagem === "FORBIDDEN" ? 403 : 400 }); }
 
 export async function GET(request: NextRequest) {
   try { const usuario = await exigirUsuarioAtivo(request); const { supabase, paroquiaId } = await resolverParoquiaDaRequisicao(request, usuario); const { data, error } = await supabase.from("paroquias").select("logo_caminho").eq("id", paroquiaId).single(); if (error) throw error; if (!data.logo_caminho) return NextResponse.json({ url: null }); const assinatura = await supabase.storage.from(bucket).createSignedUrl(data.logo_caminho, 60 * 60); if (assinatura.error) throw assinatura.error; return NextResponse.json({ url: assinatura.data.signedUrl }); }
