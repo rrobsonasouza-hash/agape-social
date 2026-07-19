@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Download, Search } from "lucide-react";
+import { Download, ImageUp, Search, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 
@@ -39,6 +39,8 @@ export default function AdministracaoPage() {
   const { buscarPrincipal, salvarPrincipal } = useParoquia(false);
   const [carregando, setCarregando] = useState(true);
   const [exportando, setExportando] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [enviandoLogo, setEnviandoLogo] = useState(false);
 
   const {
     register,
@@ -65,6 +67,22 @@ export default function AdministracaoPage() {
       .catch(() => toast.error("Não foi possível carregar a configuração da paróquia."))
       .finally(() => setCarregando(false));
   }, [buscarPrincipal, reset]);
+
+  useEffect(() => { obterTokenAcesso().then(async token => { if (!token) return; const resposta = await fetch("/api/paroquias/logo", { headers: { Authorization: `Bearer ${token}` } }); if (resposta.ok) setLogoUrl((await resposta.json()).url); }).catch(() => undefined); }, []);
+
+  async function enviarLogo(arquivo?: File) {
+    if (!arquivo) return; setEnviandoLogo(true);
+    try { const token = await obterTokenAcesso(); const formulario = new FormData(); formulario.append("logo", arquivo); const resposta = await fetch("/api/paroquias/logo", { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formulario }); const dados = await resposta.json(); if (!resposta.ok) throw new Error(dados.erro || "Não foi possível enviar o logotipo."); setLogoUrl(dados.url); toast.success("Logotipo atualizado."); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível enviar o logotipo."); }
+    finally { setEnviandoLogo(false); }
+  }
+
+  async function removerLogo() {
+    if (!window.confirm("Deseja remover o logotipo da paróquia?")) return; setEnviandoLogo(true);
+    try { const token = await obterTokenAcesso(); const resposta = await fetch("/api/paroquias/logo", { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }); const dados = await resposta.json(); if (!resposta.ok) throw new Error(dados.erro || "Não foi possível remover o logotipo."); setLogoUrl(null); toast.success("Logotipo removido."); }
+    catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível remover o logotipo."); }
+    finally { setEnviandoLogo(false); }
+  }
 
   function definirPosicao(latitudeAtual: number, longitudeAtual: number) {
     setValue("latitude", latitudeAtual, { shouldDirty: true, shouldValidate: true });
@@ -130,6 +148,9 @@ export default function AdministracaoPage() {
       />
 
       <form onSubmit={handleSubmit(salvar)} className="space-y-6" noValidate>
+        <FormSection title="Identidade visual" description="O logotipo aparece no cabeçalho junto ao nome da paróquia.">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center"><div className="grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-2xl border bg-slate-50">{logoUrl?<div role="img" aria-label="Logotipo atual da paróquia" className="h-full w-full bg-contain bg-center bg-no-repeat" style={{backgroundImage:`url(${JSON.stringify(logoUrl)})`}}/>:<ImageUp className="text-slate-300" size={36}/>}</div><div><p className="mb-3 text-sm text-slate-600">Use uma imagem quadrada em JPG ou PNG, de até 2 MB. Recomendação: 512 × 512 pixels.</p><div className="flex flex-wrap gap-2"><label className={`inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white ${enviandoLogo?"pointer-events-none opacity-60":""}`}><ImageUp size={18}/>{enviandoLogo?"Enviando...":logoUrl?"Trocar logotipo":"Enviar logotipo"}<input type="file" accept="image/jpeg,image/png" className="sr-only" disabled={enviandoLogo} onChange={event=>{void enviarLogo(event.target.files?.[0]);event.currentTarget.value="";}}/></label>{logoUrl&&<button type="button" onClick={()=>void removerLogo()} disabled={enviandoLogo} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-red-200 px-4 py-2 font-semibold text-red-700 disabled:opacity-60"><Trash2 size={18}/>Remover</button>}</div></div></div>
+        </FormSection>
         <FormSection title="Dados da paróquia" description="Identificação e endereço da sede pastoral.">
           <div className="grid gap-4 md:grid-cols-2">
             <TextField label="Nome da paróquia" {...register("nome")} error={errors.nome?.message} />
