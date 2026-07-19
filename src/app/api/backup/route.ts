@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { exigirAdministrador } from "@/lib/auth/admin-request";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
 
-const tabelasOperacionais = ["familias", "voluntarios", "doadores", "parceiros", "visitas", "areas_pastorais", "campanhas_cestas", "movimentacoes_cestas", "distribuicoes_cestas", "configuracoes", "auditoria", "secretaria_categorias_produtos", "secretaria_produtos", "secretaria_movimentacoes_estoque", "secretaria_vendas", "secretaria_servicos", "secretaria_solicitacoes", "secretaria_solicitacoes_historico", "tesouraria_contas", "tesouraria_categorias", "tesouraria_movimentacoes", "tesouraria_caixas", "tesouraria_caixa_operacoes"] as const;
+const tabelasOperacionais = ["familias", "voluntarios", "doadores", "parceiros", "visitas", "areas_pastorais", "campanhas_cestas", "movimentacoes_cestas", "distribuicoes_cestas", "configuracoes", "auditoria", "secretaria_categorias_produtos", "secretaria_produtos", "secretaria_movimentacoes_estoque", "secretaria_vendas", "secretaria_servicos", "secretaria_horarios_celebracoes", "secretaria_solicitacoes", "secretaria_solicitacoes_historico", "tesouraria_contas", "tesouraria_categorias", "tesouraria_movimentacoes", "tesouraria_caixas", "tesouraria_caixa_operacoes"] as const;
 
 function nomeArquivo(nome: string) {
   const slug = nome.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
