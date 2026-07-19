@@ -1,0 +1,8 @@
+import { NextRequest,NextResponse } from "next/server";
+import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
+import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
+
+const permitidos=["admin_plataforma","admin_paroquia","atendente_secretaria"];
+function erro(e:unknown){const m=e instanceof Error?e.message:e&&typeof e==="object"&&"message" in e?String(e.message):"Erro interno.";return NextResponse.json({erro:m},{status:m==="UNAUTHENTICATED"?401:m==="FORBIDDEN"?403:400});}
+
+export async function GET(req:NextRequest){try{const usuario=await exigirUsuarioAtivo(req);if(!permitidos.includes(usuario.role))throw new Error("FORBIDDEN");const data=req.nextUrl.searchParams.get("data");const horario=req.nextUrl.searchParams.get("horario")||"";if(!data||!/^\d{4}-\d{2}-\d{2}$/.test(data))throw new Error("Informe uma data válida.");const{supabase,paroquiaId,paroquia}=await resolverParoquiaDaRequisicao(req,usuario);const consulta=await supabase.from("secretaria_solicitacoes").select("id,protocolo,detalhes,observacoes,status,created_at").eq("paroquia_id",paroquiaId).eq("tipo","INTENCAO_MISSA").neq("status","CANCELADA").contains("detalhes",{dataCelebracao:data}).order("created_at",{ascending:true});if(consulta.error)throw consulta.error;const intencoes=(consulta.data??[]).filter(i=>!horario||i.detalhes?.horario===horario).map(i=>({id:i.id,protocolo:i.protocolo,tipo:i.detalhes?.tipo||"Outra intenção",nome:i.detalhes?.nomeIntencao||"Não informado",horario:i.detalhes?.horario||"",observacoes:i.observacoes||""}));return NextResponse.json({paroquia:{nome:paroquia.nome},data,horario,intencoes});}catch(e){return erro(e)}}
