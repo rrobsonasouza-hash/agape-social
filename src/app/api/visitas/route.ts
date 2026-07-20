@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { contextoOperacional, criarRegistro, respostaErroOperacional } from "@/lib/supabase/operational-api";
+import { visitaSchema } from "@/modules/visitas/schemas/visita.schema";
 
 const PERFIS = ["admin_plataforma", "admin_paroquia", "coordenador", "operador", "voluntario"];
 
@@ -18,6 +19,6 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  try { return NextResponse.json(await criarRegistro(request, "visitas", PERFIS), { status: 201 }); }
+  try { return NextResponse.json(await criarRegistro(request, "visitas", PERFIS, visitaSchema), { status: 201 }); }
   catch (error) { return respostaErroOperacional(error); }
 }

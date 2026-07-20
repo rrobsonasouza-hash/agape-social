@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { ZodError, type ZodType } from "zod";
 
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
@@ -12,6 +13,12 @@ export async function contextoOperacional(request: NextRequest, perfisEscrita: s
 }
 
 export function respostaErroOperacional(error: unknown) {
+  if (error instanceof ZodError) {
+    return NextResponse.json(
+      { erro: error.issues[0]?.message ?? "Dados inválidos.", detalhes: error.flatten().fieldErrors },
+      { status: 400 }
+    );
+  }
   const mensagem = error instanceof Error ? error.message : "Erro interno.";
   if (mensagem === "UNAUTHENTICATED") return NextResponse.json({ erro: "Sessão expirada." }, { status: 401 });
   if (mensagem === "FORBIDDEN") return NextResponse.json({ erro: "Sem permissão para esta operação." }, { status: 403 });
@@ -30,10 +37,11 @@ export async function listarRegistros(request: NextRequest, tabela: string, perf
   return busca ? registros[0] ?? null : registros;
 }
 
-export async function criarRegistro(request: NextRequest, tabela: string, perfis: string[]) {
+export async function criarRegistro(request: NextRequest, tabela: string, perfis: string[], schema?: ZodType) {
   const { supabase, paroquiaId } = await contextoOperacional(request, perfis, true);
   const id = randomUUID();
-  const dados = await request.json();
+  const entrada = await request.json();
+  const dados = (schema ? schema.parse(entrada) : entrada) as Record<string, unknown>;
   const { error } = await supabase.from(tabela).insert({ id, paroquia_id: paroquiaId, dados });
   if (error) throw error;
   return { id };
@@ -46,13 +54,14 @@ export async function buscarRegistro(request: NextRequest, tabela: string, perfi
   return data ? { id: data.id, ...(data.dados as Record<string, unknown>) } : null;
 }
 
-export async function atualizarRegistro(request: NextRequest, tabela: string, perfis: string[], id: string) {
+export async function atualizarRegistro(request: NextRequest, tabela: string, perfis: string[], id: string, schema?: ZodType) {
   const { supabase, paroquiaId } = await contextoOperacional(request, perfis, true);
   const alteracoes = await request.json();
   const atual = await supabase.from(tabela).select("dados").eq("id", id).eq("paroquia_id", paroquiaId).maybeSingle();
   if (atual.error) throw atual.error;
   if (!atual.data) return null;
-  const dados = { ...(atual.data.dados as Record<string, unknown>), ...alteracoes };
+  const combinados = { ...(atual.data.dados as Record<string, unknown>), ...alteracoes };
+  const dados = (schema ? schema.parse(combinados) : combinados) as Record<string, unknown>;
   const { error } = await supabase.from(tabela).update({ dados, updated_at: new Date().toISOString() }).eq("id", id).eq("paroquia_id", paroquiaId);
   if (error) throw error;
   return { id };

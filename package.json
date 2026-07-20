@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint src tests --ext .ts,.tsx",
-    "test": "node --test tests/unit/geo.test.ts tests/unit/masks.test.ts"
+    "test": "node --test tests/unit/geo.test.ts tests/unit/masks.test.ts tests/unit/validation.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

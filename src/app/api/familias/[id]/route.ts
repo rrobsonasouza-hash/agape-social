@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
+import { familiaSchema } from "@/modules/familias/schemas/familia.schema";
+import { ZodError } from "zod";
 
 const PERFIS_ESCRITA = ["admin_plataforma", "admin_paroquia", "coordenador", "operador"];
 
@@ -12,6 +14,7 @@ async function contexto(request: NextRequest, escrita = false) {
 }
 
 function respostaErro(error: unknown) {
+  if (error instanceof ZodError) return NextResponse.json({ erro: error.issues[0]?.message ?? "Dados inválidos.", detalhes: error.flatten().fieldErrors }, { status: 400 });
   const mensagem = error instanceof Error ? error.message : "Erro interno.";
   if (mensagem === "UNAUTHENTICATED") return NextResponse.json({ erro: "Sessão expirada." }, { status: 401 });
   if (mensagem === "FORBIDDEN") return NextResponse.json({ erro: "Sem permissão para esta operação." }, { status: 403 });
@@ -34,7 +37,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
   try {
     const { supabase, paroquiaId } = await contexto(request, true);
     const { id } = await context.params;
-    const dados = await request.json();
+    const dados = familiaSchema.parse(await request.json());
     const { error } = await supabase.from("familias").update({ dados, updated_at: new Date().toISOString() }).eq("id", id).eq("paroquia_id", paroquiaId);
     if (error) throw error;
     return NextResponse.json({ id });
@@ -51,7 +54,7 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     const atual = await supabase.from("familias").select("dados").eq("id", id).eq("paroquia_id", paroquiaId).maybeSingle();
     if (atual.error) throw atual.error;
     if (!atual.data) return NextResponse.json({ erro: "Família não encontrada." }, { status: 404 });
-    const dados = { ...(atual.data.dados as Record<string, unknown>), ...alteracoes };
+    const dados = familiaSchema.parse({ ...(atual.data.dados as Record<string, unknown>), ...alteracoes });
     const { error } = await supabase.from("familias").update({ dados, updated_at: new Date().toISOString() }).eq("id", id).eq("paroquia_id", paroquiaId);
     if (error) throw error;
     return NextResponse.json({ id });

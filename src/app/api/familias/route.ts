@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
+import { familiaSchema } from "@/modules/familias/schemas/familia.schema";
+import { ZodError } from "zod";
 
 const PERFIS_ESCRITA = ["admin_plataforma", "admin_paroquia", "coordenador", "operador"];
 
@@ -14,6 +16,7 @@ async function contexto(request: NextRequest, escrita = false) {
 }
 
 function respostaErro(error: unknown) {
+  if (error instanceof ZodError) return NextResponse.json({ erro: error.issues[0]?.message ?? "Dados inválidos.", detalhes: error.flatten().fieldErrors }, { status: 400 });
   const mensagem = error instanceof Error ? error.message : "Erro interno.";
   if (mensagem === "UNAUTHENTICATED") return NextResponse.json({ erro: "Sessão expirada." }, { status: 401 });
   if (mensagem === "FORBIDDEN") return NextResponse.json({ erro: "Sem permissão para esta operação." }, { status: 403 });
@@ -46,7 +49,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { supabase, paroquiaId } = await contexto(request, true);
-    const dados = await request.json();
+    const dados = familiaSchema.parse(await request.json());
     const id = randomUUID();
     const { error } = await supabase.from("familias").insert({ id, paroquia_id: paroquiaId, dados });
     if (error) throw error;
