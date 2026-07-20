@@ -2,11 +2,13 @@
   "name": "agape-social",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src tests --ext .ts,.tsx",
+    "test": "node --test tests/unit/geo.test.ts tests/unit/masks.test.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

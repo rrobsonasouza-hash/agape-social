@@ -1,4 +1,4 @@
-import { Coordenada } from "@/modules/areas-pastorais/schemas/area-pastoral.schema";
+import type { Coordenada } from "@/modules/areas-pastorais/schemas/area-pastoral.schema";
 
 export function pontoEstaNoPoligono(
   ponto: Coordenada,
