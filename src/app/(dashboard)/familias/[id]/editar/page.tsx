@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
 
@@ -20,6 +20,7 @@ import {
 
 import { useFamilias } from "@/modules/familias/hooks/useFamilias";
 import { EnderecoFamiliaFields } from "@/modules/familias/components/EnderecoFamiliaFields";
+import { formatMoeda, parseMoeda } from "@/lib/formatters/masks";
 
 export default function EditarFamiliaPage() {
   const params = useParams<{ id: string }>();
@@ -30,6 +31,7 @@ export default function EditarFamiliaPage() {
 
   const {
     register,
+    control,
     handleSubmit,
     getValues,
     reset,
@@ -208,14 +210,7 @@ export default function EditarFamiliaPage() {
             error={errors.quantidadeMoradores?.message}
           />
 
-          <TextField
-            label="Renda familiar"
-            type="number"
-            min={0}
-            step="0.01"
-            {...register("rendaFamiliar")}
-            error={errors.rendaFamiliar?.message}
-          />
+          <Controller name="rendaFamiliar" control={control} render={({ field }) => <TextField label="Renda familiar" type="text" inputMode="numeric" value={formatMoeda(Number(field.value || 0))} onChange={(event) => field.onChange(parseMoeda(event.target.value))} error={errors.rendaFamiliar?.message} />} />
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-slate-700">

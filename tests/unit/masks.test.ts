@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { maskCEP, maskCNPJ, maskCPF, maskTelefone } from "../../src/lib/formatters/masks.ts";
+import { formatMoeda, maskCEP, maskCNPJ, maskCPF, maskMoeda, maskTelefone, parseMoeda } from "../../src/lib/formatters/masks.ts";
 
 describe("máscaras brasileiras", () => {
   it("formata CPF e remove caracteres não numéricos", () => {
@@ -26,5 +26,24 @@ describe("máscaras brasileiras", () => {
 
   it("formata CNPJ", () => {
     assert.equal(maskCNPJ("11222333000181"), "11.222.333/0001-81");
+  });
+});
+
+describe("valores monetários", () => {
+  it("formata um número em reais", () => {
+    assert.equal(formatMoeda(1234.56), "R$ 1.234,56");
+  });
+
+  it("aplica a máscara enquanto o usuário digita", () => {
+    assert.equal(maskMoeda("123456"), "R$ 1.234,56");
+  });
+
+  it("converte a entrada mascarada para número", () => {
+    assert.equal(parseMoeda("R$ 1.234,56"), 1234.56);
+  });
+
+  it("mantém vazio quando não há dígitos", () => {
+    assert.equal(maskMoeda(""), "");
+    assert.equal(parseMoeda(""), 0);
   });
 });

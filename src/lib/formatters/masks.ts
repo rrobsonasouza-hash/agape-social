@@ -31,3 +31,22 @@ export function maskCNPJ(value: string): string {
     .replace(/\.(\d{3})(\d)/, ".$1/$2")
     .replace(/(\d{4})(\d)/, "$1-$2");
 }
+
+const formatadorMoeda = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+});
+
+export function formatMoeda(value: number): string {
+  return formatadorMoeda.format(Number.isFinite(value) ? value : 0);
+}
+
+export function maskMoeda(value: string): string {
+  const centavos = value.replace(/\D/g, "").slice(0, 15);
+  return centavos ? formatMoeda(Number(centavos) / 100) : "";
+}
+
+export function parseMoeda(value: string): number {
+  const centavos = value.replace(/\D/g, "").slice(0, 15);
+  return centavos ? Number(centavos) / 100 : 0;
+}
