@@ -3,14 +3,14 @@ begin;
 create table if not exists public.secretaria_dizimistas (
   id uuid primary key default gen_random_uuid(),
   paroquia_id uuid not null references public.paroquias(id),
-  familia_id text not null references public.familias(id),
   titular_nome text not null,
   conjuge_nome text not null default '',
+  cpf text not null default '',
   telefone text not null default '',
+  email text not null default '',
   ativo boolean not null default true,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (paroquia_id, familia_id)
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.secretaria_dizimos_pagamentos (
@@ -30,6 +30,7 @@ create table if not exists public.secretaria_dizimos_pagamentos (
 );
 
 create index if not exists secretaria_dizimistas_paroquia_idx on public.secretaria_dizimistas(paroquia_id, ativo);
+create unique index if not exists secretaria_dizimistas_cpf_idx on public.secretaria_dizimistas(paroquia_id, cpf) where cpf <> '';
 create index if not exists secretaria_dizimos_competencia_idx on public.secretaria_dizimos_pagamentos(paroquia_id, competencia desc);
 
 alter table public.secretaria_dizimistas enable row level security;
