@@ -8,6 +8,13 @@ create table if not exists public.secretaria_dizimistas (
   cpf text not null default '',
   telefone text not null default '',
   email text not null default '',
+  cep text not null default '',
+  logradouro text not null default '',
+  numero text not null default '',
+  complemento text not null default '',
+  bairro text not null default '',
+  cidade text not null default '',
+  estado text not null default '',
   ativo boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
