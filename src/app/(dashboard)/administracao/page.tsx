@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Download, ImageUp, Search, Trash2 } from "lucide-react";
+import { Download, FileSearch, ImageUp, Search, ShieldCheck, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 
@@ -34,11 +34,17 @@ const valoresIniciais: ParoquiaFormInput = {
   raioAtendimentoKm: 10,
 };
 
+type ValidacaoBackup={valido:boolean;arquivo:string;paroquia:string;geradoEm:string;totalRegistros:number;mensagem:string};
+
+async function sha256NoNavegador(dados:unknown){const bytes=new TextEncoder().encode(JSON.stringify(dados));const hash=await crypto.subtle.digest("SHA-256",bytes);return Array.from(new Uint8Array(hash)).map(byte=>byte.toString(16).padStart(2,"0")).join("");}
+
 export default function AdministracaoPage() {
   const { buscarPorCep, consultandoCep } = useEndereco();
   const { buscarPrincipal, salvarPrincipal } = useParoquia(false);
   const [carregando, setCarregando] = useState(true);
   const [exportando, setExportando] = useState(false);
+  const [validandoBackup,setValidandoBackup]=useState(false);
+  const [validacaoBackup,setValidacaoBackup]=useState<ValidacaoBackup|null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [enviandoLogo, setEnviandoLogo] = useState(false);
 
@@ -136,6 +142,8 @@ export default function AdministracaoPage() {
     finally { setExportando(false); }
   }
 
+  async function validarBackup(arquivo?:File){if(!arquivo)return;setValidandoBackup(true);setValidacaoBackup(null);try{if(arquivo.size>100*1024*1024)throw new Error("O arquivo excede o limite de 100 MB para validação no navegador.");const conteudo=JSON.parse(await arquivo.text()) as Record<string,unknown>;if(conteudo.formato!=="agape-social-backup")throw new Error("Este arquivo não é um backup do Ágape Social.");if(Number(conteudo.versao)<3)throw new Error("Backup antigo: gere um novo arquivo para obter a verificação de integridade.");if(!conteudo.dados||typeof conteudo.dados!=="object")throw new Error("O arquivo não contém a seção de dados.");const integridade=conteudo.integridade as {algoritmo?:string;dadosSha256?:string}|undefined;if(integridade?.algoritmo!=="SHA-256"||!integridade.dadosSha256)throw new Error("O arquivo não possui uma assinatura de integridade válida.");const hash=await sha256NoNavegador(conteudo.dados);if(hash!==integridade.dadosSha256)throw new Error("Falha de integridade: o conteúdo foi alterado ou está corrompido.");const resumo=conteudo.resumo&&typeof conteudo.resumo==="object"?conteudo.resumo as Record<string,number>:{};const total=Object.values(resumo).reduce((s,v)=>s+Number(v||0),0);if(total!==Number(conteudo.totalRegistros))throw new Error("A contagem de registros do arquivo não confere.");const paroquia=conteudo.paroquia as {nome?:string}|undefined;const resultado={valido:true,arquivo:arquivo.name,paroquia:paroquia?.nome||"Paróquia não identificada",geradoEm:String(conteudo.geradoEm||""),totalRegistros:total,mensagem:"Backup íntegro e pronto para armazenamento seguro."};setValidacaoBackup(resultado);toast.success("Backup validado com sucesso.");}catch(error){const mensagem=error instanceof Error?error.message:"Não foi possível validar o backup.";setValidacaoBackup({valido:false,arquivo:arquivo.name,paroquia:"",geradoEm:"",totalRegistros:0,mensagem});toast.error(mensagem);}finally{setValidandoBackup(false);}}
+
   if (carregando) {
     return <div className="py-16 text-center text-slate-500">Carregando configuração...</div>;
   }
@@ -201,6 +209,7 @@ export default function AdministracaoPage() {
           <p className="max-w-2xl text-sm text-slate-600">Guarde o arquivo em local seguro, pois ele contém dados pessoais das famílias, voluntários, doadores e usuários.</p>
           <button type="button" onClick={() => void baixarBackup()} disabled={exportando} className="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-3 font-semibold text-white transition hover:bg-slate-900 disabled:opacity-60"><Download size={18} />{exportando ? "Gerando..." : "Baixar backup"}</button>
         </div>
+        <div className="mt-5 border-t pt-5"><div className="flex flex-wrap items-center justify-between gap-4"><div><h3 className="font-bold text-slate-900">Validar um arquivo salvo</h3><p className="mt-1 text-sm text-slate-600">A verificação acontece somente neste navegador. O arquivo não é enviado ao servidor.</p></div><label className={`inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-blue-200 px-4 py-2 font-semibold text-blue-700 ${validandoBackup?"pointer-events-none opacity-60":""}`}><FileSearch size={18}/>{validandoBackup?"Validando...":"Selecionar backup"}<input type="file" accept="application/json,.json" className="sr-only" disabled={validandoBackup} onChange={event=>{void validarBackup(event.target.files?.[0]);event.currentTarget.value="";}}/></label></div>{validacaoBackup&&<div className={`mt-4 rounded-xl border p-4 ${validacaoBackup.valido?"border-emerald-200 bg-emerald-50":"border-red-200 bg-red-50"}`}><div className="flex items-start gap-3"><ShieldCheck className={validacaoBackup.valido?"text-emerald-700":"text-red-700"}/><div><p className={`font-bold ${validacaoBackup.valido?"text-emerald-800":"text-red-800"}`}>{validacaoBackup.valido?"Backup válido":"Backup inválido"}</p><p className="text-sm text-slate-700">{validacaoBackup.mensagem}</p><p className="mt-2 text-xs text-slate-500">Arquivo: {validacaoBackup.arquivo}{validacaoBackup.valido&&` • ${validacaoBackup.paroquia} • ${validacaoBackup.totalRegistros} registros • Gerado em ${new Date(validacaoBackup.geradoEm).toLocaleString("pt-BR")}`}</p></div></div></div>}</div>
       </FormSection>
     </div>
   );
