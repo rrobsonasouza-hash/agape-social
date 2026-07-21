@@ -45,11 +45,17 @@ export const familiaSchema = z.object({
 
   observacoes: z.string().optional().default(""),
 
+  consentimentoLgpd: z.boolean().optional().default(false),
+  consentimentoLgpdEm: z.string().optional().default(""),
+  versaoConsentimentoLgpd: z.string().optional().default(""),
+
   status: z.enum(["ATIVA", "INATIVA"]),
   beneficioBloqueado: z.boolean().optional().default(false),
   faltasConsecutivas: z.coerce.number().int().min(0).optional().default(0),
   motivoBloqueio: z.string().optional().default(""),
 });
+
+export const familiaCadastroSchema = familiaSchema.refine((dados) => dados.consentimentoLgpd, { path:["consentimentoLgpd"], message:"Confirme o consentimento para tratamento dos dados." });
 
 export type FamiliaFormInput = z.input<typeof familiaSchema>;
 export type FamiliaFormData = z.output<typeof familiaSchema>;

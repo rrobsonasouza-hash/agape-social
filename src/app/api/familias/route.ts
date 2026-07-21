@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
-import { familiaSchema } from "@/modules/familias/schemas/familia.schema";
+import { familiaCadastroSchema } from "@/modules/familias/schemas/familia.schema";
 import { ZodError } from "zod";
 
 const PERFIS_ESCRITA = ["admin_plataforma", "admin_paroquia", "coordenador", "operador"];
@@ -49,7 +49,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { supabase, paroquiaId } = await contexto(request, true);
-    const dados = familiaSchema.parse(await request.json());
+    const entrada = familiaCadastroSchema.parse(await request.json());
+    const dados = { ...entrada, consentimentoLgpd: true, consentimentoLgpdEm: new Date().toISOString(), versaoConsentimentoLgpd: "1.0-2026-07-21" };
     const id = randomUUID();
     const { error } = await supabase.from("familias").insert({ id, paroquia_id: paroquiaId, dados });
     if (error) throw error;

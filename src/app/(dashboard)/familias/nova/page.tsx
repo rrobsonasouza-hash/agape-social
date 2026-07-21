@@ -12,7 +12,7 @@ import { TextAreaField } from "@/components/forms/TextAreaField";
 import { PageHeader } from "@/components/ui/PageHeader";
 
 import {
-  familiaSchema,
+  familiaCadastroSchema,
   FamiliaFormData,
   FamiliaFormInput,
 } from "@/modules/familias/schemas/familia.schema";
@@ -34,7 +34,7 @@ export default function NovaFamiliaPage() {
     watch,
     formState: { errors, isSubmitting },
   } = useForm<FamiliaFormInput, unknown, FamiliaFormData>({
-    resolver: zodResolver(familiaSchema),
+    resolver: zodResolver(familiaCadastroSchema),
     defaultValues: {
       status: "ATIVA",
       cep: "",
@@ -49,6 +49,7 @@ export default function NovaFamiliaPage() {
       quantidadeMoradores: 1,
       rendaFamiliar: 0,
       observacoes: "",
+      consentimentoLgpd: false,
       beneficioBloqueado: false,
       faltasConsecutivas: 0,
       motivoBloqueio: "",
@@ -164,6 +165,10 @@ export default function NovaFamiliaPage() {
               placeholder="Registre informações relevantes sobre a família."
             />
           </div>
+        </FormSection>
+
+        <FormSection title="Privacidade e consentimento" description="Registre a autorização da família para o tratamento dos dados pessoais.">
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4"><input type="checkbox" {...register("consentimentoLgpd")} className="mt-1 h-5 w-5 rounded border-blue-300"/><span><strong className="block text-slate-900">Consentimento informado</strong><span className="mt-1 block text-sm text-slate-600">Confirmo que a família foi informada de que seus dados serão utilizados somente para atendimento pastoral e social, controle de benefícios e registros necessários da paróquia.</span></span></label>{errors.consentimentoLgpd?.message&&<p className="mt-2 text-sm text-red-600">{errors.consentimentoLgpd.message}</p>}
         </FormSection>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

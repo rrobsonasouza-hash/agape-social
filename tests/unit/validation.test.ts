@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { doadorSchema } from "../../src/modules/doadores/schemas/doador.schema.ts";
-import { familiaSchema } from "../../src/modules/familias/schemas/familia.schema.ts";
+import { familiaCadastroSchema, familiaSchema } from "../../src/modules/familias/schemas/familia.schema.ts";
 import { parceiroSchema } from "../../src/modules/parceiros/schemas/parceiro.schema.ts";
 import { visitaSchema } from "../../src/modules/visitas/schemas/visita.schema.ts";
 import { voluntarioSchema } from "../../src/modules/voluntarios/schemas/voluntario.schema.ts";
@@ -16,6 +16,12 @@ describe("validação server-side dos cadastros", () => {
       status: "ATIVA",
     });
     assert.equal(resultado.success, false);
+  });
+
+  it("exige consentimento LGPD no novo cadastro de família",()=>{
+    const base={nomeResponsavel:"Maria da Silva",cpf:"123.456.789-00",telefone:"(11) 99999-9999",status:"ATIVA"};
+    assert.equal(familiaCadastroSchema.safeParse(base).success,false);
+    assert.equal(familiaCadastroSchema.safeParse({...base,consentimentoLgpd:true}).success,true);
   });
 
   it("rejeita voluntário sem área pastoral", () => {
