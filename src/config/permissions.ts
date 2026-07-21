@@ -1,4 +1,4 @@
-import { Role } from "@/config/roles";
+import type { Role } from "./roles.ts";
 
 export type PerfilConfiguravel = "coordenador" | "operador" | "voluntario" | "leitor";
 export type PermissoesPorPerfil = Record<PerfilConfiguravel, string[]>;
@@ -19,11 +19,13 @@ export const permissoesPadrao: PermissoesPorPerfil = {
   leitor: ["/dashboard", "/relatorios"],
 };
 
+function rotaNaArea(rota: string, area: string) { return rota === area || rota.startsWith(`${area}/`); }
+
 export function podeAcessarRota(role: Role, rota: string, personalizadas: PermissoesPorPerfil = permissoesPadrao) {
-  if (role === "atendente_secretaria") return rota === "/secretaria" || rota.startsWith("/secretaria/");
-  if (role === "tesoureiro") return rota === "/tesouraria" || rota.startsWith("/tesouraria/");
+  if (role === "atendente_secretaria") return rotaNaArea(rota, "/secretaria");
+  if (role === "tesoureiro") return rotaNaArea(rota, "/tesouraria");
   if (role === "admin_plataforma") return true;
-  if (role === "admin_paroquia") return !rota.startsWith("/paroquias");
+  if (role === "admin_paroquia") return !rotaNaArea(rota, "/paroquias") && !rotaNaArea(rota, "/central");
   const permitidas = personalizadas[role];
   return permitidas.some((permitida) => rota === permitida || rota.startsWith(`${permitida}/`));
 }
