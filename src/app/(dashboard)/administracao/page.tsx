@@ -196,7 +196,7 @@ export default function AdministracaoPage() {
         </div>
       </form>
 
-      <FormSection title="Backup da paróquia" description="Baixe uma cópia dos cadastros e históricos desta unidade. Senhas e chaves nunca são incluídas.">
+      <FormSection title="Backup da paróquia" description="Baixe uma cópia dos cadastros, dízimos, finanças, sacramentos e históricos desta unidade. Senhas e chaves nunca são incluídas.">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <p className="max-w-2xl text-sm text-slate-600">Guarde o arquivo em local seguro, pois ele contém dados pessoais das famílias, voluntários, doadores e usuários.</p>
           <button type="button" onClick={() => void baixarBackup()} disabled={exportando} className="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-3 font-semibold text-white transition hover:bg-slate-900 disabled:opacity-60"><Download size={18} />{exportando ? "Gerando..." : "Baixar backup"}</button>
