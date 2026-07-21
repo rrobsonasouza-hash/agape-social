@@ -29,6 +29,11 @@ async function garantirBucket() {
   return supabase;
 }
 
+async function gravarStatus(paroquiaId: string, status: Record<string, unknown>) {
+  const supabase = await garantirBucket();
+  await supabase.storage.from(BUCKET).upload(`${paroquiaId}/.status-backup-diario.json`, JSON.stringify(status), { contentType: "application/json", upsert: true });
+}
+
 async function executarBackup(paroquia: Record<string, unknown>) {
   const supabase = await garantirBucket();
   const paroquiaId = String(paroquia.id);
@@ -54,10 +59,12 @@ async function executarBackup(paroquia: Record<string, unknown>) {
   const { error } = await supabase.storage.from(BUCKET).upload(`${paroquiaId}/${nome}`, compactado, { contentType: "application/gzip", upsert: true });
   if (error) throw error;
   const { data: existentes } = await supabase.storage.from(BUCKET).list(paroquiaId, { limit: 100, sortBy: { column: "created_at", order: "desc" } });
-  const excedentes = (existentes ?? []).filter((item) => item.name.endsWith(".json") || item.name.endsWith(".json.gz")).slice(LIMITE_BACKUPS).map((item) => `${paroquiaId}/${item.name}`);
+  const excedentes = (existentes ?? []).filter((item) => item.name.startsWith("backup-agape-") && (item.name.endsWith(".json") || item.name.endsWith(".json.gz"))).slice(LIMITE_BACKUPS).map((item) => `${paroquiaId}/${item.name}`);
   if (excedentes.length) await supabase.storage.from(BUCKET).remove(excedentes);
   await supabase.from("auditoria").insert({ id: randomUUID(), paroquia_id: paroquiaId, dados: { acao: "BACKUP_AUTOMATICO", entidade: "BACKUP", entidadeId: paroquiaId, descricao: `Backup automático diário salvo no cofre: ${nome}.`, usuarioId: "sistema", usuarioNome: "Sistema", usuarioEmail: "", paroquiaId, data: geradoEm } });
-  return { paroquiaId, nome, tamanhoBytes: compactado.byteLength };
+  const resultado = { paroquiaId, nome, tamanhoBytes: compactado.byteLength, totalRegistros: totalizarResumo(resumo), concluidoEm: new Date().toISOString() };
+  await gravarStatus(paroquiaId, { status: "SUCESSO", ...resultado });
+  return resultado;
 }
 
 export async function GET(request: NextRequest) {
@@ -70,7 +77,11 @@ export async function GET(request: NextRequest) {
     const falhas = [];
     for (const paroquia of paroquias ?? []) {
       try { resultados.push(await executarBackup(paroquia)); }
-      catch (errorParoquia) { falhas.push({ paroquiaId: paroquia.id, erro: errorParoquia instanceof Error ? errorParoquia.message : "Falha desconhecida" }); }
+      catch (errorParoquia) {
+        const falha = { paroquiaId: String(paroquia.id), erro: errorParoquia instanceof Error ? errorParoquia.message : "Falha desconhecida", concluidoEm: new Date().toISOString() };
+        falhas.push(falha);
+        await gravarStatus(String(paroquia.id), { status: "FALHA", ...falha }).catch(() => undefined);
+      }
     }
     return NextResponse.json({ executadoEm: new Date().toISOString(), sucesso: resultados.length, falhas, resultados }, { status: falhas.length ? 207 : 200 });
   } catch (error) {

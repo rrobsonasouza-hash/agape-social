@@ -67,12 +67,18 @@ export async function GET(request: NextRequest) {
     }
     const { data, error } = await supabase.storage.from(BUCKET).list(paroquiaId, { limit: 100, sortBy: { column: "created_at", order: "desc" } });
     if (error) throw error;
-    const arquivos = (data ?? []).filter((item) => item.name.endsWith(".json") || item.name.endsWith(".json.gz")).map((item) => ({
+    const arquivos = (data ?? []).filter((item) => item.name.startsWith("backup-agape-") && (item.name.endsWith(".json") || item.name.endsWith(".json.gz"))).map((item) => ({
       nome: item.name,
       tamanhoBytes: Number(item.metadata?.size ?? 0),
       criadoEm: item.created_at,
     }));
-    return NextResponse.json({ arquivos, totalBytes: arquivos.reduce((total, item) => total + item.tamanhoBytes, 0), limite: LIMITE_BACKUPS });
+    const statusArquivo = await supabase.storage.from(BUCKET).download(`${paroquiaId}/.status-backup-diario.json`);
+    let statusAutomatico: Record<string, unknown> | null = null;
+    if (statusArquivo.data) { try { statusAutomatico = JSON.parse(await statusArquivo.data.text()); } catch { statusAutomatico = null; } }
+    const agoraBrasil = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+    agoraBrasil.setDate(agoraBrasil.getDate() + 1);
+    const proximaExecucao = new Date(Date.UTC(agoraBrasil.getFullYear(), agoraBrasil.getMonth(), agoraBrasil.getDate(), 3)).toISOString();
+    return NextResponse.json({ arquivos, totalBytes: arquivos.reduce((total, item) => total + item.tamanhoBytes, 0), limite: LIMITE_BACKUPS, statusAutomatico, proximaExecucao });
   } catch (error) { return responderErro(error); }
 }
 
@@ -91,7 +97,7 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
 
     const { data: existentes } = await storage.storage.from(BUCKET).list(paroquiaId, { limit: 100, sortBy: { column: "created_at", order: "desc" } });
-    const excedentes = (existentes ?? []).filter((item) => item.name.endsWith(".json") || item.name.endsWith(".json.gz")).slice(LIMITE_BACKUPS).map((item) => `${paroquiaId}/${item.name}`);
+    const excedentes = (existentes ?? []).filter((item) => item.name.startsWith("backup-agape-") && (item.name.endsWith(".json") || item.name.endsWith(".json.gz"))).slice(LIMITE_BACKUPS).map((item) => `${paroquiaId}/${item.name}`);
     if (excedentes.length) await storage.storage.from(BUCKET).remove(excedentes);
 
     await supabase.from("auditoria").insert({ id: randomUUID(), paroquia_id: paroquiaId, dados: { acao: "ARMAZENAMENTO", entidade: "BACKUP", entidadeId: paroquiaId, descricao: `Backup salvo no cofre privado: ${nome}.`, usuarioId: administrador.uid, usuarioNome: administrador.nome, usuarioEmail: administrador.email, paroquiaId, data: new Date().toISOString() } });

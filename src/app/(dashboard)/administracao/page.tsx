@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Cloud, Download, FileSearch, ImageUp, RotateCcw, Search, ShieldCheck, Trash2 } from "lucide-react";
+import { CheckCircle2, Cloud, Download, FileSearch, ImageUp, RotateCcw, Search, ShieldCheck, Trash2, XCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 
@@ -38,6 +38,7 @@ type ValidacaoBackup={valido:boolean;arquivo:string;paroquia:string;geradoEm:str
 type BackupSelecionado={paroquia:{id:string;nome?:string};dados:Record<string,unknown[]>};
 type SimulacaoRestauracao={paroquia:{id:string;nome:string};tabelas:string[];linhas:Array<{tabela:string;backup:number;atual:number;ausentesEstimados:number}>};
 type BackupNuvem={nome:string;tamanhoBytes:number;criadoEm:string};
+type StatusBackupAutomatico={status:"SUCESSO"|"FALHA";concluidoEm:string;tamanhoBytes?:number;totalRegistros?:number;erro?:string};
 
 async function sha256NoNavegador(dados:unknown){const bytes=new TextEncoder().encode(JSON.stringify(dados));const hash=await crypto.subtle.digest("SHA-256",bytes);return Array.from(new Uint8Array(hash)).map(byte=>byte.toString(16).padStart(2,"0")).join("");}
 
@@ -53,6 +54,8 @@ export default function AdministracaoPage() {
   const [restaurando,setRestaurando]=useState(false);
   const [backupsNuvem,setBackupsNuvem]=useState<BackupNuvem[]>([]);
   const [carregandoNuvem,setCarregandoNuvem]=useState(false);
+  const [statusBackupAutomatico,setStatusBackupAutomatico]=useState<StatusBackupAutomatico|null>(null);
+  const [proximaExecucao,setProximaExecucao]=useState<string|null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [enviandoLogo, setEnviandoLogo] = useState(false);
 
@@ -150,7 +153,7 @@ export default function AdministracaoPage() {
     finally { setExportando(false); }
   }
 
-  async function carregarBackupsNuvem(){setCarregandoNuvem(true);try{const token=await obterTokenAcesso();const resposta=await fetch("/api/backup/nuvem",{headers:{Authorization:`Bearer ${token}`}});const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro);setBackupsNuvem(dados.arquivos??[]);}catch(error){toast.error(error instanceof Error?error.message:"Não foi possível carregar o cofre de backups.");}finally{setCarregandoNuvem(false);}}
+  async function carregarBackupsNuvem(){setCarregandoNuvem(true);try{const token=await obterTokenAcesso();const resposta=await fetch("/api/backup/nuvem",{headers:{Authorization:`Bearer ${token}`}});const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro);setBackupsNuvem(dados.arquivos??[]);setStatusBackupAutomatico(dados.statusAutomatico??null);setProximaExecucao(dados.proximaExecucao??null);}catch(error){toast.error(error instanceof Error?error.message:"Não foi possível carregar o cofre de backups.");}finally{setCarregandoNuvem(false);}}
   async function salvarBackupNuvem(){setCarregandoNuvem(true);try{const token=await obterTokenAcesso();const resposta=await fetch("/api/backup/nuvem",{method:"POST",headers:{Authorization:`Bearer ${token}`}});const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro);toast.success("Backup salvo com segurança na nuvem.");await carregarBackupsNuvem();}catch(error){toast.error(error instanceof Error?error.message:"Não foi possível salvar o backup na nuvem.");}finally{setCarregandoNuvem(false);}}
   async function baixarBackupNuvem(nome:string){try{const token=await obterTokenAcesso();const resposta=await fetch(`/api/backup/nuvem?arquivo=${encodeURIComponent(nome)}`,{headers:{Authorization:`Bearer ${token}`}});if(!resposta.ok){const dados=await resposta.json();throw new Error(dados.erro);}const blob=await resposta.blob();const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=nome;link.click();URL.revokeObjectURL(url);}catch(error){toast.error(error instanceof Error?error.message:"Não foi possível baixar o backup.");}}
   async function excluirBackupNuvem(nome:string){if(!window.confirm(`Excluir definitivamente o backup ${nome}?`))return;try{const token=await obterTokenAcesso();const resposta=await fetch(`/api/backup/nuvem?arquivo=${encodeURIComponent(nome)}`,{method:"DELETE",headers:{Authorization:`Bearer ${token}`}});const dados=await resposta.json();if(!resposta.ok)throw new Error(dados.erro);toast.success("Backup removido da nuvem.");await carregarBackupsNuvem();}catch(error){toast.error(error instanceof Error?error.message:"Não foi possível excluir o backup.");}}
@@ -232,6 +235,7 @@ export default function AdministracaoPage() {
             <div><h3 className="flex items-center gap-2 font-bold text-slate-900"><Cloud size={19} className="text-blue-600"/>Cofre de backups na nuvem</h3><p className="mt-1 text-sm text-slate-600">Backup automático todos os dias à meia-noite. Os arquivos são privados, separados por paróquia, e os 30 mais recentes são conservados.</p></div>
             <div className="flex flex-wrap gap-2"><button type="button" onClick={()=>void carregarBackupsNuvem()} disabled={carregandoNuvem} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 px-4 font-semibold text-slate-700 disabled:opacity-60"><RotateCcw size={17}/>{carregandoNuvem?"Aguarde...":"Ver backups"}</button><button type="button" onClick={()=>void salvarBackupNuvem()} disabled={carregandoNuvem} className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-blue-600 px-4 font-semibold text-white disabled:opacity-60"><Cloud size={18}/>Criar backup agora</button></div>
           </div>
+          {(statusBackupAutomatico||proximaExecucao)&&<div className={`mt-4 rounded-xl border p-4 ${statusBackupAutomatico?.status==="FALHA"?"border-red-200 bg-red-50":"border-emerald-200 bg-emerald-50"}`}><div className="flex items-start gap-3">{statusBackupAutomatico?.status==="FALHA"?<XCircle className="shrink-0 text-red-700"/>:<CheckCircle2 className="shrink-0 text-emerald-700"/>}<div><p className="font-bold text-slate-900">{statusBackupAutomatico?statusBackupAutomatico.status==="SUCESSO"?"Último backup automático concluído":"Falha no último backup automático":"Rotina automática aguardando a primeira execução"}</p>{statusBackupAutomatico&&<p className="mt-1 text-sm text-slate-700">{new Date(statusBackupAutomatico.concluidoEm).toLocaleString("pt-BR")}{statusBackupAutomatico.status==="SUCESSO"&&` • ${statusBackupAutomatico.totalRegistros??0} registros • ${((statusBackupAutomatico.tamanhoBytes??0)/1024/1024).toLocaleString("pt-BR",{maximumFractionDigits:2})} MB`}{statusBackupAutomatico.erro&&` • ${statusBackupAutomatico.erro}`}</p>}{proximaExecucao&&<p className="mt-1 text-sm text-slate-600">Próxima execução prevista: {new Date(proximaExecucao).toLocaleString("pt-BR")}.</p>}</div></div></div>}
           {backupsNuvem.length>0&&<div className="mt-4 overflow-x-auto rounded-xl border"><table className="w-full text-left text-sm"><thead className="bg-slate-50"><tr><th className="p-3">Arquivo</th><th className="p-3">Data</th><th className="p-3 text-right">Tamanho</th><th className="p-3 text-right">Ações</th></tr></thead><tbody>{backupsNuvem.map(backup=><tr key={backup.nome} className="border-t"><td className="max-w-xs truncate p-3 font-medium" title={backup.nome}>{backup.nome}</td><td className="whitespace-nowrap p-3">{new Date(backup.criadoEm).toLocaleString("pt-BR")}</td><td className="whitespace-nowrap p-3 text-right">{(backup.tamanhoBytes/1024/1024).toLocaleString("pt-BR",{maximumFractionDigits:2})} MB</td><td className="p-3"><div className="flex justify-end gap-2"><button type="button" title="Baixar" aria-label={`Baixar ${backup.nome}`} onClick={()=>void baixarBackupNuvem(backup.nome)} className="rounded-lg border p-2 text-blue-700"><Download size={17}/></button><button type="button" title="Excluir" aria-label={`Excluir ${backup.nome}`} onClick={()=>void excluirBackupNuvem(backup.nome)} className="rounded-lg border border-red-200 p-2 text-red-700"><Trash2 size={17}/></button></div></td></tr>)}</tbody></table></div>}
           {!carregandoNuvem&&backupsNuvem.length===0&&<p className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Clique em “Ver backups” para consultar o cofre ou em “Criar backup agora” para fazer uma cópia imediata.</p>}
         </div>
