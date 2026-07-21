@@ -157,12 +157,12 @@ Fundação   Auth +      Cadastros   Operação    Inteligência  Qualidade
 
 ### Entregas
 
-- [ ] Testes unitários: validators, permissions, services
+- [x] Testes unitários: validators, permissions, services
 - [ ] Testes E2E: login, cadastro família, entrega cesta (Playwright)
-- [ ] `docs/deploy.md` — passo a passo para nova paróquia
-- [ ] `docs/lgpd.md` — política e procedimentos
+- [x] `docs/deploy.md` — passo a passo para nova paróquia
+- [x] `docs/lgpd.md` — política e procedimentos
 - [ ] Seed script para ambiente demo
-- [ ] Monitoramento básico de erros
+- [x] Monitoramento básico de disponibilidade
 
 ### Critérios de conclusão
 
