@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
+import { calcularResumoPeriodo, calcularSaldoConta } from "@/modules/tesouraria/calculos";
 const perfis = ["admin_plataforma","admin_paroquia","tesoureiro"];
 const entrada = z.discriminatedUnion("entidade", [
   z.object({ entidade: z.literal("CONTA"), nome: z.string().trim().min(2), tipo: z.enum(["CAIXA","BANCO","CONTA_PAGAMENTO"]), banco: z.string().trim().default(""), agencia: z.string().trim().default(""), numeroConta: z.string().trim().default(""), saldoInicial: z.number() }),
@@ -20,9 +21,8 @@ export async function GET(request: NextRequest) { try { const { supabase, paroqu
   supabase.from("tesouraria_movimentacoes").select("id,conta_id,categoria_id,tipo,valor,data,descricao,origem,status,tesouraria_contas(nome),tesouraria_categorias(nome)").eq("paroquia_id", paroquiaId).order("data", { ascending: false }).order("created_at", { ascending: false }).limit(300),
 ]); if (contas.error) throw contas.error; if (categorias.error) throw categorias.error; if (movimentos.error) throw movimentos.error;
   const listaMovimentos = (movimentos.data ?? []).map((item) => ({ id:item.id, contaId:item.conta_id, contaNome:(item.tesouraria_contas as unknown as {nome:string}|null)?.nome || "Conta", categoriaId:item.categoria_id, categoriaNome:(item.tesouraria_categorias as unknown as {nome:string}|null)?.nome || "Sem categoria", tipo:item.tipo, valor:Number(item.valor), data:item.data, descricao:item.descricao, origem:item.origem, status:item.status }));
-  const confirmados = listaMovimentos.filter((m) => m.status === "CONFIRMADA"); const noMes = confirmados.filter((m) => m.data >= inicioMes.toISOString().slice(0,10));
-  const listaContas = (contas.data ?? []).map((conta) => { const saldoMovimentos = confirmados.filter((m) => m.contaId === conta.id).reduce((s,m) => s + (["ENTRADA","TRANSFERENCIA_ENTRADA"].includes(m.tipo) ? m.valor : -m.valor),0); return { id:conta.id,nome:conta.nome,tipo:conta.tipo,banco:conta.banco,agencia:conta.agencia,numeroConta:conta.numero_conta,saldoInicial:Number(conta.saldo_inicial),saldo:Number(conta.saldo_inicial)+saldoMovimentos,ativa:conta.ativa }; });
-  const entradasMes = noMes.filter((m) => m.tipo === "ENTRADA").reduce((s,m) => s+m.valor,0); const saidasMes = noMes.filter((m) => m.tipo === "SAIDA").reduce((s,m) => s+m.valor,0);
+  const listaContas = (contas.data ?? []).map((conta) => { const saldoInicial=Number(conta.saldo_inicial); return { id:conta.id,nome:conta.nome,tipo:conta.tipo,banco:conta.banco,agencia:conta.agencia,numeroConta:conta.numero_conta,saldoInicial,saldo:calcularSaldoConta(saldoInicial,conta.id,listaMovimentos),ativa:conta.ativa }; });
+  const resumoMes=calcularResumoPeriodo(listaMovimentos,inicioMes.toISOString().slice(0,10)); const entradasMes=resumoMes.entradas; const saidasMes=resumoMes.saidas;
   return NextResponse.json({ saldoTotal:listaContas.reduce((s,c) => s+c.saldo,0),entradasMes,saidasMes,resultadoMes:entradasMes-saidasMes,contas:listaContas,categorias:(categorias.data??[]).map((c)=>({id:c.id,nome:c.nome,natureza:c.natureza,ativa:c.ativa})),movimentacoes:listaMovimentos });
 } catch(error){ return erro(error); } }
 
