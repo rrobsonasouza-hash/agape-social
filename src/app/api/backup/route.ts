@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { randomUUID } from "node:crypto";
 import { exigirAdministrador } from "@/lib/auth/admin-request";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
+import { calcularSha256, resumirColecoes, totalizarResumo } from "@/modules/backup/integridade";
 
 const tabelasOperacionais = ["familias", "voluntarios", "doadores", "parceiros", "visitas", "areas_pastorais", "campanhas_cestas", "movimentacoes_cestas", "distribuicoes_cestas", "configuracoes", "auditoria", "secretaria_categorias_produtos", "secretaria_produtos", "secretaria_movimentacoes_estoque", "secretaria_vendas", "secretaria_servicos", "secretaria_horarios_celebracoes", "secretaria_eventos", "secretaria_dizimistas", "secretaria_dizimos_pagamentos", "secretaria_registros_sacramentais", "secretaria_registros_sacramentais_historico", "secretaria_documentos_emitidos", "secretaria_documentos_avulsos", "secretaria_solicitacoes", "secretaria_solicitacoes_historico", "tesouraria_contas", "tesouraria_categorias", "tesouraria_movimentacoes", "tesouraria_caixas", "tesouraria_caixa_operacoes"] as const;
 
@@ -23,8 +25,10 @@ export async function GET(request: NextRequest) {
     ]);
     if (perfis.error) throw perfis.error; if (documentos.error) throw documentos.error;
     const dados = { ...Object.fromEntries(consultas), perfis: perfis.data ?? [], documentos: documentos.data ?? [] };
-    const resumo = Object.fromEntries(Object.entries(dados).map(([tabela, registros]) => [tabela, Array.isArray(registros) ? registros.length : 0]));
-    const conteudo = { formato: "agape-social-backup", versao: 2, geradoEm: new Date().toISOString(), geradoPor: { id: administrador.uid, nome: administrador.nome, email: administrador.email }, paroquia, resumo, dados };
+    const resumo = resumirColecoes(dados); const totalRegistros=totalizarResumo(resumo); const geradoEm=new Date().toISOString();
+    const integridade={algoritmo:"SHA-256",dadosSha256:calcularSha256(dados)};
+    const auditoria=await supabase.from("auditoria").insert({id:randomUUID(),paroquia_id:paroquiaId,dados:{acao:"EXPORTAÇÃO",entidade:"BACKUP",entidadeId:paroquiaId,descricao:`Backup completo gerado com ${totalRegistros} registros.`,usuarioId:administrador.uid,usuarioNome:administrador.nome,usuarioEmail:administrador.email,paroquiaId,data:geradoEm}});if(auditoria.error)throw auditoria.error;
+    const conteudo = { formato: "agape-social-backup", versao: 3, geradoEm, geradoPor: { id: administrador.uid, nome: administrador.nome, email: administrador.email }, paroquia, resumo, totalRegistros, integridade, dados };
     return new NextResponse(JSON.stringify(conteudo, null, 2), { headers: { "Content-Type": "application/json; charset=utf-8", "Content-Disposition": `attachment; filename="${nomeArquivo(String(paroquia.nome))}"`, "Cache-Control": "no-store" } });
   } catch (error) {
     const mensagem = error instanceof Error ? error.message : "Não foi possível gerar o backup.";
