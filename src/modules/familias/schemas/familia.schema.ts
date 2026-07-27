@@ -18,8 +18,11 @@ export const familiaSchema = z.object({
 
   telefone: z
     .string()
+    .optional()
+    .default("")
     .refine(
       (valor) => {
+        if (!valor) return true;
         const digitos = valor.replace(/\D/g, "");
         return digitos.length === 10 || digitos.length === 11;
       },
