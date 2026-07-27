@@ -37,6 +37,8 @@ export default function NovaFamiliaPage() {
     resolver: zodResolver(familiaCadastroSchema),
     defaultValues: {
       status: "ATIVA",
+      cpf: "",
+      rg: "",
       cep: "",
       logradouro: "",
       numero: "",
@@ -104,11 +106,19 @@ export default function NovaFamiliaPage() {
             />
 
             <TextField
-              label="CPF"
+              label="CPF (opcional se informar RG)"
               placeholder="000.000.000-00"
               mask="cpf"
               {...register("cpf")}
               error={errors.cpf?.message}
+            />
+
+            <TextField
+              label="RG (opcional se informar CPF)"
+              placeholder="Número do RG"
+              maxLength={20}
+              {...register("rg")}
+              error={errors.rg?.message}
             />
 
             <TextField

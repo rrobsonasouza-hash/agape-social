@@ -437,6 +437,16 @@ export default function DetalhesFamiliaPage() {
               </dd>
             </div>
 
+            <div>
+              <dt className="text-sm text-slate-500">
+                RG
+              </dt>
+
+              <dd className="font-medium text-slate-900">
+                {familia.rg || "Não informado"}
+              </dd>
+            </div>
+
             <div className="flex items-start gap-3">
               <Phone
                 size={20}

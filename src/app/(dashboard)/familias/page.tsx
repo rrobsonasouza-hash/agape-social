@@ -49,12 +49,14 @@ export default function FamiliasPage() {
     return familias.filter((familia) => {
       const nome = familia.nomeResponsavel?.toLowerCase() ?? "";
       const cpf = familia.cpf?.toLowerCase() ?? "";
+      const rg = familia.rg?.toLowerCase() ?? "";
       const telefone = familia.telefone?.toLowerCase() ?? "";
       const cidade = familia.cidade?.toLowerCase() ?? "";
 
       return (
         nome.includes(termo) ||
         cpf.includes(termo) ||
+        rg.includes(termo) ||
         telefone.includes(termo) ||
         cidade.includes(termo)
       );
@@ -138,7 +140,7 @@ export default function FamiliasPage() {
               setPesquisa(event.target.value)
             }
             className="w-full rounded-lg border border-slate-300 py-3 pl-12 pr-4 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            placeholder="Pesquisar por nome, CPF, telefone ou cidade..."
+            placeholder="Pesquisar por nome, CPF, RG, telefone ou cidade..."
           />
         </div>
       </Card>

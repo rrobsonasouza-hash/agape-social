@@ -7,10 +7,14 @@ export const familiaSchema = z.object({
 
   cpf: z
     .string()
+    .optional()
+    .default("")
     .refine(
-      (valor) => valor.replace(/\D/g, "").length === 11,
+      (valor) => !valor || valor.replace(/\D/g, "").length === 11,
       "CPF inválido."
     ),
+
+  rg: z.string().trim().max(20, "RG deve ter no máximo 20 caracteres.").optional().default(""),
 
   telefone: z
     .string()
@@ -53,7 +57,7 @@ export const familiaSchema = z.object({
   beneficioBloqueado: z.boolean().optional().default(false),
   faltasConsecutivas: z.coerce.number().int().min(0).optional().default(0),
   motivoBloqueio: z.string().optional().default(""),
-});
+}).refine((dados) => Boolean(dados.cpf || dados.rg), { path:["cpf"], message:"Informe o CPF ou o RG do responsável." });
 
 export const familiaCadastroSchema = familiaSchema.refine((dados) => dados.consentimentoLgpd, { path:["consentimentoLgpd"], message:"Confirme o consentimento para tratamento dos dados." });
 

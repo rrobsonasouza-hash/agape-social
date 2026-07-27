@@ -46,6 +46,7 @@ export default function EditarFamiliaPage() {
     defaultValues: {
       nomeResponsavel: "",
       cpf: "",
+      rg: "",
       telefone: "",
       email: "",
       cep: "",
@@ -84,6 +85,7 @@ export default function EditarFamiliaPage() {
         reset({
           nomeResponsavel: familia.nomeResponsavel || "",
           cpf: familia.cpf || "",
+          rg: familia.rg || "",
           telefone: familia.telefone || "",
           email: familia.email || "",
           cep: familia.cep || "",
@@ -168,10 +170,17 @@ export default function EditarFamiliaPage() {
           />
 
           <TextField
-            label="CPF"
+            label="CPF (opcional se informar RG)"
             mask="cpf"
             {...register("cpf")}
             error={errors.cpf?.message}
+          />
+
+          <TextField
+            label="RG (opcional se informar CPF)"
+            maxLength={20}
+            {...register("rg")}
+            error={errors.rg?.message}
           />
 
           <TextField

@@ -9,9 +9,9 @@ export class FamiliaService {
 
   async criar(data: FamiliaFormData) {
     const dadosValidados = familiaSchema.parse(data);
-    const familiaExistente = await this.repository.buscarPorCpf(
-      dadosValidados.cpf
-    );
+    const familiaExistente = dadosValidados.cpf
+      ? await this.repository.buscarPorCpf(dadosValidados.cpf)
+      : null;
 
     if (familiaExistente) {
       throw new Error("Já existe uma família cadastrada com este CPF.");
@@ -38,9 +38,9 @@ export class FamiliaService {
     }
 
     const dadosValidados = familiaSchema.parse(data);
-    const familiaExistente = await this.repository.buscarPorCpf(
-      dadosValidados.cpf
-    );
+    const familiaExistente = dadosValidados.cpf
+      ? await this.repository.buscarPorCpf(dadosValidados.cpf)
+      : null;
 
     if (familiaExistente && familiaExistente.id !== id) {
       throw new Error("Já existe uma família cadastrada com este CPF.");
