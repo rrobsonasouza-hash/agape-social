@@ -9,4 +9,5 @@ export class DistribuicaoRepository {
   alterarStatus(id: string, status: StatusDistribuicao) { return requisicao(`/api/distribuicoes/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ status }) }); }
   alterarData(id: string, data: string) { return requisicao(`/api/distribuicoes/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ data }) }); }
   agendarMuitas(registros: DistribuicaoData[]) { return registros.length ? requisicao("/api/distribuicoes", { method: "POST", body: JSON.stringify(registros) }) : Promise.resolve(); }
+  excluirAgendadas(ids: string[]) { return requisicao<{ removidas: number }>("/api/distribuicoes", { method: "DELETE", body: JSON.stringify({ ids }) }); }
 }

@@ -20,7 +20,7 @@ const hoje = new Date().toISOString().slice(0, 10);
 export default function DistribuicaoCestasPage() {
   const { listar: listarFamilias } = useFamilias();
   const { listarCampanhas } = useCestas();
-  const { listarPorData, agendar, agendarTodas, remarcarTodas, marcar } = useDistribuicoes();
+  const { listarPorData, agendar, agendarTodas, remarcarTodas, excluirAgendadas, marcar } = useDistribuicoes();
   const [data, setData] = useState(hoje);
   const [novaData, setNovaData] = useState(hoje);
   const [campanhaId, setCampanhaId] = useState("");
@@ -66,6 +66,17 @@ export default function DistribuicaoCestasPage() {
 
   async function moverAgendadas() { const ids=lista.filter((item)=>item.status==="AGENDADA").map((item)=>item.id); if (!ids.length) return toast.error("Não há famílias agendadas para mover."); if (!novaData) return toast.error("Informe a nova data."); try { await remarcarTodas(ids,novaData); await carregarLista(); toast.success(`${ids.length} família(s) remarcada(s) para a nova data.`); } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível remarcar a lista."); } }
 
+  async function excluirListaAgendada() {
+    const ids = lista.filter((item) => item.status === "AGENDADA").map((item) => item.id);
+    if (!ids.length) return toast.error("Não há famílias agendadas para excluir.");
+    if (!window.confirm(`Excluir ${ids.length} família(s) agendada(s) desta data? As cestas prontas do estoque não serão alteradas.`)) return;
+    try {
+      const resultado = await excluirAgendadas(ids);
+      await carregarLista();
+      toast.success(`${resultado.removidas} família(s) agendada(s) excluída(s) da lista.`);
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível excluir a lista."); }
+  }
+
   async function adicionarTodas() {
     if (!campanhaId) return toast.error("Selecione a campanha.");
     try {
@@ -101,6 +112,8 @@ export default function DistribuicaoCestasPage() {
       <FormSection title="Preparar lista" description="Primeiro selecione a data da fila que será exibida abaixo. Depois inclua as famílias previstas.">
         <div className="grid gap-4 md:grid-cols-3"><TextField label="Data da lista de distribuição" type="date" value={data} onChange={(e) => setData(e.target.value)} /><label className="flex flex-col gap-1 text-sm font-medium text-slate-700">Campanha para inclusão<select value={campanhaId} onChange={(e) => setCampanhaId(e.target.value)} className="rounded-lg border px-4 py-3"><option value="">Selecione a campanha</option>{campanhas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}</select></label><label className="flex flex-col gap-1 text-sm font-medium text-slate-700">Família para inclusão<select value={familiaId} onChange={(e) => setFamiliaId(e.target.value)} className="rounded-lg border px-4 py-3"><option value="">Selecione a família</option>{familias.filter((f) => !f.beneficioBloqueado).map((f) => <option key={f.id} value={f.id}>{f.nomeResponsavel}</option>)}</select></label></div><div className="mt-4 flex flex-wrap gap-3"><button type="button" onClick={adicionar} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white"><Plus size={18} /> Adicionar selecionada</button><button type="button" onClick={adicionarTodas} className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 font-semibold text-blue-700 hover:bg-blue-100"><Plus size={18} /> Adicionar todas as elegíveis</button></div><div className="mt-5 flex flex-wrap items-end gap-3 border-t border-slate-200 pt-4"><div className="mr-2"><p className="text-sm font-semibold text-slate-800">Remarcar famílias agendadas</p><p className="text-xs text-slate-500">Move apenas as famílias que ainda estão como agendadas nesta lista.</p></div><label className="flex flex-col gap-1 text-sm font-medium text-slate-700">Nova data para remarcação<input type="date" value={novaData} onChange={(e) => setNovaData(e.target.value)} className="rounded-lg border px-3 py-2" /></label><button type="button" onClick={() => void moverAgendadas()} className="rounded-lg border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 hover:bg-slate-50">Remarcar agendadas</button></div>
       </FormSection>
+
+      {agendadas > 0 && <section className="flex flex-col gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold text-red-900">Excluir lista agendada desta data</p><p className="text-sm text-red-700">Remove somente as {agendadas} família(s) ainda agendadas. As cestas prontas não serão removidas do estoque.</p></div><button type="button" onClick={() => void excluirListaAgendada()} className="rounded-lg border border-red-300 bg-white px-4 py-3 font-semibold text-red-700 hover:bg-red-100">Excluir agendadas</button></section>}
 
       <section className="flex flex-col gap-2 rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-blue-700">Fila de distribuição exibida</p><h2 className="text-xl font-bold text-slate-900">{new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}</h2></div><span className="w-fit rounded-full bg-white px-3 py-1 text-sm font-semibold text-blue-700 shadow-sm">{lista.length} família(s) na data</span></section>
 

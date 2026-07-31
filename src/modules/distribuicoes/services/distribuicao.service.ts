@@ -53,6 +53,11 @@ export class DistribuicaoService {
     await Promise.all(ids.map((id) => this.remarcar(id, data)));
   }
 
+  async excluirAgendadas(ids: string[]) {
+    if (!ids.length) throw new Error("Não há famílias agendadas para excluir.");
+    return this.repository.excluirAgendadas(ids);
+  }
+
   async marcar(id: string, status: Exclude<StatusDistribuicao, "AGENDADA">) {
     const registro = await this.repository.buscarPorId(id);
     if (!registro) throw new Error("Registro não encontrado.");

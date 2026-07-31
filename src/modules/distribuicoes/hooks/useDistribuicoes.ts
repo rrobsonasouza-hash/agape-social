@@ -9,6 +9,7 @@ export function useDistribuicoes() {
     agendar: useCallback((data: DistribuicaoData) => service.agendar(data), []),
     agendarTodas: useCallback((data: string, campanhaId: string) => service.agendarTodas(data, campanhaId), []),
     remarcarTodas: useCallback((ids: string[], data: string) => service.remarcarTodas(ids, data), []),
+    excluirAgendadas: useCallback((ids: string[]) => service.excluirAgendadas(ids), []),
     marcar: useCallback((id: string, status: Exclude<StatusDistribuicao, "AGENDADA">) => service.marcar(id, status), []),
   };
 }
