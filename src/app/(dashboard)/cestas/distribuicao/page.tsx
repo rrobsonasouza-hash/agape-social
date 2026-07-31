@@ -49,6 +49,10 @@ export default function DistribuicaoCestasPage() {
     const termo = pesquisa.toLowerCase().trim();
     return termo ? lista.filter((item) => item.familiaNome.toLowerCase().includes(termo)) : lista;
   }, [lista, pesquisa]);
+  const familiasPorId = useMemo(
+    () => new Map(familias.map((familia) => [familia.id, familia])),
+    [familias],
+  );
 
   async function adicionar() {
     const familia = familias.find((item) => item.id === familiaId);
@@ -100,7 +104,7 @@ export default function DistribuicaoCestasPage() {
       <div className="space-y-3">
         {listaFiltrada.map((item) => (
           <div key={item.id} className="flex flex-col gap-4 rounded-xl border bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
-            <div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 font-bold text-blue-700">{item.familiaNome.slice(0, 2).toUpperCase()}</div><div><p className="font-semibold text-slate-900">{item.familiaNome}</p><StatusBadge status={item.status} /></div></div>
+            <div className="flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 font-bold text-blue-700">{item.familiaNome.slice(0, 2).toUpperCase()}</div><div><p className="font-semibold text-slate-900">{item.familiaNome}</p><div className="mt-1 grid grid-cols-2 gap-x-5 text-xs text-slate-600"><span><b className="mr-1 text-slate-500">CPF:</b>{familiasPorId.get(item.familiaId)?.cpf || "Não informado"}</span><span><b className="mr-1 text-slate-500">RG:</b>{familiasPorId.get(item.familiaId)?.rg || "Não informado"}</span></div><StatusBadge status={item.status} /></div></div>
             {item.status === "AGENDADA" ? <div className="grid grid-cols-3 gap-2"><button disabled={atualizando === item.id} onClick={() => finalizar(item, "RETIRADA")} className="inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-sm font-semibold text-white"><CheckCircle2 size={18} /> Retirada</button><button disabled={atualizando === item.id} onClick={() => finalizar(item, "AUSENTE")} className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-500 px-4 py-3 text-sm font-semibold text-white"><UserX size={18} /> Ausente</button><button disabled={atualizando === item.id} onClick={() => finalizar(item, "ENTREGUE_DOMICILIO")} className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white"><Home size={18} /> Em casa</button></div> : <span className="text-sm text-slate-400">Atendimento finalizado</span>}
           </div>
         ))}
