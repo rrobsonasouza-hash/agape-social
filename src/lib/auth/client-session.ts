@@ -23,7 +23,10 @@ export async function enviarRecuperacaoSenha(email: string) {
 export async function sair() { await supabase.auth.signOut(); }
 
 export function observarSessao(callback: (identidade: IdentidadeSessao | null) => void) {
-  const assinatura = supabase.auth.onAuthStateChange((_evento, sessao) => {
+  const assinatura = supabase.auth.onAuthStateChange((evento, sessao) => {
+    // A renovação silenciosa do token ocorre, por exemplo, ao retornar de outra janela.
+    // Ela não altera o usuário e não deve desmontar a tela nem perder formulários em andamento.
+    if (evento === "TOKEN_REFRESHED") return;
     const user = sessao?.user;
     callback(user ? { uid: user.id, email: user.email || "", nome: String(user.user_metadata?.nome || "") } : null);
   });
