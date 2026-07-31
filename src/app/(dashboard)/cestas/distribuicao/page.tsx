@@ -14,10 +14,13 @@ import { StatusDistribuicao } from "@/modules/distribuicoes/schemas/distribuicao
 import { DistribuicaoDocumento } from "@/modules/distribuicoes/types/distribuicao-documento";
 import { useFamilias } from "@/modules/familias/hooks/useFamilias";
 import { FamiliaDocumento } from "@/modules/familias/types/familia-documento";
+import { obterTokenAcesso } from "@/lib/auth/client-session";
+import { useParoquia } from "@/modules/paroquias/hooks/useParoquia";
 
 const hoje = new Date().toISOString().slice(0, 10);
 
 export default function DistribuicaoCestasPage() {
+  const { paroquia } = useParoquia();
   const { listar: listarFamilias } = useFamilias();
   const { listarCampanhas } = useCestas();
   const { listarPorData, agendar, agendarTodas, remarcarTodas, excluirAgendadas, marcar } = useDistribuicoes();
@@ -30,6 +33,7 @@ export default function DistribuicaoCestasPage() {
   const [campanhas, setCampanhas] = useState<CampanhaCestas[]>([]);
   const [lista, setLista] = useState<DistribuicaoDocumento[]>([]);
   const [atualizando, setAtualizando] = useState<string | null>(null);
+  const [logoParoquia, setLogoParoquia] = useState<string | null>(null);
 
   const carregarLista = useCallback(async () => {
     setLista(await listarPorData(data));
@@ -45,6 +49,8 @@ export default function DistribuicaoCestasPage() {
   }, [listarCampanhas, listarFamilias]);
 
   useEffect(() => { carregarLista().catch(() => toast.error("Não foi possível carregar a lista.")); }, [carregarLista]);
+
+  useEffect(() => { if (!paroquia) return; obterTokenAcesso().then(async (token) => { const resposta = await fetch("/api/paroquias/logo", { headers: { Authorization: `Bearer ${token}` } }); if (resposta.ok) setLogoParoquia((await resposta.json()).url); }).catch(() => setLogoParoquia(null)); }, [paroquia]);
 
   const listaFiltrada = useMemo(() => {
     const termo = pesquisa.toLowerCase().trim();
@@ -82,10 +88,12 @@ export default function DistribuicaoCestasPage() {
     if (!pendentes.length) return toast.error("Não há famílias pendentes para imprimir.");
     const dataFormatada = new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
     const escapar = (texto: string) => texto.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    const endereco = [paroquia?.logradouro, paroquia?.numero, paroquia?.bairro, paroquia?.cidade, paroquia?.estado].filter(Boolean).join(", ");
+    const cabecalho = `<header class="instituicao">${logoParoquia ? `<img src="${escapar(logoParoquia)}" alt="Logotipo da paróquia"/>` : ""}<p class="paroquia">${escapar(paroquia?.nome || "Ágape Social")}</p>${endereco ? `<p class="endereco">${escapar(endereco)}</p>` : ""}<div></div><h1>Fila de distribuição ${escapar(dataFormatada)}</h1><p class="subtitulo">Famílias pendentes de retirada · Marque o X na coluna ao lado quando a cesta for entregue.</p></header>`;
     const linhas = pendentes.map((item, indice) => `<tr><td class="numero">${indice + 1}</td><td>${escapar(item.familiaNome)}</td><td class="marca"><span></span></td></tr>`).join("");
     const janela = window.open("", "_blank");
     if (!janela) return toast.error("Permita a abertura da janela de impressão para gerar o PDF.");
-    janela.document.write(`<!doctype html><html lang="pt-BR"><head><title>Fila de distribuição</title><style>@page{size:A4;margin:16mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:0}h1{font-size:18px;margin:0 0 4px;text-transform:none}.subtitulo{font-size:11px;color:#555;margin:0 0 18px}.linha{height:1px;background:#111;margin-bottom:14px}table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;background:#f1f1f1;border:1px solid #777;padding:8px}td{border:1px solid #999;padding:10px;height:38px}.numero{width:42px;text-align:center}.marca{width:62px;text-align:center}.marca span{display:inline-block;width:19px;height:19px;border:1.5px solid #111}footer{margin-top:16px;font-size:10px;color:#555}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><h1>Fila de distribuição ${escapar(dataFormatada)}</h1><p class="subtitulo">Famílias pendentes de retirada · Marque o X na coluna ao lado quando a cesta for entregue.</p><div class="linha"></div><table><thead><tr><th class="numero">Nº</th><th>Nome da família / responsável</th><th class="marca">X</th></tr></thead><tbody>${linhas}</tbody></table><footer>Total de famílias pendentes: ${pendentes.length}</footer></body></html>`);
+    janela.document.write(`<!doctype html><html lang="pt-BR"><head><title>Fila de distribuição</title><style>@page{size:A4;margin:16mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:0}.instituicao{text-align:center}.instituicao img{width:74px;height:74px;object-fit:contain;margin:0 auto 7px}.paroquia{margin:0;font-size:13px;font-weight:700;letter-spacing:1.1px;text-transform:uppercase}.endereco{margin:4px 0 0;font-size:10px;color:#555}.instituicao>div{height:1px;max-width:520px;margin:16px auto 18px;background:#111}h1{font-family:Georgia,serif;font-size:20px;margin:0 0 5px}.subtitulo{font-size:11px;color:#555;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;background:#f1f1f1;border:1px solid #777;padding:8px}td{border:1px solid #999;padding:10px;height:38px}.numero{width:42px;text-align:center}.marca{width:62px;text-align:center}.marca span{display:inline-block;width:19px;height:19px;border:1.5px solid #111}footer{margin-top:16px;border-top:1px solid #999;padding-top:8px;text-align:center;font-size:10px;color:#555}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>${cabecalho}<table><thead><tr><th class="numero">Nº</th><th>Nome da família / responsável</th><th class="marca">X</th></tr></thead><tbody>${linhas}</tbody></table><footer>Documento emitido pelo sistema Ágape Social · Total de famílias pendentes: ${pendentes.length}</footer></body></html>`);
     janela.document.close();
     janela.focus();
     window.setTimeout(() => janela.print(), 250);
