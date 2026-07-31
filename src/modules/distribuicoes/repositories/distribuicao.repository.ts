@@ -7,5 +7,6 @@ export class DistribuicaoRepository {
   buscarPorId(id: string): Promise<DistribuicaoDocumento | null> { return requisicao(`/api/distribuicoes/${encodeURIComponent(id)}`); }
   listarPorData(data: string): Promise<DistribuicaoDocumento[]> { return requisicao(`/api/distribuicoes?data=${encodeURIComponent(data)}`); }
   alterarStatus(id: string, status: StatusDistribuicao) { return requisicao(`/api/distribuicoes/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ status }) }); }
+  alterarData(id: string, data: string) { return requisicao(`/api/distribuicoes/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ data }) }); }
   agendarMuitas(registros: DistribuicaoData[]) { return registros.length ? requisicao("/api/distribuicoes", { method: "POST", body: JSON.stringify(registros) }) : Promise.resolve(); }
 }

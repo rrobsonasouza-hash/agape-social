@@ -46,6 +46,8 @@ export class DistribuicaoService {
     return { adicionadas: elegiveis.length };
   }
 
+  async remarcar(id: string, data: string) { const registro = await this.repository.buscarPorId(id); if (!registro) throw new Error("Registro não encontrado."); if (registro.status !== "AGENDADA") throw new Error("Somente distribuições agendadas podem ser remarcadas."); if (!data) throw new Error("Informe a nova data."); return this.repository.alterarData(id, data); }
+
   async marcar(id: string, status: Exclude<StatusDistribuicao, "AGENDADA">) {
     const registro = await this.repository.buscarPorId(id);
     if (!registro) throw new Error("Registro não encontrado.");

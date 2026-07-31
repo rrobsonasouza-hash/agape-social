@@ -20,8 +20,9 @@ const hoje = new Date().toISOString().slice(0, 10);
 export default function DistribuicaoCestasPage() {
   const { listar: listarFamilias } = useFamilias();
   const { listarCampanhas } = useCestas();
-  const { listarPorData, agendar, agendarTodas, marcar } = useDistribuicoes();
+  const { listarPorData, agendar, agendarTodas, remarcarTodas, marcar } = useDistribuicoes();
   const [data, setData] = useState(hoje);
+  const [novaData, setNovaData] = useState(hoje);
   const [campanhaId, setCampanhaId] = useState("");
   const [familiaId, setFamiliaId] = useState("");
   const [pesquisa, setPesquisa] = useState("");
@@ -63,6 +64,8 @@ export default function DistribuicaoCestasPage() {
     } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível adicionar."); }
   }
 
+  async function moverAgendadas() { const ids=lista.filter((item)=>item.status==="AGENDADA").map((item)=>item.id); if (!ids.length) return toast.error("Não há famílias agendadas para mover."); if (!novaData) return toast.error("Informe a nova data."); try { await remarcarTodas(ids,novaData); await carregarLista(); toast.success(`${ids.length} família(s) remarcada(s) para a nova data.`); } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível remarcar a lista."); } }
+
   async function adicionarTodas() {
     if (!campanhaId) return toast.error("Selecione a campanha.");
     try {
@@ -96,7 +99,7 @@ export default function DistribuicaoCestasPage() {
       <section className="grid gap-4 sm:grid-cols-3">{[{ label: "Aguardando", value: agendadas }, { label: "Recebidas", value: retiradas }, { label: "Ausentes", value: ausentes }].map((item) => <div key={item.label} className="rounded-xl border bg-white p-5 shadow-sm"><p className="text-3xl font-bold">{item.value}</p><p className="text-sm text-slate-500">{item.label}</p></div>)}</section>
 
       <FormSection title="Preparar lista" description="Selecione a data e inclua as famílias previstas. Famílias bloqueadas nunca são adicionadas.">
-        <div className="grid gap-4 md:grid-cols-3"><TextField label="Data da distribuição" type="date" value={data} onChange={(e) => setData(e.target.value)} /><select value={campanhaId} onChange={(e) => setCampanhaId(e.target.value)} className="self-end rounded-lg border px-4 py-3"><option value="">Campanha</option>{campanhas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}</select><select value={familiaId} onChange={(e) => setFamiliaId(e.target.value)} className="self-end rounded-lg border px-4 py-3"><option value="">Selecione a família</option>{familias.filter((f) => !f.beneficioBloqueado).map((f) => <option key={f.id} value={f.id}>{f.nomeResponsavel}</option>)}</select></div><div className="mt-4 flex flex-wrap gap-3"><button type="button" onClick={adicionar} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white"><Plus size={18} /> Adicionar selecionada</button><button type="button" onClick={adicionarTodas} className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 font-semibold text-blue-700 hover:bg-blue-100"><Plus size={18} /> Adicionar todas as elegíveis</button></div>
+        <div className="grid gap-4 md:grid-cols-3"><TextField label="Data da distribuição" type="date" value={data} onChange={(e) => setData(e.target.value)} /><select value={campanhaId} onChange={(e) => setCampanhaId(e.target.value)} className="self-end rounded-lg border px-4 py-3"><option value="">Campanha</option>{campanhas.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}</select><select value={familiaId} onChange={(e) => setFamiliaId(e.target.value)} className="self-end rounded-lg border px-4 py-3"><option value="">Selecione a família</option>{familias.filter((f) => !f.beneficioBloqueado).map((f) => <option key={f.id} value={f.id}>{f.nomeResponsavel}</option>)}</select></div><div className="mt-4 flex flex-wrap items-end gap-3"><label className="flex flex-col gap-1 text-sm font-medium text-slate-700">Nova data<input type="date" value={novaData} onChange={(e) => setNovaData(e.target.value)} className="rounded-lg border px-3 py-2" /></label><button type="button" onClick={() => void moverAgendadas()} className="rounded-lg border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 hover:bg-slate-50">Editar data das agendadas</button><button type="button" onClick={adicionar} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white"><Plus size={18} /> Adicionar selecionada</button><button type="button" onClick={adicionarTodas} className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 font-semibold text-blue-700 hover:bg-blue-100"><Plus size={18} /> Adicionar todas as elegíveis</button></div>
       </FormSection>
 
       <div className="relative"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} /><input type="search" value={pesquisa} onChange={(e) => setPesquisa(e.target.value)} placeholder="Localizar família na fila..." className="w-full rounded-lg border bg-white py-3 pl-12 pr-4" /></div>
