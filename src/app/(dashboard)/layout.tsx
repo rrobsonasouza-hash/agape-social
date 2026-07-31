@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
+import { RefreshOnNavigation } from "@/components/layout/RefreshOnNavigation";
 import { ProtectedArea } from "@/components/auth/ProtectedArea";
 
 export default function DashboardLayout({
@@ -8,7 +9,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ProtectedArea><div className="flex min-h-screen bg-gray-100">
+    <ProtectedArea><RefreshOnNavigation /><div className="flex min-h-screen bg-gray-100">
 
       <Sidebar />
 
