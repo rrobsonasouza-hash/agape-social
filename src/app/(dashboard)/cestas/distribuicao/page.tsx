@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckCircle2, Home, Plus, Search, UserX } from "lucide-react";
+import { CheckCircle2, Home, Plus, Printer, Search, UserX } from "lucide-react";
 import toast from "react-hot-toast";
 import { FormSection } from "@/components/forms/FormSection";
 import { TextField } from "@/components/forms/TextField";
@@ -77,6 +77,20 @@ export default function DistribuicaoCestasPage() {
     } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível excluir a lista."); }
   }
 
+  function imprimirPendentes() {
+    const pendentes = lista.filter((item) => item.status === "AGENDADA");
+    if (!pendentes.length) return toast.error("Não há famílias pendentes para imprimir.");
+    const dataFormatada = new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+    const escapar = (texto: string) => texto.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    const linhas = pendentes.map((item, indice) => `<tr><td class="numero">${indice + 1}</td><td>${escapar(item.familiaNome)}</td><td class="marca"><span></span></td></tr>`).join("");
+    const janela = window.open("", "_blank");
+    if (!janela) return toast.error("Permita a abertura da janela de impressão para gerar o PDF.");
+    janela.document.write(`<!doctype html><html lang="pt-BR"><head><title>Fila de distribuição</title><style>@page{size:A4;margin:16mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:0}h1{font-size:18px;margin:0 0 4px;text-transform:none}.subtitulo{font-size:11px;color:#555;margin:0 0 18px}.linha{height:1px;background:#111;margin-bottom:14px}table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;background:#f1f1f1;border:1px solid #777;padding:8px}td{border:1px solid #999;padding:10px;height:38px}.numero{width:42px;text-align:center}.marca{width:62px;text-align:center}.marca span{display:inline-block;width:19px;height:19px;border:1.5px solid #111}footer{margin-top:16px;font-size:10px;color:#555}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body><h1>Fila de distribuição ${escapar(dataFormatada)}</h1><p class="subtitulo">Famílias pendentes de retirada · Marque o X na coluna ao lado quando a cesta for entregue.</p><div class="linha"></div><table><thead><tr><th class="numero">Nº</th><th>Nome da família / responsável</th><th class="marca">X</th></tr></thead><tbody>${linhas}</tbody></table><footer>Total de famílias pendentes: ${pendentes.length}</footer></body></html>`);
+    janela.document.close();
+    janela.focus();
+    window.setTimeout(() => janela.print(), 250);
+  }
+
   async function adicionarTodas() {
     if (!campanhaId) return toast.error("Selecione a campanha.");
     try {
@@ -118,6 +132,8 @@ export default function DistribuicaoCestasPage() {
       <section className="flex flex-col gap-2 rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-bold uppercase tracking-wider text-blue-700">Fila de distribuição exibida</p><h2 className="text-xl font-bold text-slate-900">{new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}</h2></div><span className="w-fit rounded-full bg-white px-3 py-1 text-sm font-semibold text-blue-700 shadow-sm">{lista.length} família(s) na data</span></section>
 
       <div className="relative"><Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} /><input type="search" value={pesquisa} onChange={(e) => setPesquisa(e.target.value)} placeholder="Localizar família na fila..." className="w-full rounded-lg border bg-white py-3 pl-12 pr-4" /></div>
+
+      {agendadas > 0 && <div className="flex justify-end"><button type="button" onClick={imprimirPendentes} className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 hover:bg-slate-50"><Printer size={18} /> Imprimir pendentes</button></div>}
 
       <div className="space-y-3">
         {listaFiltrada.map((item) => (
