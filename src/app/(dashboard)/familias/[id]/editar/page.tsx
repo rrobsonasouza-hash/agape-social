@@ -37,16 +37,14 @@ export default function EditarFamiliaPage() {
     reset,
     setValue,
     watch,
-    formState: {
-      errors,
-      isSubmitting,
-    },
+    formState: { errors, isSubmitting },
   } = useForm<FamiliaFormInput, unknown, FamiliaFormData>({
     resolver: zodResolver(familiaSchema),
     defaultValues: {
       nomeResponsavel: "",
       cpf: "",
       rg: "",
+      pessoaAutorizadaRetirada: "",
       telefone: "",
       email: "",
       cep: "",
@@ -86,6 +84,7 @@ export default function EditarFamiliaPage() {
           nomeResponsavel: familia.nomeResponsavel || "",
           cpf: familia.cpf || "",
           rg: familia.rg || "",
+          pessoaAutorizadaRetirada: familia.pessoaAutorizadaRetirada || "",
           telefone: familia.telefone || "",
           email: familia.email || "",
           cep: familia.cep || "",
@@ -97,10 +96,8 @@ export default function EditarFamiliaPage() {
           estado: familia.estado || "",
           latitude: familia.latitude ?? null,
           longitude: familia.longitude ?? null,
-          quantidadeMoradores:
-            Number(familia.quantidadeMoradores) || 1,
-          rendaFamiliar:
-            Number(familia.rendaFamiliar) || 0,
+          quantidadeMoradores: Number(familia.quantidadeMoradores) || 1,
+          rendaFamiliar: Number(familia.rendaFamiliar) || 0,
           observacoes: familia.observacoes || "",
           consentimentoLgpd: familia.consentimentoLgpd ?? false,
           consentimentoLgpdEm: familia.consentimentoLgpdEm ?? "",
@@ -191,6 +188,13 @@ export default function EditarFamiliaPage() {
           />
 
           <TextField
+            label="Pessoa autorizada a retirar a cesta"
+            placeholder="Nome completo (opcional)"
+            {...register("pessoaAutorizadaRetirada")}
+            error={errors.pessoaAutorizadaRetirada?.message}
+          />
+
+          <TextField
             label="E-mail"
             type="email"
             {...register("email")}
@@ -199,10 +203,7 @@ export default function EditarFamiliaPage() {
         </div>
       </FormSection>
 
-      <FormSection
-        title="Endereço"
-        description="Localização atual da família."
-      >
+      <FormSection title="Endereço" description="Localização atual da família.">
         <EnderecoFamiliaFields
           register={register}
           errors={errors}
@@ -225,7 +226,22 @@ export default function EditarFamiliaPage() {
             error={errors.quantidadeMoradores?.message}
           />
 
-          <Controller name="rendaFamiliar" control={control} render={({ field }) => <TextField label="Renda familiar" type="text" inputMode="numeric" value={formatMoeda(Number(field.value || 0))} onChange={(event) => field.onChange(parseMoeda(event.target.value))} error={errors.rendaFamiliar?.message} />} />
+          <Controller
+            name="rendaFamiliar"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                label="Renda familiar"
+                type="text"
+                inputMode="numeric"
+                value={formatMoeda(Number(field.value || 0))}
+                onChange={(event) =>
+                  field.onChange(parseMoeda(event.target.value))
+                }
+                error={errors.rendaFamiliar?.message}
+              />
+            )}
+          />
 
           <div className="space-y-2">
             <label className="block text-sm font-medium text-slate-700">
@@ -241,9 +257,7 @@ export default function EditarFamiliaPage() {
             </select>
 
             {errors.status?.message && (
-              <p className="text-sm text-red-600">
-                {errors.status.message}
-              </p>
+              <p className="text-sm text-red-600">{errors.status.message}</p>
             )}
           </div>
         </div>
@@ -268,13 +282,8 @@ export default function EditarFamiliaPage() {
           Cancelar
         </Button>
 
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-        >
-          {isSubmitting
-            ? "Salvando alterações..."
-            : "Salvar alterações"}
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Salvando alterações..." : "Salvar alterações"}
         </Button>
       </div>
     </form>

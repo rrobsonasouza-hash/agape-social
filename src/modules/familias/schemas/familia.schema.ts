@@ -1,68 +1,85 @@
 import { z } from "zod";
 
-export const familiaSchema = z.object({
-  nomeResponsavel: z
-    .string()
-    .min(3, "Informe o nome do responsável."),
+export const familiaSchema = z
+  .object({
+    nomeResponsavel: z.string().min(3, "Informe o nome do responsável."),
 
-  cpf: z
-    .string()
-    .optional()
-    .default("")
-    .refine(
-      (valor) => !valor || valor.replace(/\D/g, "").length === 11,
-      "CPF inválido."
-    ),
+    cpf: z
+      .string()
+      .optional()
+      .default("")
+      .refine(
+        (valor) => !valor || valor.replace(/\D/g, "").length === 11,
+        "CPF inválido.",
+      ),
 
-  rg: z.string().trim().max(20, "RG deve ter no máximo 20 caracteres.").optional().default(""),
+    rg: z
+      .string()
+      .trim()
+      .max(20, "RG deve ter no máximo 20 caracteres.")
+      .optional()
+      .default(""),
 
-  telefone: z
-    .string()
-    .optional()
-    .default("")
-    .refine(
-      (valor) => {
+    pessoaAutorizadaRetirada: z
+      .string()
+      .trim()
+      .max(
+        160,
+        "O nome da pessoa autorizada deve ter no máximo 160 caracteres.",
+      )
+      .optional()
+      .default(""),
+
+    telefone: z
+      .string()
+      .optional()
+      .default("")
+      .refine((valor) => {
         if (!valor) return true;
         const digitos = valor.replace(/\D/g, "");
         return digitos.length === 10 || digitos.length === 11;
-      },
-      "Telefone inválido."
-    ),
+      }, "Telefone inválido."),
 
-  email: z
-    .string()
-    .email("E-mail inválido.")
-    .optional()
-    .or(z.literal("")),
+    email: z.string().email("E-mail inválido.").optional().or(z.literal("")),
 
-  cep: z.string().optional().default(""),
-  logradouro: z.string().optional().default(""),
-  numero: z.string().optional().default(""),
-  complemento: z.string().optional().default(""),
-  bairro: z.string().optional().default(""),
-  cidade: z.string().optional().default(""),
-  estado: z.string().optional().default(""),
+    cep: z.string().optional().default(""),
+    logradouro: z.string().optional().default(""),
+    numero: z.string().optional().default(""),
+    complemento: z.string().optional().default(""),
+    bairro: z.string().optional().default(""),
+    cidade: z.string().optional().default(""),
+    estado: z.string().optional().default(""),
 
-  latitude: z.number().min(-90).max(90).nullable().default(null),
-  longitude: z.number().min(-180).max(180).nullable().default(null),
+    latitude: z.number().min(-90).max(90).nullable().default(null),
+    longitude: z.number().min(-180).max(180).nullable().default(null),
 
-  quantidadeMoradores: z.coerce.number().default(1),
+    quantidadeMoradores: z.coerce.number().default(1),
 
-  rendaFamiliar: z.coerce.number().default(0),
+    rendaFamiliar: z.coerce.number().default(0),
 
-  observacoes: z.string().optional().default(""),
+    observacoes: z.string().optional().default(""),
 
-  consentimentoLgpd: z.boolean().optional().default(false),
-  consentimentoLgpdEm: z.string().optional().default(""),
-  versaoConsentimentoLgpd: z.string().optional().default(""),
+    consentimentoLgpd: z.boolean().optional().default(false),
+    consentimentoLgpdEm: z.string().optional().default(""),
+    versaoConsentimentoLgpd: z.string().optional().default(""),
 
-  status: z.enum(["ATIVA", "INATIVA"]),
-  beneficioBloqueado: z.boolean().optional().default(false),
-  faltasConsecutivas: z.coerce.number().int().min(0).optional().default(0),
-  motivoBloqueio: z.string().optional().default(""),
-}).refine((dados) => Boolean(dados.cpf || dados.rg), { path:["cpf"], message:"Informe o CPF ou o RG do responsável." });
+    status: z.enum(["ATIVA", "INATIVA"]),
+    beneficioBloqueado: z.boolean().optional().default(false),
+    faltasConsecutivas: z.coerce.number().int().min(0).optional().default(0),
+    motivoBloqueio: z.string().optional().default(""),
+  })
+  .refine((dados) => Boolean(dados.cpf || dados.rg), {
+    path: ["cpf"],
+    message: "Informe o CPF ou o RG do responsável.",
+  });
 
-export const familiaCadastroSchema = familiaSchema.refine((dados) => dados.consentimentoLgpd, { path:["consentimentoLgpd"], message:"Confirme o consentimento para tratamento dos dados." });
+export const familiaCadastroSchema = familiaSchema.refine(
+  (dados) => dados.consentimentoLgpd,
+  {
+    path: ["consentimentoLgpd"],
+    message: "Confirme o consentimento para tratamento dos dados.",
+  },
+);
 
 export type FamiliaFormInput = z.input<typeof familiaSchema>;
 export type FamiliaFormData = z.output<typeof familiaSchema>;

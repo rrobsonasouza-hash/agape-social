@@ -497,7 +497,7 @@ export default function DistribuicaoCestasPage() {
                 <p className="font-semibold text-slate-900">
                   {item.familiaNome}
                 </p>
-                <div className="mt-1 grid grid-cols-2 gap-x-5 text-xs text-slate-600">
+                <div className="mt-1 grid gap-x-5 gap-y-1 text-xs text-slate-600 sm:grid-cols-3">
                   <span>
                     <b className="mr-1 text-slate-500">CPF:</b>
                     {familiasPorId.get(item.familiaId)?.cpf || "Não informado"}
@@ -505,6 +505,11 @@ export default function DistribuicaoCestasPage() {
                   <span>
                     <b className="mr-1 text-slate-500">RG:</b>
                     {familiasPorId.get(item.familiaId)?.rg || "Não informado"}
+                  </span>
+                  <span>
+                    <b className="mr-1 text-slate-500">Autorizado:</b>
+                    {familiasPorId.get(item.familiaId)
+                      ?.pessoaAutorizadaRetirada || "Responsável"}
                   </span>
                 </div>
                 <StatusBadge status={item.status} />

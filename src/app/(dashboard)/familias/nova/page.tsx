@@ -39,6 +39,7 @@ export default function NovaFamiliaPage() {
       status: "ATIVA",
       cpf: "",
       rg: "",
+      pessoaAutorizadaRetirada: "",
       cep: "",
       logradouro: "",
       numero: "",
@@ -130,6 +131,13 @@ export default function NovaFamiliaPage() {
             />
 
             <TextField
+              label="Pessoa autorizada a retirar a cesta"
+              placeholder="Nome completo (opcional)"
+              {...register("pessoaAutorizadaRetirada")}
+              error={errors.pessoaAutorizadaRetirada?.message}
+            />
+
+            <TextField
               label="E-mail"
               type="email"
               placeholder="email@exemplo.com"
@@ -164,7 +172,22 @@ export default function NovaFamiliaPage() {
               {...register("quantidadeMoradores")}
               error={errors.quantidadeMoradores?.message}
             />
-            <Controller name="rendaFamiliar" control={control} render={({ field }) => <TextField label="Renda familiar" type="text" inputMode="numeric" value={formatMoeda(Number(field.value || 0))} onChange={(event) => field.onChange(parseMoeda(event.target.value))} error={errors.rendaFamiliar?.message} />} />
+            <Controller
+              name="rendaFamiliar"
+              control={control}
+              render={({ field }) => (
+                <TextField
+                  label="Renda familiar"
+                  type="text"
+                  inputMode="numeric"
+                  value={formatMoeda(Number(field.value || 0))}
+                  onChange={(event) =>
+                    field.onChange(parseMoeda(event.target.value))
+                  }
+                  error={errors.rendaFamiliar?.message}
+                />
+              )}
+            />
           </div>
           <div className="mt-4">
             <TextAreaField
@@ -177,8 +200,32 @@ export default function NovaFamiliaPage() {
           </div>
         </FormSection>
 
-        <FormSection title="Privacidade e consentimento" description="Registre a autorização da família para o tratamento dos dados pessoais.">
-          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4"><input type="checkbox" {...register("consentimentoLgpd")} className="mt-1 h-5 w-5 rounded border-blue-300"/><span><strong className="block text-slate-900">Consentimento informado</strong><span className="mt-1 block text-sm text-slate-600">Confirmo que a família foi informada de que seus dados serão utilizados somente para atendimento pastoral e social, controle de benefícios e registros necessários da paróquia.</span></span></label>{errors.consentimentoLgpd?.message&&<p className="mt-2 text-sm text-red-600">{errors.consentimentoLgpd.message}</p>}
+        <FormSection
+          title="Privacidade e consentimento"
+          description="Registre a autorização da família para o tratamento dos dados pessoais."
+        >
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
+            <input
+              type="checkbox"
+              {...register("consentimentoLgpd")}
+              className="mt-1 h-5 w-5 rounded border-blue-300"
+            />
+            <span>
+              <strong className="block text-slate-900">
+                Consentimento informado
+              </strong>
+              <span className="mt-1 block text-sm text-slate-600">
+                Confirmo que a família foi informada de que seus dados serão
+                utilizados somente para atendimento pastoral e social, controle
+                de benefícios e registros necessários da paróquia.
+              </span>
+            </span>
+          </label>
+          {errors.consentimentoLgpd?.message && (
+            <p className="mt-2 text-sm text-red-600">
+              {errors.consentimentoLgpd.message}
+            </p>
+          )}
         </FormSection>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
@@ -190,10 +237,7 @@ export default function NovaFamiliaPage() {
             Cancelar
           </Button>
 
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-          >
+          <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Salvando..." : "Salvar Família"}
           </Button>
         </div>
