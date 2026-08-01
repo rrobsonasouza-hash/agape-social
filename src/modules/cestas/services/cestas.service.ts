@@ -160,6 +160,28 @@ export class CestasService {
     });
   }
 
+  devolverCestas(campanhaId: string, quantidade: number, familiaNome: string) {
+    if (!Number.isInteger(quantidade) || quantidade <= 0)
+      throw new Error("Informe uma quantidade válida.");
+    return this.criarMovimentacao({
+      campanhaId,
+      tipo: "CESTA_PRONTA",
+      origem: "COMPRA_PAROQUIA",
+      operacao: "ENTRADA",
+      doadorId: "",
+      doadorNome: "",
+      itemId: "",
+      itemNome: "",
+      quantidade,
+      unidade: "cesta",
+      valorTotal: 0,
+      data: new Date().toISOString().slice(0, 10),
+      observacoes: `Estorno de baixa de entrega para ${familiaNome}.`,
+      familiaId: "",
+      familiaNome: "",
+    });
+  }
+
   async doarExcedentes(
     campanhaId: string,
     quantidade: number,

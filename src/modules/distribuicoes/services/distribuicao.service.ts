@@ -1,22 +1,32 @@
 import { CestasService } from "@/modules/cestas/services/cestas.service";
 import { FamiliaRepository } from "@/modules/familias/repositories/familia.repository";
 import { DistribuicaoRepository } from "../repositories/distribuicao.repository";
-import { distribuicaoSchema, DistribuicaoData, StatusDistribuicao } from "../schemas/distribuicao.schema";
+import {
+  distribuicaoSchema,
+  DistribuicaoData,
+  StatusDistribuicao,
+} from "../schemas/distribuicao.schema";
 
 export class DistribuicaoService {
   private repository = new DistribuicaoRepository();
   private familias = new FamiliaRepository();
   private cestas = new CestasService();
 
-  listarPorData(data: string) { return this.repository.listarPorData(data); }
+  listarPorData(data: string) {
+    return this.repository.listarPorData(data);
+  }
 
   async agendar(data: DistribuicaoData) {
     const validado = distribuicaoSchema.parse(data);
     const familia = await this.familias.buscarPorId(validado.familiaId);
     if (!familia) throw new Error("Família não encontrada.");
-    if (familia.beneficioBloqueado) throw new Error("Esta família está bloqueada por três faltas consecutivas.");
+    if (familia.beneficioBloqueado)
+      throw new Error(
+        "Esta família está bloqueada por três faltas consecutivas.",
+      );
     const lista = await this.repository.listarPorData(validado.data);
-    if (lista.some((item) => item.familiaId === validado.familiaId)) throw new Error("A família já está nesta lista.");
+    if (lista.some((item) => item.familiaId === validado.familiaId))
+      throw new Error("A família já está nesta lista.");
     return this.repository.agendar(validado);
   }
 
@@ -31,7 +41,7 @@ export class DistribuicaoService {
       (familia) =>
         familia.status === "ATIVA" &&
         !familia.beneficioBloqueado &&
-        !existentes.has(familia.id)
+        !existentes.has(familia.id),
     );
     await this.repository.agendarMuitas(
       elegiveis.map((familia) => ({
@@ -41,12 +51,19 @@ export class DistribuicaoService {
         familiaNome: familia.nomeResponsavel,
         quantidade: 1,
         status: "AGENDADA",
-      }))
+      })),
     );
     return { adicionadas: elegiveis.length };
   }
 
-  async remarcar(id: string, data: string) { const registro = await this.repository.buscarPorId(id); if (!registro) throw new Error("Registro não encontrado."); if (registro.status !== "AGENDADA") throw new Error("Somente distribuições agendadas podem ser remarcadas."); if (!data) throw new Error("Informe a nova data."); return this.repository.alterarData(id, data); }
+  async remarcar(id: string, data: string) {
+    const registro = await this.repository.buscarPorId(id);
+    if (!registro) throw new Error("Registro não encontrado.");
+    if (registro.status !== "AGENDADA")
+      throw new Error("Somente distribuições agendadas podem ser remarcadas.");
+    if (!data) throw new Error("Informe a nova data.");
+    return this.repository.alterarData(id, data);
+  }
 
   async remarcarTodas(ids: string[], data: string) {
     if (!data) throw new Error("Informe a nova data.");
@@ -61,17 +78,51 @@ export class DistribuicaoService {
   async marcar(id: string, status: Exclude<StatusDistribuicao, "AGENDADA">) {
     const registro = await this.repository.buscarPorId(id);
     if (!registro) throw new Error("Registro não encontrado.");
-    if (registro.status !== "AGENDADA") throw new Error("Este atendimento já foi finalizado.");
+    if (registro.status !== "AGENDADA")
+      throw new Error("Este atendimento já foi finalizado.");
     const familia = await this.familias.buscarPorId(registro.familiaId);
     if (!familia) throw new Error("Família não encontrada.");
 
     if (status === "RETIRADA" || status === "ENTREGUE_DOMICILIO") {
-      await this.cestas.entregarCestas(registro.campanhaId, registro.quantidade, registro.familiaId, registro.familiaNome);
-      await this.familias.atualizarControleBeneficio(registro.familiaId, { beneficioBloqueado: false, faltasConsecutivas: 0, motivoBloqueio: "" });
+      await this.cestas.entregarCestas(
+        registro.campanhaId,
+        registro.quantidade,
+        registro.familiaId,
+        registro.familiaNome,
+      );
+      await this.familias.atualizarControleBeneficio(registro.familiaId, {
+        beneficioBloqueado: false,
+        faltasConsecutivas: 0,
+        motivoBloqueio: "",
+      });
     } else {
       const faltas = (familia.faltasConsecutivas ?? 0) + 1;
-      await this.familias.atualizarControleBeneficio(registro.familiaId, { beneficioBloqueado: faltas >= 3, faltasConsecutivas: faltas, motivoBloqueio: faltas >= 3 ? "Três ausências consecutivas na retirada de cestas." : "" });
+      await this.familias.atualizarControleBeneficio(registro.familiaId, {
+        beneficioBloqueado: faltas >= 3,
+        faltasConsecutivas: faltas,
+        motivoBloqueio:
+          faltas >= 3
+            ? "Três ausências consecutivas na retirada de cestas."
+            : "",
+      });
     }
     await this.repository.alterarStatus(id, status);
+  }
+
+  async desfazerBaixa(id: string) {
+    const registro = await this.repository.buscarPorId(id);
+    if (!registro) throw new Error("Registro não encontrado.");
+    if (
+      registro.status !== "RETIRADA" &&
+      registro.status !== "ENTREGUE_DOMICILIO"
+    ) {
+      throw new Error("Somente baixas de entrega podem ser desfeitas.");
+    }
+    await this.cestas.devolverCestas(
+      registro.campanhaId,
+      registro.quantidade,
+      registro.familiaNome,
+    );
+    await this.repository.alterarStatus(id, "AGENDADA");
   }
 }
