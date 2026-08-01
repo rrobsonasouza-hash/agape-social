@@ -16,6 +16,7 @@ import {
   Phone,
   Power,
   RotateCcw,
+  Trash2,
   User,
   Users,
   Wallet,
@@ -49,21 +50,19 @@ export default function DetalhesFamiliaPage() {
   const router = useRouter();
 
   const { buscarPorId, alterarStatus } = useFamilias();
-  const { listarPorEntidade, obterUrlVisualizacao } = useDocumentos();
+  const { listarPorEntidade, obterUrlVisualizacao, remover } = useDocumentos();
   const { paroquia } = useParoquia();
   const { listar: listarAreasPastorais } = useAreasPastorais();
   const { listarPorFamilia: listarVisitasPorFamilia } = useVisitas();
   const { listarMovimentacoes } = useCestas();
 
-  const [familia, setFamilia] =
-    useState<FamiliaDocumento | null>(null);
+  const [familia, setFamilia] = useState<FamiliaDocumento | null>(null);
 
-  const [carregando, setCarregando] =
-    useState(true);
+  const [carregando, setCarregando] = useState(true);
 
-  const [alterandoStatus, setAlterandoStatus] =
-    useState(false);
+  const [alterandoStatus, setAlterandoStatus] = useState(false);
   const [documentos, setDocumentos] = useState<Documento[]>([]);
+  const [removendoDocumento, setRemovendoDocumento] = useState("");
   const [areaPastoral, setAreaPastoral] =
     useState<AreaPastoralDocumento | null>(null);
   const [visitas, setVisitas] = useState<VisitaDocumento[]>([]);
@@ -95,8 +94,8 @@ export default function DetalhesFamiliaPage() {
               (movimento) =>
                 movimento.familiaId === params.id &&
                 movimento.tipo === "CESTA_PRONTA" &&
-                movimento.operacao === "SAIDA"
-            )
+                movimento.operacao === "SAIDA",
+            ),
           );
         } catch (error) {
           console.error("Erro ao carregar benefícios:", error);
@@ -116,8 +115,8 @@ export default function DetalhesFamiliaPage() {
                     latitude: dados.latitude!,
                     longitude: dados.longitude!,
                   },
-                  area.poligono
-                )
+                  area.poligono,
+                ),
             );
             setAreaPastoral(areaEncontrada ?? null);
           } catch (error) {
@@ -128,7 +127,7 @@ export default function DetalhesFamiliaPage() {
         try {
           const documentosDaFamilia = await listarPorEntidade(
             "FAMILIA",
-            params.id
+            params.id,
           );
           setDocumentos(documentosDaFamilia);
         } catch (error) {
@@ -136,21 +135,24 @@ export default function DetalhesFamiliaPage() {
           toast.error("Os documentos da família não puderam ser carregados.");
         }
       } catch (error) {
-        console.error(
-          "Erro ao carregar a família:",
-          error
-        );
+        console.error("Erro ao carregar a família:", error);
 
-        toast.error(
-          "Não foi possível carregar os dados da família."
-        );
+        toast.error("Não foi possível carregar os dados da família.");
       } finally {
         setCarregando(false);
       }
     }
 
     carregarFamilia();
-  }, [buscarPorId, listarAreasPastorais, listarMovimentacoes, listarPorEntidade, listarVisitasPorFamilia, params.id, router]);
+  }, [
+    buscarPorId,
+    listarAreasPastorais,
+    listarMovimentacoes,
+    listarPorEntidade,
+    listarVisitasPorFamilia,
+    params.id,
+    router,
+  ]);
 
   async function abrirDocumento(documento: Documento) {
     try {
@@ -162,24 +164,39 @@ export default function DetalhesFamiliaPage() {
     }
   }
 
+  async function removerDocumento(documento: Documento) {
+    if (
+      !window.confirm(
+        `Excluir o documento “${documento.nomeOriginal}”? Esta ação remove o arquivo e permite enviar o documento correto em seguida.`,
+      )
+    )
+      return;
+    try {
+      setRemovendoDocumento(documento.id);
+      await remover(documento);
+      setDocumentos(await listarPorEntidade("FAMILIA", params.id));
+      toast.success("Documento excluído. Agora envie o arquivo correto.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível excluir o documento.",
+      );
+    } finally {
+      setRemovendoDocumento("");
+    }
+  }
+
   async function alternarStatus() {
     if (!familia) {
       return;
     }
 
-    const novoStatus =
-      familia.status === "ATIVA"
-        ? "INATIVA"
-        : "ATIVA";
+    const novoStatus = familia.status === "ATIVA" ? "INATIVA" : "ATIVA";
 
-    const acao =
-      novoStatus === "INATIVA"
-        ? "inativar"
-        : "reativar";
+    const acao = novoStatus === "INATIVA" ? "inativar" : "reativar";
 
-    const confirmado = window.confirm(
-      `Deseja realmente ${acao} esta família?`
-    );
+    const confirmado = window.confirm(`Deseja realmente ${acao} esta família?`);
 
     if (!confirmado) {
       return;
@@ -188,10 +205,7 @@ export default function DetalhesFamiliaPage() {
     try {
       setAlterandoStatus(true);
 
-      await alterarStatus(
-        familia.id,
-        novoStatus
-      );
+      await alterarStatus(familia.id, novoStatus);
 
       setFamilia({
         ...familia,
@@ -201,17 +215,12 @@ export default function DetalhesFamiliaPage() {
       toast.success(
         novoStatus === "ATIVA"
           ? "Família reativada com sucesso!"
-          : "Família inativada com sucesso!"
+          : "Família inativada com sucesso!",
       );
     } catch (error) {
-      console.error(
-        "Erro ao alterar status da família:",
-        error
-      );
+      console.error("Erro ao alterar status da família:", error);
 
-      toast.error(
-        "Não foi possível alterar o status da família."
-      );
+      toast.error("Não foi possível alterar o status da família.");
     } finally {
       setAlterandoStatus(false);
     }
@@ -220,9 +229,7 @@ export default function DetalhesFamiliaPage() {
   if (carregando) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
-        <p className="text-slate-500">
-          Carregando dados da família...
-        </p>
+        <p className="text-slate-500">Carregando dados da família...</p>
       </div>
     );
   }
@@ -231,8 +238,7 @@ export default function DetalhesFamiliaPage() {
     return null;
   }
 
-  const familiaAtiva =
-    familia.status === "ATIVA";
+  const familiaAtiva = familia.status === "ATIVA";
 
   const enderecoCompleto = [
     familia.logradouro,
@@ -245,17 +251,15 @@ export default function DetalhesFamiliaPage() {
     .filter(Boolean)
     .join(", ");
 
-  const rendaFormatada = Number(
-    familia.rendaFamiliar || 0
-  ).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
+  const rendaFormatada = Number(familia.rendaFamiliar || 0).toLocaleString(
+    "pt-BR",
+    {
+      style: "currency",
+      currency: "BRL",
+    },
+  );
 
-  const subtitulo = [
-    "Responsável familiar",
-    familia.cidade || undefined,
-  ]
+  const subtitulo = ["Responsável familiar", familia.cidade || undefined]
     .filter(Boolean)
     .join(" • ");
 
@@ -271,12 +275,12 @@ export default function DetalhesFamiliaPage() {
           {
             latitude: familia.latitude,
             longitude: familia.longitude,
-          }
+          },
         )
       : null;
 
   const ultimaVisitaRealizada = visitas.find(
-    (visita) => visita.status === "REALIZADA"
+    (visita) => visita.status === "REALIZADA",
   );
 
   const formatarDataVisita = (data: string) => {
@@ -288,9 +292,7 @@ export default function DetalhesFamiliaPage() {
     <div className="space-y-6">
       <button
         type="button"
-        onClick={() =>
-          router.push("/familias")
-        }
+        onClick={() => router.push("/familias")}
         className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 transition hover:text-blue-900"
       >
         <ArrowLeft size={18} />
@@ -308,11 +310,7 @@ export default function DetalhesFamiliaPage() {
             <Button
               type="button"
               className="flex items-center justify-center gap-2"
-              onClick={() =>
-                router.push(
-                  `/familias/${familia.id}/editar`
-                )
-              }
+              onClick={() => router.push(`/familias/${familia.id}/editar`)}
             >
               <Pencil size={18} />
               Editar
@@ -328,11 +326,7 @@ export default function DetalhesFamiliaPage() {
                   : "bg-green-600 hover:bg-green-700"
               }`}
             >
-              {familiaAtiva ? (
-                <Power size={18} />
-              ) : (
-                <RotateCcw size={18} />
-              )}
+              {familiaAtiva ? <Power size={18} /> : <RotateCcw size={18} />}
 
               {alterandoStatus
                 ? "Atualizando..."
@@ -348,25 +342,20 @@ export default function DetalhesFamiliaPage() {
         items={[
           {
             label: "Moradores",
-            value:
-              familia.quantidadeMoradores ||
-              1,
-            description:
-              "Pessoas no núcleo familiar",
+            value: familia.quantidadeMoradores || 1,
+            description: "Pessoas no núcleo familiar",
             icon: Users,
           },
           {
             label: "Renda familiar",
             value: rendaFormatada,
-            description:
-              "Renda mensal informada",
+            description: "Renda mensal informada",
             icon: Wallet,
           },
           {
             label: "Documentos",
             value: documentos.length,
-            description:
-              "Arquivos anexados",
+            description: "Arquivos anexados",
             icon: FileText,
           },
           {
@@ -374,8 +363,7 @@ export default function DetalhesFamiliaPage() {
             value: ultimaVisitaRealizada
               ? formatarDataVisita(ultimaVisitaRealizada.data)
               : "Pendente",
-            description:
-              "Acompanhamento pastoral",
+            description: "Acompanhamento pastoral",
             icon: CalendarCheck,
           },
         ]}
@@ -383,14 +371,11 @@ export default function DetalhesFamiliaPage() {
 
       {!familiaAtiva && (
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-800">
-          <p className="font-semibold">
-            Esta família está inativa.
-          </p>
+          <p className="font-semibold">Esta família está inativa.</p>
 
           <p className="mt-1 text-sm">
-            O histórico foi preservado, mas ela
-            não será considerada nos indicadores
-            de famílias ativas.
+            O histórico foi preservado, mas ela não será considerada nos
+            indicadores de famílias ativas.
           </p>
         </div>
       )}
@@ -399,7 +384,8 @@ export default function DetalhesFamiliaPage() {
         <div className="rounded-xl border border-red-300 bg-red-50 p-4 text-red-900">
           <p className="font-semibold">Benefício bloqueado</p>
           <p className="mt-1 text-sm">
-            {familia.motivoBloqueio || "A família atingiu o limite de ausências consecutivas."}
+            {familia.motivoBloqueio ||
+              "A família atingiu o limite de ausências consecutivas."}
           </p>
         </div>
       )}
@@ -411,15 +397,10 @@ export default function DetalhesFamiliaPage() {
         >
           <dl className="space-y-5">
             <div className="flex items-start gap-3">
-              <User
-                size={20}
-                className="mt-1 shrink-0 text-blue-600"
-              />
+              <User size={20} className="mt-1 shrink-0 text-blue-600" />
 
               <div>
-                <dt className="text-sm text-slate-500">
-                  Nome completo
-                </dt>
+                <dt className="text-sm text-slate-500">Nome completo</dt>
 
                 <dd className="font-medium text-slate-900">
                   {familia.nomeResponsavel}
@@ -428,19 +409,13 @@ export default function DetalhesFamiliaPage() {
             </div>
 
             <div>
-              <dt className="text-sm text-slate-500">
-                CPF
-              </dt>
+              <dt className="text-sm text-slate-500">CPF</dt>
 
-              <dd className="font-medium text-slate-900">
-                {familia.cpf}
-              </dd>
+              <dd className="font-medium text-slate-900">{familia.cpf}</dd>
             </div>
 
             <div>
-              <dt className="text-sm text-slate-500">
-                RG
-              </dt>
+              <dt className="text-sm text-slate-500">RG</dt>
 
               <dd className="font-medium text-slate-900">
                 {familia.rg || "Não informado"}
@@ -448,15 +423,10 @@ export default function DetalhesFamiliaPage() {
             </div>
 
             <div className="flex items-start gap-3">
-              <Phone
-                size={20}
-                className="mt-1 shrink-0 text-blue-600"
-              />
+              <Phone size={20} className="mt-1 shrink-0 text-blue-600" />
 
               <div>
-                <dt className="text-sm text-slate-500">
-                  Telefone
-                </dt>
+                <dt className="text-sm text-slate-500">Telefone</dt>
 
                 <dd className="font-medium text-slate-900">
                   {familia.telefone}
@@ -465,19 +435,13 @@ export default function DetalhesFamiliaPage() {
             </div>
 
             <div className="flex items-start gap-3">
-              <Mail
-                size={20}
-                className="mt-1 shrink-0 text-blue-600"
-              />
+              <Mail size={20} className="mt-1 shrink-0 text-blue-600" />
 
               <div>
-                <dt className="text-sm text-slate-500">
-                  E-mail
-                </dt>
+                <dt className="text-sm text-slate-500">E-mail</dt>
 
                 <dd className="break-all font-medium text-slate-900">
-                  {familia.email ||
-                    "Não informado"}
+                  {familia.email || "Não informado"}
                 </dd>
               </div>
             </div>
@@ -490,10 +454,7 @@ export default function DetalhesFamiliaPage() {
         >
           <dl className="space-y-5">
             <div className="flex items-start gap-3">
-              <Users
-                size={20}
-                className="mt-1 shrink-0 text-blue-600"
-              />
+              <Users size={20} className="mt-1 shrink-0 text-blue-600" />
 
               <div>
                 <dt className="text-sm text-slate-500">
@@ -501,37 +462,26 @@ export default function DetalhesFamiliaPage() {
                 </dt>
 
                 <dd className="font-medium text-slate-900">
-                  {familia.quantidadeMoradores ||
-                    1}
+                  {familia.quantidadeMoradores || 1}
                 </dd>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <Wallet
-                size={20}
-                className="mt-1 shrink-0 text-blue-600"
-              />
+              <Wallet size={20} className="mt-1 shrink-0 text-blue-600" />
 
               <div>
-                <dt className="text-sm text-slate-500">
-                  Renda familiar
-                </dt>
+                <dt className="text-sm text-slate-500">Renda familiar</dt>
 
-                <dd className="font-medium text-slate-900">
-                  {rendaFormatada}
-                </dd>
+                <dd className="font-medium text-slate-900">{rendaFormatada}</dd>
               </div>
             </div>
 
             <div>
-              <dt className="text-sm text-slate-500">
-                Observações
-              </dt>
+              <dt className="text-sm text-slate-500">Observações</dt>
 
               <dd className="mt-1 whitespace-pre-line text-slate-900">
-                {familia.observacoes ||
-                  "Nenhuma observação registrada."}
+                {familia.observacoes || "Nenhuma observação registrada."}
               </dd>
             </div>
           </dl>
@@ -543,21 +493,15 @@ export default function DetalhesFamiliaPage() {
         description="Localização atual da família."
       >
         <div className="flex items-start gap-3">
-          <MapPin
-            size={22}
-            className="mt-1 shrink-0 text-blue-600"
-          />
+          <MapPin size={22} className="mt-1 shrink-0 text-blue-600" />
 
           <div>
             <p className="font-medium text-slate-900">
-              {enderecoCompleto ||
-                "Endereço ainda não informado."}
+              {enderecoCompleto || "Endereço ainda não informado."}
             </p>
 
             {familia.cep && (
-              <p className="mt-1 text-sm text-slate-500">
-                CEP: {familia.cep}
-              </p>
+              <p className="mt-1 text-sm text-slate-500">CEP: {familia.cep}</p>
             )}
           </div>
         </div>
@@ -598,7 +542,8 @@ export default function DetalhesFamiliaPage() {
                     : "Família fora da área de atendimento"}
                 </p>
                 <p className="mt-1">
-                  Distância em linha reta: {distanciaPastoralKm.toFixed(1)} km. Raio configurado: {paroquia!.raioAtendimentoKm} km.
+                  Distância em linha reta: {distanciaPastoralKm.toFixed(1)} km.
+                  Raio configurado: {paroquia!.raioAtendimentoKm} km.
                 </p>
               </div>
             )}
@@ -649,25 +594,43 @@ export default function DetalhesFamiliaPage() {
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => abrirDocumento(documento)}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50"
-                >
-                  <Download size={17} aria-hidden="true" />
-                  Abrir
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => abrirDocumento(documento)}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-blue-200 px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                  >
+                    <Download size={17} aria-hidden="true" />
+                    Abrir
+                  </button>
+                  <button
+                    type="button"
+                    disabled={removendoDocumento === documento.id}
+                    onClick={() => void removerDocumento(documento)}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Trash2 size={17} aria-hidden="true" />
+                    {removendoDocumento === documento.id
+                      ? "Excluindo..."
+                      : "Excluir / substituir"}
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
         ) : (
           <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center">
-            <FileText size={36} aria-hidden="true" className="mx-auto text-slate-300" />
+            <FileText
+              size={36}
+              aria-hidden="true"
+              className="mx-auto text-slate-300"
+            />
             <p className="mt-4 font-medium text-slate-700">
               Nenhum documento anexado.
             </p>
             <p className="mt-2 text-sm text-slate-500">
-              Os documentos da família aparecerão aqui quando o envio estiver habilitado.
+              Os documentos da família aparecerão aqui quando o envio estiver
+              habilitado.
             </p>
           </div>
         )}
@@ -680,17 +643,17 @@ export default function DetalhesFamiliaPage() {
         <Timeline
           items={[
             ...visitas.map((visita) => ({
-            title: visita.objetivo,
-            description:
-              visita.observacoes ||
-              (visita.status === "AGENDADA"
-                ? "Visita pastoral agendada."
-                : visita.status === "REALIZADA"
-                  ? "Visita pastoral concluída."
-                  : "Visita pastoral cancelada."),
-            date: `${formatarDataVisita(visita.data)} às ${visita.horario}`,
-            metadata: `${visita.voluntarioNome || "Responsável a definir"} • ${visita.status.toLowerCase()}`,
-            icon: CalendarCheck,
+              title: visita.objetivo,
+              description:
+                visita.observacoes ||
+                (visita.status === "AGENDADA"
+                  ? "Visita pastoral agendada."
+                  : visita.status === "REALIZADA"
+                    ? "Visita pastoral concluída."
+                    : "Visita pastoral cancelada."),
+              date: `${formatarDataVisita(visita.data)} às ${visita.horario}`,
+              metadata: `${visita.voluntarioNome || "Responsável a definir"} • ${visita.status.toLowerCase()}`,
+              icon: CalendarCheck,
             })),
             ...entregas.map((entrega) => ({
               title: "Entrega de cesta básica",
