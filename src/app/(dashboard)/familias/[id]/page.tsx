@@ -62,7 +62,9 @@ export default function DetalhesFamiliaPage() {
 
   const [alterandoStatus, setAlterandoStatus] = useState(false);
   const [documentos, setDocumentos] = useState<Documento[]>([]);
-  const [removendoDocumento, setRemovendoDocumento] = useState("");
+  const [removendoDocumento, setRemovendoDocumento] = useState<
+    string | undefined
+  >("");
   const [areaPastoral, setAreaPastoral] =
     useState<AreaPastoralDocumento | null>(null);
   const [visitas, setVisitas] = useState<VisitaDocumento[]>([]);
