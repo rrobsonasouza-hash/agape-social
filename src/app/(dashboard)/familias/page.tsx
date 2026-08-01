@@ -6,10 +6,7 @@ import { Eye, Plus, Search } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { Card } from "@/components/forms/Card";
-import {
-  DataTable,
-  DataTableColumn,
-} from "@/components/ui/DataTable";
+import { DataTable, DataTableColumn } from "@/components/ui/DataTable";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
@@ -21,6 +18,9 @@ export default function FamiliasPage() {
 
   const [familias, setFamilias] = useState<FamiliaDocumento[]>([]);
   const [pesquisa, setPesquisa] = useState("");
+  const [ordenacao, setOrdenacao] = useState<
+    "nome-asc" | "nome-desc" | "cidade-asc" | "status-asc"
+  >("nome-asc");
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
@@ -40,18 +40,25 @@ export default function FamiliasPage() {
   }, [listar]);
 
   const familiasFiltradas = useMemo(() => {
-    const termo = pesquisa.trim().toLowerCase();
+    const normalizar = (valor?: string | null) =>
+      (valor ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase("pt-BR");
+    const termo = normalizar(pesquisa.trim());
+    const comparador = new Intl.Collator("pt-BR", {
+      sensitivity: "base",
+      numeric: true,
+    });
 
-    if (!termo) {
-      return familias;
-    }
+    const filtradas = familias.filter((familia) => {
+      if (!termo) return true;
 
-    return familias.filter((familia) => {
-      const nome = familia.nomeResponsavel?.toLowerCase() ?? "";
-      const cpf = familia.cpf?.toLowerCase() ?? "";
-      const rg = familia.rg?.toLowerCase() ?? "";
-      const telefone = familia.telefone?.toLowerCase() ?? "";
-      const cidade = familia.cidade?.toLowerCase() ?? "";
+      const nome = normalizar(familia.nomeResponsavel);
+      const cpf = normalizar(familia.cpf);
+      const rg = normalizar(familia.rg);
+      const telefone = normalizar(familia.telefone);
+      const cidade = normalizar(familia.cidade);
 
       return (
         nome.includes(termo) ||
@@ -61,7 +68,42 @@ export default function FamiliasPage() {
         cidade.includes(termo)
       );
     });
-  }, [familias, pesquisa]);
+
+    return filtradas.sort((primeira, segunda) => {
+      if (ordenacao === "nome-desc") {
+        return comparador.compare(
+          segunda.nomeResponsavel,
+          primeira.nomeResponsavel,
+        );
+      }
+
+      if (ordenacao === "cidade-asc") {
+        const porCidade = comparador.compare(
+          primeira.cidade || "\uffff",
+          segunda.cidade || "\uffff",
+        );
+
+        return (
+          porCidade ||
+          comparador.compare(primeira.nomeResponsavel, segunda.nomeResponsavel)
+        );
+      }
+
+      if (ordenacao === "status-asc") {
+        const porStatus = comparador.compare(primeira.status, segunda.status);
+
+        return (
+          porStatus ||
+          comparador.compare(primeira.nomeResponsavel, segunda.nomeResponsavel)
+        );
+      }
+
+      return comparador.compare(
+        primeira.nomeResponsavel,
+        segunda.nomeResponsavel,
+      );
+    });
+  }, [familias, ordenacao, pesquisa]);
 
   const colunas: DataTableColumn<FamiliaDocumento>[] = [
     {
@@ -83,15 +125,12 @@ export default function FamiliasPage() {
     {
       key: "cidade",
       title: "Cidade",
-      render: (familia) =>
-        familia.cidade || "Não informada",
+      render: (familia) => familia.cidade || "Não informada",
     },
     {
       key: "status",
       title: "Status",
-      render: (familia) => (
-        <StatusBadge status={familia.status} />
-      ),
+      render: (familia) => <StatusBadge status={familia.status} />,
     },
     {
       key: "acoes",
@@ -136,16 +175,35 @@ export default function FamiliasPage() {
           <input
             type="search"
             value={pesquisa}
-            onChange={(event) =>
-              setPesquisa(event.target.value)
-            }
+            onChange={(event) => setPesquisa(event.target.value)}
             className="w-full rounded-lg border border-slate-300 py-3 pl-12 pr-4 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             placeholder="Pesquisar por nome, CPF, RG, telefone ou cidade..."
           />
         </div>
       </Card>
 
-      <Card title="Famílias cadastradas">
+      <Card>
+        <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+          <h2 className="text-xl font-semibold">Famílias cadastradas</h2>
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-600">
+            Ordenar por
+            <select
+              value={ordenacao}
+              onChange={(event) =>
+                setOrdenacao(
+                  event.target.value as
+                    "nome-asc" | "nome-desc" | "cidade-asc" | "status-asc",
+                )
+              }
+              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            >
+              <option value="nome-asc">Nome (A–Z)</option>
+              <option value="nome-desc">Nome (Z–A)</option>
+              <option value="cidade-asc">Cidade (A–Z)</option>
+              <option value="status-asc">Status</option>
+            </select>
+          </label>
+        </div>
         <DataTable
           data={familiasFiltradas}
           columns={colunas}
