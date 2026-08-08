@@ -1,26 +1,8 @@
 import Link from "next/link";
-
+import { BookOpen, CheckCircle2, HeartHandshake, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
 
 export default function HomePage() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-6">
-      <div className="max-w-lg space-y-3 text-center">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          {siteConfig.nome}
-        </h1>
-        <p className="text-muted-foreground">{siteConfig.descricao}</p>
-      </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <Button asChild>
-          <Link href="/login">Entrar</Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <Link href="/dashboard">Painel</Link>
-        </Button>
-      </div>
-    </main>
-  );
+  return <main className="min-h-screen overflow-hidden bg-slate-50 text-slate-950"><section className="mx-auto grid min-h-screen max-w-7xl items-center gap-12 px-6 py-16 lg:grid-cols-[1.05fr_.95fr]"><div><div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-4 py-2 text-xs font-bold text-blue-700 shadow-sm"><HeartHandshake size={16}/>Tecnologia a serviço da Caridade</div><h1 className="mt-6 max-w-3xl text-4xl font-black leading-tight tracking-tight sm:text-6xl">Gestão social com <span className="text-blue-600">clareza, cuidado e continuidade.</span></h1><p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">{siteConfig.descricao} Centralize famílias, distribuições, estoque, visitas, secretaria e tesouraria em uma única plataforma.</p><div className="mt-8 flex flex-col gap-3 sm:flex-row"><Button asChild className="min-h-12 rounded-xl px-6 text-base"><Link href="/login">Entrar no Ágape</Link></Button><Button variant="outline" asChild className="min-h-12 rounded-xl px-6 text-base"><Link href="/dashboard">Conhecer o painel</Link></Button></div><div className="mt-8 flex flex-wrap gap-x-5 gap-y-3 text-sm font-medium text-slate-600"><span className="inline-flex items-center gap-2"><CheckCircle2 size={17} className="text-emerald-600"/>Dados por paróquia</span><span className="inline-flex items-center gap-2"><CheckCircle2 size={17} className="text-emerald-600"/>Acesso por perfil</span><span className="inline-flex items-center gap-2"><CheckCircle2 size={17} className="text-emerald-600"/>Histórico preservado</span></div></div><div className="relative"><div className="absolute -inset-8 rounded-[3rem] bg-blue-200/45 blur-3xl"/><section className="relative rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl shadow-blue-950/10 sm:p-8"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-black tracking-[.15em] text-blue-600">DIFERENCIAL ÁGAPE</p><h2 className="mt-2 text-3xl font-bold tracking-tight">Manual vivo e ilustrado</h2><p className="mt-3 leading-7 text-slate-600">Orientação visual que acompanha cada evolução do sistema.</p></div><span className="grid h-13 w-13 place-items-center rounded-2xl bg-blue-100 text-blue-700"><BookOpen size={27}/></span></div><div className="mt-7 rounded-2xl border bg-slate-50 p-4"><div className="flex items-center gap-2 border-b pb-3 text-xs font-bold text-slate-500"><i className="h-2 w-2 rounded-full bg-blue-400"/><i className="h-2 w-2 rounded-full bg-emerald-400"/><span className="ml-2">Guia de Famílias</span></div><div className="mt-4 grid gap-3"><p className="text-xs font-black tracking-[.12em] text-blue-600">PASSO A PASSO</p><div className="flex items-center gap-3 rounded-xl border bg-white p-3 text-sm text-slate-700"><span className="grid h-6 w-6 place-items-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">1</span>Cadastre a família e os documentos</div><div className="flex items-center gap-3 rounded-xl border bg-white p-3 text-sm text-slate-700"><span className="grid h-6 w-6 place-items-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">2</span>Localize o endereço pelo CEP</div><div className="flex items-center gap-3 rounded-xl border bg-white p-3 text-sm text-slate-700"><span className="grid h-6 w-6 place-items-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">3</span>Acompanhe atendimentos e entregas</div></div></div><div className="mt-6 grid gap-3 sm:grid-cols-2"><div className="rounded-xl bg-blue-50 p-4"><Sparkles size={18} className="text-blue-600"/><strong className="mt-2 block text-sm">Sempre atualizado</strong><p className="mt-1 text-xs leading-5 text-slate-600">Novas melhorias entram no guia junto com a entrega.</p></div><div className="rounded-xl bg-emerald-50 p-4"><ShieldCheck size={18} className="text-emerald-600"/><strong className="mt-2 block text-sm">Direto para a ação</strong><p className="mt-1 text-xs leading-5 text-slate-600">Cada orientação abre a rotina correspondente.</p></div></div></section></div></section></main>;
 }

@@ -22,6 +22,7 @@ export const permissoesPadrao: PermissoesPorPerfil = {
 function rotaNaArea(rota: string, area: string) { return rota === area || rota.startsWith(`${area}/`); }
 
 export function podeAcessarRota(role: Role, rota: string, personalizadas: PermissoesPorPerfil = permissoesPadrao) {
+  if (rotaNaArea(rota, "/manual")) return true;
   if (role === "atendente_secretaria") return rotaNaArea(rota, "/secretaria");
   if (role === "tesoureiro") return rotaNaArea(rota, "/tesouraria");
   if (role === "admin_plataforma") return true;

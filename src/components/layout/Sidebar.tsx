@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { BarChart3, ChevronDown, ChevronRight, ClipboardList, Gift, HandHeart, Handshake, HeartHandshake, History, KeyRound, Landmark, LayoutDashboard, MapPinned, Menu, Package, Route, Settings, ShieldCheck, ShoppingCart, Users, X } from "lucide-react";
+import { BarChart3, BookOpen, ChevronDown, ChevronRight, ClipboardList, Gift, HandHeart, Handshake, HeartHandshake, History, KeyRound, Landmark, LayoutDashboard, MapPinned, Menu, Package, Route, Settings, ShieldCheck, ShoppingCart, Users, X } from "lucide-react";
 import { podeAcessarRota } from "@/config/permissions";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 import { usePermissoes } from "@/modules/permissoes/hooks/usePermissoes";
@@ -23,6 +23,7 @@ const pastoral: Grupo = { id: "pastoral", title: "Pastoral Social", icon: HeartH
 const modulos: Item[] = [
   { title: "Secretaria", href: "/secretaria", icon: ShoppingCart },
   { title: "Tesouraria", href: "/tesouraria", icon: Landmark },
+  { title: "Manual do sistema", href: "/manual", icon: BookOpen },
 ];
 const administracao: Grupo = { id: "administracao", title: "Administração", icon: Settings, items: [
   { title: "Configurações da paróquia", href: "/administracao", icon: Settings },
@@ -36,7 +37,7 @@ export function Sidebar() {
   const pathname = usePathname(); const { usuario } = useAuth(); const { permissoes } = usePermissoes(); const { buscarContexto } = useParoquia(false);
   const [temParoquiaSelecionada, setTemParoquiaSelecionada] = useState(false); const [abertoMobile, setAbertoMobile] = useState(false); const [gruposAbertos, setGruposAbertos] = useState<string[]>(["pastoral"]);
   useEffect(() => { if (usuario?.role === "admin_plataforma") buscarContexto().then((paroquia) => setTemParoquiaSelecionada(Boolean(paroquia))).catch(() => setTemParoquiaSelecionada(false)); else setTemParoquiaSelecionada(Boolean(usuario)); }, [buscarContexto, usuario]);
-  const pode = useCallback((href: string) => Boolean(usuario && !(usuario.role === "admin_plataforma" && !temParoquiaSelecionada) && podeAcessarRota(usuario.role, href, permissoes)), [usuario, permissoes, temParoquiaSelecionada]);
+  const pode = useCallback((href: string) => Boolean(usuario && (href === "/manual" || !(usuario.role === "admin_plataforma" && !temParoquiaSelecionada)) && podeAcessarRota(usuario.role, href, permissoes)), [usuario, permissoes, temParoquiaSelecionada]);
   const grupos = useMemo(() => [pastoral, administracao].map(grupo => ({ ...grupo, items: grupo.items.filter(item => pode(item.href)) })).filter(grupo => grupo.items.length), [pode]);
   const diretos = [painel, ...modulos].filter(item => pode(item.href));
   useEffect(() => { const grupoAtual = grupos.find(grupo => grupo.items.some(item => rotaAtiva(pathname, item.href))); if (grupoAtual) setGruposAbertos(atuais => atuais.includes(grupoAtual.id) ? atuais : [...atuais, grupoAtual.id]); setAbertoMobile(false); }, [pathname, grupos]);
