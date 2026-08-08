@@ -1,4 +1,8 @@
+"use client";
+
+import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -13,6 +17,8 @@ import {
   Sparkles,
   UsersRound,
   WalletCards,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { siteConfig } from "@/config/site";
@@ -25,6 +31,62 @@ const differentials = [
   { icon: FileCheck2, title: "Histórico que permanece", text: "Visitas, documentos, solicitações e atendimentos preservados para que o cuidado não recomece do zero." },
   { icon: ShieldCheck, title: "Acesso responsável", text: "Dados isolados por paróquia, permissões por perfil e trilha de auditoria para uma operação segura." },
 ];
+
+const churchImages = [
+  { src: "/images/igrejas/igreja-1.png", alt: "Igreja católica com torre e vitrais" },
+  { src: "/images/igrejas/igreja-2.png", alt: "Interior de uma igreja católica" },
+  { src: "/images/igrejas/igreja-3.png", alt: "Fachada de igreja católica" },
+  { src: "/images/igrejas/igreja-4.png", alt: "Santuário católico" },
+  { src: "/images/igrejas/igreja-5.png", alt: "Catedral vista do alto em São Paulo" },
+];
+
+function ChurchCarousel() {
+  const [activeImage, setActiveImage] = useState(0);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const interval = window.setInterval(() => {
+      setActiveImage((current) => (current + 1) % churchImages.length);
+    }, 5500);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const selectPrevious = () => setActiveImage((current) => (current - 1 + churchImages.length) % churchImages.length);
+  const selectNext = () => setActiveImage((current) => (current + 1) % churchImages.length);
+
+  return (
+    <section aria-roledescription="carrossel" aria-label="Igrejas e comunidades atendidas" className="relative isolate min-h-[390px] overflow-hidden rounded-3xl bg-slate-950 shadow-2xl shadow-blue-950/15 sm:min-h-[460px]">
+      {churchImages.map((image, index) => (
+        <Image
+          key={image.src}
+          src={image.src}
+          alt={image.alt}
+          fill
+          priority={index === 0}
+          sizes="(max-width: 1024px) 100vw, 48vw"
+          className={`object-cover transition-all duration-1000 ease-in-out ${index === activeImage ? "scale-100 opacity-100" : "scale-105 opacity-0"}`}
+        />
+      ))}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/10 to-slate-950/15" />
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-6 text-white sm:p-8">
+        <div className="max-w-sm">
+          <p className="text-[10px] font-black tracking-[.18em] text-blue-200">COMUNIDADES QUE ACOLHEM</p>
+          <p className="mt-2 text-lg font-bold leading-snug">Uma gestão que fortalece a missão de cada paróquia.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={selectPrevious} aria-label="Imagem anterior" className="grid h-10 w-10 place-items-center rounded-full border border-white/35 bg-slate-950/30 transition hover:bg-white hover:text-slate-950"><ChevronLeft size={19}/></button>
+          <button type="button" onClick={selectNext} aria-label="Próxima imagem" className="grid h-10 w-10 place-items-center rounded-full border border-white/35 bg-slate-950/30 transition hover:bg-white hover:text-slate-950"><ChevronRight size={19}/></button>
+        </div>
+      </div>
+      <div className="absolute left-6 top-6 flex gap-2 sm:left-8 sm:top-8">
+        {churchImages.map((image, index) => (
+          <button key={image.src} type="button" onClick={() => setActiveImage(index)} aria-label={`Exibir imagem ${index + 1}`} aria-current={index === activeImage} className={`h-1.5 rounded-full transition-all ${index === activeImage ? "w-8 bg-white" : "w-3 bg-white/55 hover:bg-white/80"}`} />
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export default function HomePage() {
   return (
@@ -43,6 +105,18 @@ export default function HomePage() {
             <div className="mt-7 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl bg-blue-50 p-4"><span className="text-[10px] font-black tracking-[.12em] text-blue-600">FAMÍLIAS</span><strong className="mt-2 block text-2xl">38</strong><small className="text-slate-500">acompanhadas</small></div><div className="rounded-2xl bg-emerald-50 p-4"><span className="text-[10px] font-black tracking-[.12em] text-emerald-700">CESTAS</span><strong className="mt-2 block text-2xl">31</strong><small className="text-slate-500">entregues no mês</small></div><div className="rounded-2xl bg-amber-50 p-4"><span className="text-[10px] font-black tracking-[.12em] text-amber-700">VISITAS</span><strong className="mt-2 block text-2xl">14</strong><small className="text-slate-500">registradas</small></div></div>
             <div className="mt-5 rounded-2xl border bg-slate-50 p-4"><div className="flex items-center justify-between gap-3"><div><p className="text-xs font-black tracking-[.12em] text-blue-600">PRÓXIMA AÇÃO</p><strong className="mt-1 block text-sm">Distribuição de cestas · sábado</strong><p className="mt-1 text-xs text-slate-500">27 famílias agendadas e estoque conferido.</p></div><span className="grid h-10 w-10 place-items-center rounded-xl bg-white text-blue-600 shadow-sm"><Route size={20}/></span></div></div>
           </section>
+        </div>
+      </section>
+
+      <section className="border-y border-blue-100 bg-blue-50/60 py-16 sm:py-20">
+        <div className="mx-auto grid max-w-7xl gap-10 px-6 lg:grid-cols-[.82fr_1.18fr] lg:items-center">
+          <div>
+            <p className="text-xs font-black tracking-[.16em] text-blue-700">CADA PARÓQUIA, UMA HISTÓRIA</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Feito para servir comunidades que fazem a diferença.</h2>
+            <p className="mt-5 max-w-xl text-lg leading-8 text-slate-600">O Ágape acompanha o trabalho de quem acolhe, visita, organiza campanhas e transforma cuidado em presença concreta no território.</p>
+            <div className="mt-7 flex items-center gap-3 text-sm font-semibold text-slate-700"><HeartHandshake className="text-blue-600" size={22}/><span>Uma plataforma para a caridade acontecer com organização.</span></div>
+          </div>
+          <ChurchCarousel />
         </div>
       </section>
 
