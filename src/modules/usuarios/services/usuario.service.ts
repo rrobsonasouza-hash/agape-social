@@ -19,4 +19,5 @@ export class UsuarioService {
   async criar(data: UsuarioFormData, options?: { gerarLinkDefinicaoSenha?: boolean }) { const validado = usuarioSchema.parse(data); return await requisicaoAdministrativa("/api/usuarios", "POST", { ...validado, gerarLinkDefinicaoSenha: Boolean(options?.gerarLinkDefinicaoSenha) }) as CriarUsuarioResultado; }
   async atualizar(id: string, data: UsuarioFormData) { return requisicaoAdministrativa(`/api/usuarios/${id}`, "PUT", usuarioSchema.parse(data)); }
   alterarStatus(id: string, status: "PENDENTE" | "ATIVO" | "INATIVO") { return requisicaoAdministrativa(`/api/usuarios/${id}`, "PATCH", { status }); }
+  gerarLinkDefinicaoSenha(id: string) { return requisicaoAdministrativa(`/api/usuarios/${id}/link-definicao-senha`, "POST", {}) as Promise<{ linkDefinicaoSenha: string; nome: string }>; }
 }

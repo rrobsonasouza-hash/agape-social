@@ -48,7 +48,7 @@ const perfis: Role[] = [
 ];
 
 export default function UsuariosPage() {
-  const { listar, criar, atualizar, alterarStatus } = useUsuarios();
+  const { listar, criar, atualizar, alterarStatus, gerarLinkDefinicaoSenha } = useUsuarios();
   const { listar: listarParoquias } = useParoquia(false);
   const [usuarios, setUsuarios] = useState<UsuarioDocumento[]>([]);
   const [paroquias, setParoquias] = useState<ParoquiaDocumento[]>([]);
@@ -135,6 +135,22 @@ export default function UsuariosPage() {
       toast.success("Link copiado.");
     } catch {
       toast.error("Nao foi possivel copiar o link.");
+    }
+  }
+
+  async function gerarLinkParaUsuarioExistente() {
+    if (!editandoId) return;
+    setSalvando(true);
+    try {
+      const resultado = await gerarLinkDefinicaoSenha(editandoId);
+      setLinkConvite(resultado.linkDefinicaoSenha);
+      setNomeConvite(resultado.nome);
+      limparFormulario();
+      toast.success("Link de definição de senha gerado e pronto para compartilhar.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível gerar o link.");
+    } finally {
+      setSalvando(false);
     }
   }
 
@@ -408,6 +424,16 @@ export default function UsuariosPage() {
                   className="rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-3 font-semibold text-emerald-700 disabled:opacity-60"
                 >
                   {salvando ? "Salvando..." : "Salvar + gerar link"}
+                </button>
+              )}
+              {editandoId && (
+                <button
+                  type="button"
+                  onClick={() => void gerarLinkParaUsuarioExistente()}
+                  disabled={salvando}
+                  className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-3 font-semibold text-emerald-700 disabled:opacity-60"
+                >
+                  <LinkIcon size={17} /> {salvando ? "Gerando..." : "Gerar link de senha"}
                 </button>
               )}
               <button
