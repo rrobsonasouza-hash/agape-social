@@ -1,6 +1,8 @@
 "use client";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Copy,
+  Link as LinkIcon,
   Pencil,
   Plus,
   Search,
@@ -14,8 +16,10 @@ import { roleLabels, Role } from "@/config/roles";
 import { Card } from "@/components/forms/Card";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { DataTable, DataTableColumn } from "@/components/ui/DataTable";
+import { enviarRecuperacaoSenha } from "@/lib/auth/client-session";
 import { useUsuarios } from "@/modules/usuarios/hooks/useUsuarios";
 import {
+  CriarUsuarioResultado,
   UsuarioDocumento,
   UsuarioFormData,
 } from "@/modules/usuarios/types/usuario-documento";
@@ -29,7 +33,7 @@ const inicial: UsuarioFormData = {
   telefone: "",
   role: "operador",
   paroquiaId: "principal",
-  paroquiaNome: "Paróquia principal",
+  paroquiaNome: "Paroquia principal",
   status: "PENDENTE",
   observacoes: "",
 };
@@ -54,20 +58,30 @@ export default function UsuariosPage() {
   const [exibirForm, setExibirForm] = useState(false);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState(false);
+  const [linkConvite, setLinkConvite] = useState("");
+  const [nomeConvite, setNomeConvite] = useState("");
+
   const carregar = useCallback(async () => {
     setCarregando(true);
     try {
       setUsuarios(await listar());
     } catch {
-      toast.error("Não foi possível carregar os usuários.");
+      toast.error("Nao foi possivel carregar os usuarios.");
     } finally {
       setCarregando(false);
     }
   }, [listar]);
+
   useEffect(() => {
     void carregar();
   }, [carregar]);
-  useEffect(() => { listarParoquias().then(setParoquias).catch(() => toast.error("Não foi possível carregar as paróquias.")); }, [listarParoquias]);
+
+  useEffect(() => {
+    listarParoquias()
+      .then(setParoquias)
+      .catch(() => toast.error("Nao foi possivel carregar as paroquias."));
+  }, [listarParoquias]);
+
   const filtrados = useMemo(() => {
     const termo = pesquisa.toLowerCase().trim();
     return termo
@@ -81,8 +95,17 @@ export default function UsuariosPage() {
         )
       : usuarios;
   }, [pesquisa, usuarios]);
+
+  function limparFormulario() {
+    setExibirForm(false);
+    setEditandoId("");
+    setForm(inicial);
+  }
+
   function editar(usuario: UsuarioDocumento) {
     setEditandoId(usuario.id);
+    setLinkConvite("");
+    setNomeConvite("");
     setForm({
       nome: usuario.nome,
       email: usuario.email,
@@ -96,24 +119,65 @@ export default function UsuariosPage() {
     setExibirForm(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
+
   function novo() {
     setEditandoId("");
+    setLinkConvite("");
+    setNomeConvite("");
     const paroquia = paroquias.find((item) => item.ativa) ?? paroquias[0];
     setForm(paroquia ? { ...inicial, paroquiaId: paroquia.id, paroquiaNome: paroquia.nome } : inicial);
     setExibirForm(true);
   }
+
+  async function copiarLinkConvite() {
+    try {
+      await navigator.clipboard.writeText(linkConvite);
+      toast.success("Link copiado.");
+    } catch {
+      toast.error("Nao foi possivel copiar o link.");
+    }
+  }
+
   async function salvar(event: FormEvent) {
     event.preventDefault();
+    const submitter = (event.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
+    const gerarLinkDefinicaoSenha = !editandoId && submitter?.dataset.acao === "gerar-link";
     setSalvando(true);
     try {
-      if (editandoId) await atualizar(editandoId, form);
-      else await criar(form);
-      toast.success(
-        editandoId ? "Perfil atualizado." : "Usuário criado. Enviamos a definição de senha por e-mail.",
-      );
-      setExibirForm(false);
-      setEditandoId("");
-      setForm(inicial);
+      let resultado: CriarUsuarioResultado | null = null;
+      if (editandoId) {
+        await atualizar(editandoId, form);
+        setLinkConvite("");
+        setNomeConvite("");
+        toast.success("Perfil atualizado.");
+      } else {
+        resultado = await criar(form, { gerarLinkDefinicaoSenha });
+        let emailEnviado = true;
+        try {
+          await enviarRecuperacaoSenha(form.email);
+        } catch {
+          emailEnviado = false;
+        }
+        if (resultado.linkDefinicaoSenha) {
+          setLinkConvite(resultado.linkDefinicaoSenha);
+          setNomeConvite(form.nome);
+          toast.success(emailEnviado ? "Usuario criado. E-mail enviado e link pronto para copiar." : "Usuario criado. Link pronto para copiar.");
+          if (!emailEnviado) {
+            toast("Nao foi possivel enviar o e-mail nesta tentativa.");
+          }
+        } else {
+          setLinkConvite("");
+          setNomeConvite("");
+          toast.success(emailEnviado ? "Usuario criado. Enviamos a definicao de senha por e-mail." : "Usuario criado.");
+          if (!emailEnviado) {
+            toast("Nao foi possivel enviar o e-mail nesta tentativa.");
+          }
+          if (resultado.erroGeracaoLink) {
+            toast("Nao foi possivel gerar o link para compartilhar nesta tentativa.");
+          }
+        }
+      }
+      limparFormulario();
       await carregar();
     } catch (error) {
       toast.error(
@@ -121,12 +185,13 @@ export default function UsuariosPage() {
           ? error.issues[0]?.message || "Revise os dados."
           : error instanceof Error
             ? error.message
-            : "Não foi possível salvar.",
+            : "Nao foi possivel salvar.",
       );
     } finally {
       setSalvando(false);
     }
   }
+
   async function alternar(usuario: UsuarioDocumento) {
     const status = usuario.status === "INATIVO" ? "ATIVO" : "INATIVO";
     try {
@@ -136,13 +201,14 @@ export default function UsuariosPage() {
       );
       await carregar();
     } catch {
-      toast.error("Não foi possível alterar o status.");
+      toast.error("Nao foi possivel alterar o status.");
     }
   }
+
   const colunas: DataTableColumn<UsuarioDocumento>[] = [
     {
       key: "usuario",
-      title: "Usuário",
+      title: "Usuario",
       render: (item) => (
         <div>
           <p className="font-semibold text-slate-900">{item.nome}</p>
@@ -151,7 +217,7 @@ export default function UsuariosPage() {
       ),
     },
     { key: "perfil", title: "Perfil", render: (item) => roleLabels[item.role] },
-    { key: "paroquia", title: "Paróquia", render: (item) => item.paroquiaNome },
+    { key: "paroquia", title: "Paroquia", render: (item) => item.paroquiaNome },
     {
       key: "status",
       title: "Status",
@@ -169,7 +235,7 @@ export default function UsuariosPage() {
     },
     {
       key: "acoes",
-      title: "Ações",
+      title: "Acoes",
       render: (item) => (
         <div className="flex gap-2">
           <button
@@ -194,17 +260,18 @@ export default function UsuariosPage() {
       ),
     },
   ];
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Usuários e permissões"
+        title="Usuarios e permissoes"
         description="Administre os perfis que trabalham na pastoral e limite o acesso conforme a responsabilidade."
         actions={
           <button
             onClick={novo}
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white"
           >
-            <Plus size={18} /> Novo usuário
+            <Plus size={18} /> Novo usuario
           </button>
         }
       />
@@ -212,13 +279,43 @@ export default function UsuariosPage() {
         <div className="flex gap-3">
           <ShieldCheck className="mt-0.5 shrink-0" size={20} />
           <p>
-            <strong>Cadastro seguro:</strong> ao salvar, o Ágape cria a credencial,
-            aplica o perfil de acesso e envia ao usuário um e-mail para definir a senha.
+            <strong>Cadastro seguro:</strong> ao salvar, o Agape cria a credencial,
+            aplica o perfil de acesso e envia ao usuario um e-mail para definir a senha.
+            Se preferir, voce tambem pode gerar um link pronto para copiar e colar no WhatsApp.
           </p>
         </div>
       </div>
+      {linkConvite && (
+        <Card title="Link para compartilhar">
+          <div className="space-y-3">
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+              <div className="flex gap-3">
+                <LinkIcon className="mt-0.5 shrink-0" size={18} />
+                <p>
+                  Link de definicao de senha gerado para <strong>{nomeConvite}</strong>.
+                  Copie abaixo e cole no WhatsApp quando quiser.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 md:flex-row">
+              <input
+                readOnly
+                value={linkConvite}
+                className="w-full rounded-lg border bg-slate-50 px-4 py-3 text-sm text-slate-700"
+              />
+              <button
+                type="button"
+                onClick={() => void copiarLinkConvite()}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-blue-200 px-4 py-3 font-semibold text-blue-700"
+              >
+                <Copy size={17} /> Copiar link
+              </button>
+            </div>
+          </div>
+        </Card>
+      )}
       {exibirForm && (
-        <Card title={editandoId ? "Editar usuário" : "Cadastrar usuário"}>
+        <Card title={editandoId ? "Editar usuario" : "Cadastrar usuario"}>
           <form onSubmit={salvar} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <label className="text-sm font-medium">
@@ -271,15 +368,23 @@ export default function UsuariosPage() {
                 </select>
               </label>
               <label className="text-sm font-medium md:col-span-2">
-                Paróquia
-                <select className="mt-2 w-full rounded-lg border bg-white px-4 py-3 font-normal" value={form.paroquiaId} onChange={(e) => { const paroquia = paroquias.find((item) => item.id === e.target.value); setForm({ ...form, paroquiaId: e.target.value, paroquiaNome: paroquia?.nome || "" }); }} required>
+                Paroquia
+                <select
+                  className="mt-2 w-full rounded-lg border bg-white px-4 py-3 font-normal"
+                  value={form.paroquiaId}
+                  onChange={(e) => {
+                    const paroquia = paroquias.find((item) => item.id === e.target.value);
+                    setForm({ ...form, paroquiaId: e.target.value, paroquiaNome: paroquia?.nome || "" });
+                  }}
+                  required
+                >
                   {form.paroquiaId === "principal" && <option value="principal">{form.paroquiaNome}</option>}
                   {paroquias.filter((item) => item.ativa || item.id === form.paroquiaId).map((item) => <option key={item.id} value={item.id}>{item.nome}</option>)}
                 </select>
               </label>
             </div>
             <label className="block text-sm font-medium">
-              Observações
+              Observacoes
               <textarea
                 className="mt-2 min-h-24 w-full rounded-lg border px-4 py-3 font-normal"
                 value={form.observacoes}
@@ -288,16 +393,26 @@ export default function UsuariosPage() {
                 }
               />
             </label>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <button
                 disabled={salvando}
                 className="rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white disabled:opacity-60"
               >
                 {salvando ? "Salvando..." : "Salvar perfil"}
               </button>
+              {!editandoId && (
+                <button
+                  type="submit"
+                  data-acao="gerar-link"
+                  disabled={salvando}
+                  className="rounded-lg border border-emerald-200 bg-emerald-50 px-5 py-3 font-semibold text-emerald-700 disabled:opacity-60"
+                >
+                  {salvando ? "Salvando..." : "Salvar + gerar link"}
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => setExibirForm(false)}
+                onClick={limparFormulario}
                 className="rounded-lg border px-5 py-3 font-semibold text-slate-700"
               >
                 Cancelar
@@ -306,7 +421,7 @@ export default function UsuariosPage() {
           </form>
         </Card>
       )}
-      <Card title="Pesquisar usuários">
+      <Card title="Pesquisar usuarios">
         <div className="relative">
           <Search
             className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
@@ -317,7 +432,7 @@ export default function UsuariosPage() {
             value={pesquisa}
             onChange={(e) => setPesquisa(e.target.value)}
             className="w-full rounded-lg border py-3 pl-12 pr-4"
-            placeholder="Nome, e-mail, perfil ou paróquia..."
+            placeholder="Nome, e-mail, perfil ou paroquia..."
           />
         </div>
       </Card>
@@ -327,8 +442,8 @@ export default function UsuariosPage() {
           columns={colunas}
           getRowKey={(item) => item.id}
           loading={carregando}
-          emptyTitle="Nenhum usuário cadastrado"
-          emptyDescription="Cadastre os responsáveis pela operação da pastoral."
+          emptyTitle="Nenhum usuario cadastrado"
+          emptyDescription="Cadastre os responsaveis pela operacao da pastoral."
         />
       </Card>
     </div>

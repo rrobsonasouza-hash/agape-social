@@ -8,7 +8,7 @@ function erro(error: unknown) {
   const mensagem = error instanceof Error ? error.message : "Erro interno.";
   const conflito = /already|registered|duplicate/i.test(mensagem);
   const status = mensagem === "UNAUTHENTICATED" ? 401 : mensagem === "FORBIDDEN" ? 403 : conflito ? 409 : 400;
-  return NextResponse.json({ erro: conflito ? "Já existe uma credencial com este e-mail." : mensagem }, { status });
+  return NextResponse.json({ erro: conflito ? "Ja existe uma credencial com este e-mail." : mensagem }, { status });
 }
 
 export async function GET(request: NextRequest) {
@@ -24,8 +24,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const administrador = await exigirAdministrador(request);
-    const dados = usuarioSchema.parse(await request.json());
-    if (dados.role === "admin_plataforma") throw new Error("O perfil Administrador da plataforma só pode ser gerenciado pela Central.");
+    const entrada = await request.json();
+    const dados = usuarioSchema.parse(entrada);
+    const gerarLinkDefinicaoSenha = Boolean(entrada.gerarLinkDefinicaoSenha);
+    if (dados.role === "admin_plataforma") throw new Error("O perfil Administrador da plataforma so pode ser gerenciado pela Central.");
     const { supabase, paroquiaId } = await resolverParoquiaDaRequisicao(request, administrador);
     const email = dados.email.trim().toLowerCase();
     const criacao = await supabase.auth.admin.createUser({ email, password: randomBytes(32).toString("base64url"), email_confirm: true, user_metadata: { nome: dados.nome } });
@@ -33,7 +35,21 @@ export async function POST(request: NextRequest) {
     const id = criacao.data.user.id;
     const { error } = await supabase.from("perfis").insert({ id, paroquia_id: paroquiaId, nome: dados.nome, email, telefone: dados.telefone || "", perfil: dados.role, status: "ATIVO", observacoes: dados.observacoes || "" });
     if (error) { await supabase.auth.admin.deleteUser(id); throw error; }
-    await supabase.from("auditoria").insert({ id: randomUUID(), paroquia_id: paroquiaId, dados: { acao: "CADASTRO", entidade: "USUÁRIOS", entidadeId: id, descricao: `Credencial criada para ${dados.nome}.`, usuarioId: administrador.uid, usuarioNome: administrador.nome, usuarioEmail: administrador.email, data: new Date().toISOString() } });
-    return NextResponse.json({ id }, { status: 201 });
+    await supabase.from("auditoria").insert({ id: randomUUID(), paroquia_id: paroquiaId, dados: { acao: "CADASTRO", entidade: "USUARIOS", entidadeId: id, descricao: `Credencial criada para ${dados.nome}.`, usuarioId: administrador.uid, usuarioNome: administrador.nome, usuarioEmail: administrador.email, data: new Date().toISOString() } });
+
+    let linkDefinicaoSenha: string | null = null;
+    let erroGeracaoLink: string | null = null;
+
+    if (gerarLinkDefinicaoSenha) {
+      const link = await supabase.auth.admin.generateLink({
+        type: "recovery",
+        email,
+        options: { redirectTo: `${request.nextUrl.origin}/definir-senha` },
+      });
+      if (link.error) erroGeracaoLink = link.error.message;
+      else linkDefinicaoSenha = link.data.properties.action_link;
+    }
+
+    return NextResponse.json({ id, linkDefinicaoSenha, erroGeracaoLink }, { status: 201 });
   } catch (error) { return erro(error); }
 }
