@@ -3,14 +3,14 @@ import { usuarioSchema } from "../schemas/usuario.schema";
 import { UsuarioRepository } from "../repositories/usuario.repository";
 import { CriarUsuarioResultado, UsuarioFormData } from "../types/usuario-documento";
 
-async function requisicaoAdministrativa(url: string, method: string, body: unknown) {
+async function requisicaoAdministrativa<T = { id: string }>(url: string, method: string, body: unknown): Promise<T> {
   const token = await obterTokenAcesso();
   if (!token) throw new Error("Sessão expirada. Entre novamente.");
   const resposta = await fetch(url, { method, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
   const tipo = resposta.headers.get("content-type") || "";
   const resultado = tipo.includes("application/json") ? await resposta.json() : { erro: resposta.ok ? "Resposta inválida do servidor." : `Serviço indisponível (${resposta.status}). Tente novamente após alguns instantes.` };
   if (!resposta.ok) throw new Error(resultado.erro || "Não foi possível concluir a operação.");
-  return resultado as { id: string };
+  return resultado as T;
 }
 
 export class UsuarioService {
@@ -19,5 +19,5 @@ export class UsuarioService {
   async criar(data: UsuarioFormData, options?: { gerarLinkDefinicaoSenha?: boolean }) { const validado = usuarioSchema.parse(data); return await requisicaoAdministrativa("/api/usuarios", "POST", { ...validado, gerarLinkDefinicaoSenha: Boolean(options?.gerarLinkDefinicaoSenha) }) as CriarUsuarioResultado; }
   async atualizar(id: string, data: UsuarioFormData) { return requisicaoAdministrativa(`/api/usuarios/${id}`, "PUT", usuarioSchema.parse(data)); }
   alterarStatus(id: string, status: "PENDENTE" | "ATIVO" | "INATIVO") { return requisicaoAdministrativa(`/api/usuarios/${id}`, "PATCH", { status }); }
-  gerarLinkDefinicaoSenha(id: string) { return requisicaoAdministrativa(`/api/usuarios/${id}/link-definicao-senha`, "POST", {}) as Promise<{ linkDefinicaoSenha: string; nome: string }>; }
+  gerarLinkDefinicaoSenha(id: string) { return requisicaoAdministrativa<{ linkDefinicaoSenha: string; nome: string }>(`/api/usuarios/${id}/link-definicao-senha`, "POST", {}); }
 }
