@@ -1,7 +1,7 @@
 import { obterTokenAcesso } from "@/lib/auth/client-session";
 import { usuarioSchema } from "../schemas/usuario.schema";
 import { UsuarioRepository } from "../repositories/usuario.repository";
-import { CriarUsuarioResultado, UsuarioFormData } from "../types/usuario-documento";
+import { UsuarioFormData } from "../types/usuario-documento";
 
 async function requisicaoAdministrativa<T = { id: string }>(url: string, method: string, body: unknown): Promise<T> {
   const token = await obterTokenAcesso();
@@ -16,8 +16,7 @@ async function requisicaoAdministrativa<T = { id: string }>(url: string, method:
 export class UsuarioService {
   private repository = new UsuarioRepository();
   listar() { return this.repository.listar(); }
-  async criar(data: UsuarioFormData, options?: { gerarLinkDefinicaoSenha?: boolean }) { const validado = usuarioSchema.parse(data); return await requisicaoAdministrativa("/api/usuarios", "POST", { ...validado, gerarLinkDefinicaoSenha: Boolean(options?.gerarLinkDefinicaoSenha) }) as CriarUsuarioResultado; }
+  async criar(data: UsuarioFormData) { const validado = usuarioSchema.parse(data); return requisicaoAdministrativa("/api/usuarios", "POST", validado); }
   async atualizar(id: string, data: UsuarioFormData) { return requisicaoAdministrativa(`/api/usuarios/${id}`, "PUT", usuarioSchema.parse(data)); }
   alterarStatus(id: string, status: "PENDENTE" | "ATIVO" | "INATIVO") { return requisicaoAdministrativa(`/api/usuarios/${id}`, "PATCH", { status }); }
-  gerarLinkDefinicaoSenha(id: string) { return requisicaoAdministrativa<{ linkDefinicaoSenha: string; nome: string }>(`/api/usuarios/${id}/link-definicao-senha`, "POST", {}); }
 }

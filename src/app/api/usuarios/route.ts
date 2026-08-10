@@ -26,7 +26,6 @@ export async function POST(request: NextRequest) {
     const administrador = await exigirAdministrador(request);
     const entrada = await request.json();
     const dados = usuarioSchema.parse(entrada);
-    const gerarLinkDefinicaoSenha = Boolean(entrada.gerarLinkDefinicaoSenha);
     if (dados.role === "admin_plataforma") throw new Error("O perfil Administrador da plataforma so pode ser gerenciado pela Central.");
     const { supabase, paroquiaId } = await resolverParoquiaDaRequisicao(request, administrador);
     const email = dados.email.trim().toLowerCase();
@@ -37,19 +36,6 @@ export async function POST(request: NextRequest) {
     if (error) { await supabase.auth.admin.deleteUser(id); throw error; }
     await supabase.from("auditoria").insert({ id: randomUUID(), paroquia_id: paroquiaId, dados: { acao: "CADASTRO", entidade: "USUARIOS", entidadeId: id, descricao: `Credencial criada para ${dados.nome}.`, usuarioId: administrador.uid, usuarioNome: administrador.nome, usuarioEmail: administrador.email, data: new Date().toISOString() } });
 
-    let linkDefinicaoSenha: string | null = null;
-    let erroGeracaoLink: string | null = null;
-
-    if (gerarLinkDefinicaoSenha) {
-      const link = await supabase.auth.admin.generateLink({
-        type: "recovery",
-        email,
-        options: { redirectTo: `${request.nextUrl.origin}/definir-senha` },
-      });
-      if (link.error) erroGeracaoLink = link.error.message;
-      else linkDefinicaoSenha = link.data.properties.action_link;
-    }
-
-    return NextResponse.json({ id, linkDefinicaoSenha, erroGeracaoLink }, { status: 201 });
+    return NextResponse.json({ id }, { status: 201 });
   } catch (error) { return erro(error); }
 }
