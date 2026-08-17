@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
+import { exigirPermissaoServidor } from "@/lib/auth/server-permissions";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
 
 type Registro = { id: string; dados: Record<string, unknown> };
@@ -22,6 +23,7 @@ export async function GET(request: NextRequest) {
       request,
       usuario,
     );
+    await exigirPermissaoServidor(supabase, paroquiaId, usuario.role, "/dashboard", ["admin_plataforma", "admin_paroquia", "coordenador", "operador", "voluntario", "leitor"]);
     const [familias, campanhasResposta, movimentacoes, distribuicoes] =
       await Promise.all([
         supabase

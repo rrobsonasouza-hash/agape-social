@@ -6,7 +6,7 @@ const PERFIS = ["admin_plataforma", "admin_paroquia", "coordenador", "operador",
 
 export async function GET(request: NextRequest) {
   try {
-    const { supabase, paroquiaId } = await contextoOperacional(request, PERFIS);
+    const { supabase, paroquiaId } = await contextoOperacional(request, PERFIS, false, "/visitas");
     const familiaId = new URL(request.url).searchParams.get("familiaId");
     let consulta = supabase.from("visitas").select("id,dados").eq("paroquia_id", paroquiaId);
     if (familiaId) consulta = consulta.eq("dados->>familiaId", familiaId);

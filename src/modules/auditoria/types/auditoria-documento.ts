@@ -10,5 +10,3 @@ export interface AuditoriaDocumento {
   paroquiaId: string;
   data?: { toDate?: () => Date } | Date | string | null;
 }
-
-export type AuditoriaEntrada = Omit<AuditoriaDocumento, "id" | "data">;

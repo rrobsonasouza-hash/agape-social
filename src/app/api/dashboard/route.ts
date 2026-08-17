@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
+import { exigirPermissaoServidor } from "@/lib/auth/server-permissions";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
 
 export async function GET(request: NextRequest) {
   try {
     const usuario = await exigirUsuarioAtivo(request);
     const { supabase, paroquiaId } = await resolverParoquiaDaRequisicao(request, usuario);
+    await exigirPermissaoServidor(supabase, paroquiaId, usuario.role, "/dashboard", ["admin_plataforma", "admin_paroquia", "coordenador", "operador", "voluntario", "leitor"]);
     const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0);
     const contagem = (tabela: string, status?: string) => {
       let consulta = supabase.from(tabela).select("id", { count: "exact", head: true }).eq("paroquia_id", paroquiaId);

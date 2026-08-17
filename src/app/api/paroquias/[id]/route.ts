@@ -3,10 +3,10 @@ import { exigirAdministrador } from "@/lib/auth/admin-request";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { resolverParoquia } from "@/lib/supabase/tenant";
 type Contexto = { params: Promise<{ id: string }> };
-function erro(error: unknown) { const mensagem = error instanceof Error ? error.message : "Erro interno."; return NextResponse.json({ erro: mensagem }, { status: mensagem === "FORBIDDEN" ? 403 : 500 }); }
+function erro(error: unknown) { const mensagem = error instanceof Error ? error.message : "Erro interno."; if (mensagem === "FORBIDDEN") return NextResponse.json({ erro: "Sem permissão para acessar esta paróquia." }, { status: 403 }); console.error("Erro na paróquia:", error); return NextResponse.json({ erro: "Não foi possível concluir a operação." }, { status: 500 }); }
 
 export async function GET(request: NextRequest, context: Contexto) {
-  try { await exigirAdministrador(request); const { paroquia } = await resolverParoquia((await context.params).id); return NextResponse.json(paroquia); }
+  try { const usuario = await exigirAdministrador(request); const id = (await context.params).id; if (usuario.role !== "admin_plataforma" && (await resolverParoquia(usuario.paroquiaId)).paroquiaId !== id) throw new Error("FORBIDDEN"); const { paroquia } = await resolverParoquia(id); return NextResponse.json(paroquia); }
   catch (error) { return erro(error); }
 }
 export async function PUT(request: NextRequest, context: Contexto) {

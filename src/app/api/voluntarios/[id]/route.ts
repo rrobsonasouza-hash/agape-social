@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
+import { exigirPermissaoServidor } from "@/lib/auth/server-permissions";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
 import { voluntarioSchema } from "@/modules/voluntarios/schemas/voluntario.schema";
 import { ZodError } from "zod";
 
 const PERFIS_ESCRITA = ["admin_plataforma", "admin_paroquia", "coordenador"];
+const PERFIS_LEITURA = [...PERFIS_ESCRITA, "operador", "voluntario", "leitor"];
 
 async function contexto(request: NextRequest, escrita = false) {
   const usuario = await exigirUsuarioAtivo(request);
-  if (escrita && !PERFIS_ESCRITA.includes(usuario.role)) throw new Error("FORBIDDEN");
-  return resolverParoquiaDaRequisicao(request, usuario);
+  const contextoParoquia = await resolverParoquiaDaRequisicao(request, usuario);
+  await exigirPermissaoServidor(contextoParoquia.supabase, contextoParoquia.paroquiaId, usuario.role, "/voluntarios", escrita ? PERFIS_ESCRITA : PERFIS_LEITURA);
+  return contextoParoquia;
 }
 
 function respostaErro(error: unknown) {

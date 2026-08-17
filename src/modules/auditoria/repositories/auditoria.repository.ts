@@ -1,5 +1,5 @@
 import { obterTokenAcesso } from "@/lib/auth/client-session";
-import { AuditoriaDocumento, AuditoriaEntrada } from "../types/auditoria-documento";
+import { AuditoriaDocumento } from "../types/auditoria-documento";
 
 async function requisicao<T>(url: string, init?: RequestInit): Promise<T> {
   const token = await obterTokenAcesso();
@@ -11,6 +11,5 @@ async function requisicao<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export class AuditoriaRepository {
-  registrar(entrada: AuditoriaEntrada) { return requisicao<{ id: string }>("/api/auditoria", { method: "POST", body: JSON.stringify(entrada) }); }
   listar(limite = 200): Promise<AuditoriaDocumento[]> { return requisicao(`/api/auditoria?limite=${limite}`); }
 }
