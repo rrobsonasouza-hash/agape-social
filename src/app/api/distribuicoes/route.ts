@@ -51,6 +51,66 @@ export async function POST(request: NextRequest) {
   } catch (error) { return respostaErroOperacional(error); }
 }
 
+export async function PATCH(request: NextRequest) {
+  try {
+    const { supabase, paroquiaId } = await contextoOperacional(request, PERFIS_GESTAO, true, "/cestas");
+    const { ids, status } = await request.json() as { ids?: string[]; status?: string };
+    const idsUnicos = [...new Set(ids ?? [])];
+    if (status !== "AUSENTE") return NextResponse.json({ erro: "A ação em lote permite somente registrar ausências." }, { status: 400 });
+    if (!idsUnicos.length || idsUnicos.length > 500 || idsUnicos.some((id) => typeof id !== "string" || !id.trim())) {
+      return NextResponse.json({ erro: "Informe entre 1 e 500 agendamentos válidos." }, { status: 400 });
+    }
+
+    const distribuicoes = await supabase.from("distribuicoes_cestas").select("id,dados").eq("paroquia_id", paroquiaId).in("id", idsUnicos);
+    if (distribuicoes.error) throw distribuicoes.error;
+    const pendentes = (distribuicoes.data ?? []).filter((item) => (item.dados as Record<string, unknown>).status === "AGENDADA");
+    if (!pendentes.length) return NextResponse.json({ atualizadas: 0 });
+
+    const faltasPorFamilia = new Map<string, number>();
+    for (const item of pendentes) {
+      const familiaId = (item.dados as Record<string, unknown>).familiaId;
+      if (typeof familiaId === "string" && familiaId) faltasPorFamilia.set(familiaId, (faltasPorFamilia.get(familiaId) ?? 0) + 1);
+    }
+    const familias = faltasPorFamilia.size
+      ? await supabase.from("familias").select("id,dados").eq("paroquia_id", paroquiaId).in("id", [...faltasPorFamilia.keys()])
+      : { data: [], error: null };
+    if (familias.error) throw familias.error;
+
+    const agora = new Date().toISOString();
+    const familiasAtualizadas = (familias.data ?? []).map((familia) => {
+      const dados = familia.dados as Record<string, unknown>;
+      const faltas = Math.max(0, Number(dados.faltasConsecutivas ?? 0)) + (faltasPorFamilia.get(String(familia.id)) ?? 0);
+      return {
+        id: familia.id,
+        paroquia_id: paroquiaId,
+        dados: {
+          ...dados,
+          faltasConsecutivas: faltas,
+          beneficioBloqueado: faltas >= 3,
+          motivoBloqueio: faltas >= 3 ? "Três ausências consecutivas na retirada de cestas." : "",
+        },
+        updated_at: agora,
+      };
+    });
+    if (familiasAtualizadas.length) {
+      const atualizacaoFamilias = await supabase.from("familias").upsert(familiasAtualizadas, { onConflict: "id" });
+      if (atualizacaoFamilias.error) throw atualizacaoFamilias.error;
+    }
+
+    const atualizacaoDistribuicoes = await supabase.from("distribuicoes_cestas").upsert(
+      pendentes.map((item) => ({
+        id: item.id,
+        paroquia_id: paroquiaId,
+        dados: { ...(item.dados as Record<string, unknown>), status: "AUSENTE" },
+        updated_at: agora,
+      })),
+      { onConflict: "id" },
+    );
+    if (atualizacaoDistribuicoes.error) throw atualizacaoDistribuicoes.error;
+    return NextResponse.json({ atualizadas: pendentes.length });
+  } catch (error) { return respostaErroOperacional(error); }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const { supabase, paroquiaId } = await contextoOperacional(request, PERFIS_GESTAO, true, "/cestas");

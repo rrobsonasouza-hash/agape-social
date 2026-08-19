@@ -58,4 +58,10 @@ export class DistribuicaoRepository {
       body: JSON.stringify({ ids }),
     });
   }
+  marcarAusentes(ids: string[]) {
+    return requisicao<{ atualizadas: number }>("/api/distribuicoes", {
+      method: "PATCH",
+      body: JSON.stringify({ ids, status: "AUSENTE" }),
+    });
+  }
 }

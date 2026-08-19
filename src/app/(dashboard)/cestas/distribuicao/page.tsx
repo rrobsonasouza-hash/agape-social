@@ -44,6 +44,7 @@ export default function DistribuicaoCestasPage() {
     agendarTodas,
     remarcarTodas,
     excluirAgendadas,
+    marcarAusentes,
     marcar,
     desfazerBaixa,
   } = useDistribuicoes();
@@ -56,6 +57,7 @@ export default function DistribuicaoCestasPage() {
   const [campanhas, setCampanhas] = useState<CampanhaCestas[]>([]);
   const [lista, setLista] = useState<DistribuicaoDocumento[]>([]);
   const [atualizando, setAtualizando] = useState<string | null>(null);
+  const [finalizandoEmMassa, setFinalizandoEmMassa] = useState(false);
   const [logoParoquia, setLogoParoquia] = useState<string | null>(null);
 
   const carregarLista = useCallback(async () => {
@@ -186,6 +188,23 @@ export default function DistribuicaoCestasPage() {
           ? error.message
           : "Não foi possível excluir a lista.",
       );
+    }
+  }
+
+  async function registrarAusenciasEmMassa() {
+    const ids = lista.filter((item) => item.status === "AGENDADA").map((item) => item.id);
+    if (!ids.length) return toast.error("Não há famílias pendentes nesta data.");
+    const dataFormatada = new Date(`${data}T00:00:00`).toLocaleDateString("pt-BR");
+    if (!window.confirm(`Registrar ausência para as ${ids.length} famílias ainda pendentes em ${dataFormatada}? As retiradas e entregas já baixadas não serão alteradas. Esta ação contará uma falta consecutiva para cada família.`)) return;
+    try {
+      setFinalizandoEmMassa(true);
+      const resultado = await marcarAusentes(ids);
+      await carregarLista();
+      toast.success(`${resultado.atualizadas} ausência(s) registrada(s).`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível registrar as ausências.");
+    } finally {
+      setFinalizandoEmMassa(false);
     }
   }
 
@@ -472,7 +491,15 @@ export default function DistribuicaoCestasPage() {
       </div>
 
       {agendadas > 0 && (
-        <div className="flex justify-end">
+        <div className="flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            disabled={finalizandoEmMassa}
+            onClick={() => void registrarAusenciasEmMassa()}
+            className="inline-flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 font-semibold text-amber-800 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <UserX size={18} /> {finalizandoEmMassa ? "Registrando ausências..." : `Marcar pendentes como ausentes (${agendadas})`}
+          </button>
           <button
             type="button"
             onClick={imprimirPendentes}

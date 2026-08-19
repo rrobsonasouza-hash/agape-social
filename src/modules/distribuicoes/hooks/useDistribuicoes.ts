@@ -26,6 +26,7 @@ export function useDistribuicoes() {
       (ids: string[]) => service.excluirAgendadas(ids),
       [],
     ),
+    marcarAusentes: useCallback((ids: string[]) => service.marcarAusentes(ids), []),
     marcar: useCallback(
       (id: string, status: Exclude<StatusDistribuicao, "AGENDADA">) =>
         service.marcar(id, status),

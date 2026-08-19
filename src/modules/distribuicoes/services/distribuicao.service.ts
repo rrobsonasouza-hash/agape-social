@@ -75,6 +75,11 @@ export class DistribuicaoService {
     return this.repository.excluirAgendadas(ids);
   }
 
+  async marcarAusentes(ids: string[]) {
+    if (!ids.length) throw new Error("Não há famílias pendentes para registrar ausência.");
+    return this.repository.marcarAusentes(ids);
+  }
+
   async marcar(id: string, status: Exclude<StatusDistribuicao, "AGENDADA">) {
     const registro = await this.repository.buscarPorId(id);
     if (!registro) throw new Error("Registro não encontrado.");
