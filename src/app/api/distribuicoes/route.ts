@@ -15,7 +15,24 @@ export async function GET(request: NextRequest) {
     if (dataFiltro) consulta = consulta.eq("dados->>data", dataFiltro);
     const { data, error } = await consulta;
     if (error) throw error;
-    const registros: Array<Record<string, unknown> & { id: string }> = (data ?? []).map((item) => ({ id: String(item.id), ...(item.dados as Record<string, unknown>) }));
+    const linhas = data ?? [];
+    const familiaIds = [...new Set(linhas
+      .map((item) => (item.dados as Record<string, unknown>).familiaId)
+      .filter((id): id is string => typeof id === "string" && Boolean(id)))];
+    const familias = familiaIds.length
+      ? await supabase.from("familias").select("id,dados").eq("paroquia_id", paroquiaId).in("id", familiaIds)
+      : { data: [], error: null };
+    if (familias.error) throw familias.error;
+    const nomesAtuais = new Map((familias.data ?? []).map((familia) => [
+      String(familia.id),
+      String((familia.dados as Record<string, unknown>).nomeResponsavel ?? ""),
+    ]));
+    const registros: Array<Record<string, unknown> & { id: string }> = linhas.map((item) => {
+      const dados = item.dados as Record<string, unknown>;
+      const familiaId = typeof dados.familiaId === "string" ? dados.familiaId : "";
+      const familiaNome = dados.status === "AGENDADA" ? nomesAtuais.get(familiaId) || dados.familiaNome : dados.familiaNome;
+      return { id: String(item.id), ...dados, familiaNome };
+    });
     registros.sort((a, b) => String(a.familiaNome).localeCompare(String(b.familiaNome)));
     return NextResponse.json(registros);
   } catch (error) { return respostaErroOperacional(error); }

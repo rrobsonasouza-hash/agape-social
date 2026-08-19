@@ -1,13 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { atualizarRegistro, buscarRegistro, respostaErroOperacional } from "@/lib/supabase/operational-api";
+import { atualizarRegistro, contextoOperacional, respostaErroOperacional } from "@/lib/supabase/operational-api";
 import { distribuicaoSchema, statusDistribuicaoSchema } from "@/modules/distribuicoes/schemas/distribuicao.schema";
 
 const PERFIS = ["admin_plataforma", "admin_paroquia", "coordenador", "operador", "voluntario"];
 type Contexto = { params: Promise<{ id: string }> };
 
 export async function GET(request: NextRequest, context: Contexto) {
-  try { return NextResponse.json(await buscarRegistro(request, "distribuicoes_cestas", PERFIS, (await context.params).id)); }
+  try {
+    const { supabase, paroquiaId } = await contextoOperacional(request, PERFIS, false, "/cestas");
+    const { id } = await context.params;
+    const consulta = await supabase.from("distribuicoes_cestas").select("id,dados").eq("id", id).eq("paroquia_id", paroquiaId).maybeSingle();
+    if (consulta.error) throw consulta.error;
+    if (!consulta.data) return NextResponse.json(null);
+    const dados = consulta.data.dados as Record<string, unknown>;
+    let familiaNome = dados.familiaNome;
+    if (dados.status === "AGENDADA" && typeof dados.familiaId === "string") {
+      const familia = await supabase.from("familias").select("dados").eq("id", dados.familiaId).eq("paroquia_id", paroquiaId).maybeSingle();
+      if (familia.error) throw familia.error;
+      const nomeAtual = (familia.data?.dados as Record<string, unknown> | undefined)?.nomeResponsavel;
+      if (typeof nomeAtual === "string" && nomeAtual.trim()) familiaNome = nomeAtual;
+    }
+    return NextResponse.json({ id: consulta.data.id, ...dados, familiaNome });
+  }
   catch (error) { return respostaErroOperacional(error); }
 }
 
