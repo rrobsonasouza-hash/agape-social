@@ -128,6 +128,36 @@ export default function DistribuicaoCestasPage() {
     [familias],
   );
 
+  function atualizarStatusLocal(
+    item: DistribuicaoDocumento,
+    novoStatus: StatusDistribuicao,
+  ) {
+    setLista((atual) =>
+      atual.map((registro) =>
+        registro.id === item.id ? { ...registro, status: novoStatus } : registro,
+      ),
+    );
+    setDatasDistribuicao((atual) =>
+      atual.map((resumo) => {
+        if (resumo.data !== item.data) return resumo;
+        const proximo = { ...resumo };
+        const retirarContagem = (status: StatusDistribuicao) => {
+          if (status === "AGENDADA") proximo.agendadas = Math.max(0, proximo.agendadas - 1);
+          else if (status === "AUSENTE") proximo.ausentes = Math.max(0, proximo.ausentes - 1);
+          else proximo.recebidas = Math.max(0, proximo.recebidas - 1);
+        };
+        const adicionarContagem = (status: StatusDistribuicao) => {
+          if (status === "AGENDADA") proximo.agendadas += 1;
+          else if (status === "AUSENTE") proximo.ausentes += 1;
+          else proximo.recebidas += 1;
+        };
+        retirarContagem(item.status);
+        adicionarContagem(novoStatus);
+        return proximo;
+      }),
+    );
+  }
+
   async function adicionar() {
     const familia = familias.find((item) => item.id === familiaId);
     if (!familia || !campanhaId)
@@ -285,7 +315,7 @@ export default function DistribuicaoCestasPage() {
     try {
       setAtualizando(item.id);
       await marcar(item.id, status);
-      await carregarLista();
+      atualizarStatusLocal(item, status);
       toast.success(
         status === "AUSENTE"
           ? "Ausência registrada."
@@ -310,7 +340,7 @@ export default function DistribuicaoCestasPage() {
     try {
       setAtualizando(item.id);
       await desfazerBaixa(item.id);
-      await carregarLista();
+      atualizarStatusLocal(item, "AGENDADA");
       toast.success(
         "Baixa desfeita; cesta devolvida ao saldo e família reaberta na fila.",
       );
