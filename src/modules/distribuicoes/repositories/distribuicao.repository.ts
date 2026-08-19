@@ -3,7 +3,10 @@ import {
   DistribuicaoData,
   StatusDistribuicao,
 } from "../schemas/distribuicao.schema";
-import { DistribuicaoDocumento } from "../types/distribuicao-documento";
+import {
+  DistribuicaoDocumento,
+  ResumoDataDistribuicao,
+} from "../types/distribuicao-documento";
 async function requisicao<T>(url: string, init?: RequestInit): Promise<T> {
   const token = await obterTokenAcesso();
   const resposta = await fetch(url, {
@@ -31,6 +34,9 @@ export class DistribuicaoRepository {
   }
   listarPorData(data: string): Promise<DistribuicaoDocumento[]> {
     return requisicao(`/api/distribuicoes?data=${encodeURIComponent(data)}`);
+  }
+  listarDatas(): Promise<ResumoDataDistribuicao[]> {
+    return requisicao("/api/distribuicoes?resumo=datas");
   }
   alterarStatus(id: string, status: StatusDistribuicao) {
     return requisicao(`/api/distribuicoes/${encodeURIComponent(id)}`, {

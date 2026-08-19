@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   CheckCircle2,
+  CalendarDays,
   Home,
   Plus,
   Printer,
@@ -20,7 +21,10 @@ import { useCestas } from "@/modules/cestas/hooks/useCestas";
 import { CampanhaCestas } from "@/modules/cestas/types/cestas.types";
 import { useDistribuicoes } from "@/modules/distribuicoes/hooks/useDistribuicoes";
 import { StatusDistribuicao } from "@/modules/distribuicoes/schemas/distribuicao.schema";
-import { DistribuicaoDocumento } from "@/modules/distribuicoes/types/distribuicao-documento";
+import {
+  DistribuicaoDocumento,
+  ResumoDataDistribuicao,
+} from "@/modules/distribuicoes/types/distribuicao-documento";
 import { useFamilias } from "@/modules/familias/hooks/useFamilias";
 import { FamiliaDocumento } from "@/modules/familias/types/familia-documento";
 import { obterTokenAcesso } from "@/lib/auth/client-session";
@@ -40,6 +44,7 @@ export default function DistribuicaoCestasPage() {
   const { listarCampanhas } = useCestas();
   const {
     listarPorData,
+    listarDatas,
     agendar,
     agendarTodas,
     remarcarTodas,
@@ -56,12 +61,14 @@ export default function DistribuicaoCestasPage() {
   const [familias, setFamilias] = useState<FamiliaDocumento[]>([]);
   const [campanhas, setCampanhas] = useState<CampanhaCestas[]>([]);
   const [lista, setLista] = useState<DistribuicaoDocumento[]>([]);
+  const [datasDistribuicao, setDatasDistribuicao] = useState<ResumoDataDistribuicao[]>([]);
   const [atualizando, setAtualizando] = useState<string | null>(null);
   const [finalizandoEmMassa, setFinalizandoEmMassa] = useState(false);
   const [logoParoquia, setLogoParoquia] = useState<string | null>(null);
 
   const carregarLista = useCallback(async () => {
-    const carregada = await listarPorData(data);
+    const [carregada, datas] = await Promise.all([listarPorData(data), listarDatas()]);
+    setDatasDistribuicao(datas);
     setLista(
       carregada.sort((a, b) =>
         a.familiaNome.localeCompare(b.familiaNome, "pt-BR", {
@@ -69,7 +76,7 @@ export default function DistribuicaoCestasPage() {
         }),
       ),
     );
-  }, [data, listarPorData]);
+  }, [data, listarDatas, listarPorData]);
 
   useEffect(() => {
     Promise.all([listarFamilias(), listarCampanhas()])
@@ -346,6 +353,63 @@ export default function DistribuicaoCestasPage() {
           </div>
         ))}
       </section>
+
+      {datasDistribuicao.length > 0 && (
+        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="flex items-center gap-2 font-semibold text-slate-900">
+                <CalendarDays size={19} className="text-blue-600" /> Datas com distribuição
+              </p>
+              <p className="text-sm text-slate-500">Selecione uma data para abrir rapidamente a respectiva lista.</p>
+            </div>
+            {datasDistribuicao.length > 8 && (
+              <select
+                value={datasDistribuicao.some((item) => item.data === data) ? data : ""}
+                onChange={(event) => event.target.value && setData(event.target.value)}
+                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
+                aria-label="Consultar todas as datas de distribuição"
+              >
+                <option value="">Consultar outra data</option>
+                {datasDistribuicao.map((item) => (
+                  <option key={item.data} value={item.data}>
+                    {new Date(`${item.data}T00:00:00`).toLocaleDateString("pt-BR")} — {item.total} família(s)
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {datasDistribuicao.slice(0, 8).map((item) => {
+              const selecionada = item.data === data;
+              return (
+                <button
+                  key={item.data}
+                  type="button"
+                  onClick={() => setData(item.data)}
+                  className={`min-w-44 rounded-xl border px-4 py-3 text-left transition ${
+                    selecionada
+                      ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                      : "border-slate-200 bg-slate-50 text-slate-800 hover:border-blue-300 hover:bg-blue-50"
+                  }`}
+                >
+                  <span className="block text-sm font-bold capitalize">
+                    {new Date(`${item.data}T00:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+                  </span>
+                  <span className={`mt-1 block text-xs ${selecionada ? "text-blue-100" : "text-slate-500"}`}>
+                    {item.total} família(s) · {item.recebidas} recebida(s) · {item.ausentes} ausente(s)
+                  </span>
+                  {item.agendadas > 0 && (
+                    <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${selecionada ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800"}`}>
+                      {item.agendadas} aguardando
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       <FormSection
         title="Preparar lista"

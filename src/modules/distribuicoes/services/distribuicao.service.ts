@@ -16,6 +16,10 @@ export class DistribuicaoService {
     return this.repository.listarPorData(data);
   }
 
+  listarDatas() {
+    return this.repository.listarDatas();
+  }
+
   async agendar(data: DistribuicaoData) {
     const validado = distribuicaoSchema.parse(data);
     const familia = await this.familias.buscarPorId(validado.familiaId);

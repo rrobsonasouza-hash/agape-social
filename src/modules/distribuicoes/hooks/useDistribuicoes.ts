@@ -12,6 +12,7 @@ export function useDistribuicoes() {
       (data: string) => service.listarPorData(data),
       [],
     ),
+    listarDatas: useCallback(() => service.listarDatas(), []),
     agendar: useCallback((data: DistribuicaoData) => service.agendar(data), []),
     agendarTodas: useCallback(
       (data: string, campanhaId: string) =>

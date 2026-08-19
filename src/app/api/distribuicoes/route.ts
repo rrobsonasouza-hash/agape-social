@@ -10,12 +10,28 @@ const PERFIS_GESTAO = ["admin_plataforma", "admin_paroquia", "coordenador", "ope
 export async function GET(request: NextRequest) {
   try {
     const { supabase, paroquiaId } = await contextoOperacional(request, PERFIS_LEITURA, false, "/cestas");
-    const dataFiltro = new URL(request.url).searchParams.get("data");
+    const parametros = new URL(request.url).searchParams;
+    const dataFiltro = parametros.get("data");
     let consulta = supabase.from("distribuicoes_cestas").select("id,dados").eq("paroquia_id", paroquiaId);
     if (dataFiltro) consulta = consulta.eq("dados->>data", dataFiltro);
     const { data, error } = await consulta;
     if (error) throw error;
     const linhas = data ?? [];
+    if (parametros.get("resumo") === "datas") {
+      const resumos = new Map<string, { data: string; total: number; agendadas: number; recebidas: number; ausentes: number }>();
+      for (const item of linhas) {
+        const dados = item.dados as Record<string, unknown>;
+        const dataDistribuicao = typeof dados.data === "string" ? dados.data : "";
+        if (!dataDistribuicao) continue;
+        const resumo = resumos.get(dataDistribuicao) ?? { data: dataDistribuicao, total: 0, agendadas: 0, recebidas: 0, ausentes: 0 };
+        resumo.total += 1;
+        if (dados.status === "AGENDADA") resumo.agendadas += 1;
+        else if (dados.status === "AUSENTE") resumo.ausentes += 1;
+        else if (dados.status === "RETIRADA" || dados.status === "ENTREGUE_DOMICILIO") resumo.recebidas += 1;
+        resumos.set(dataDistribuicao, resumo);
+      }
+      return NextResponse.json([...resumos.values()].sort((a, b) => b.data.localeCompare(a.data)));
+    }
     const familiaIds = [...new Set(linhas
       .map((item) => (item.dados as Record<string, unknown>).familiaId)
       .filter((id): id is string => typeof id === "string" && Boolean(id)))];
