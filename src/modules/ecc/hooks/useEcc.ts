@@ -1,12 +1,29 @@
 "use client";
 import { useCallback } from "react";
 import { EccService } from "../services/ecc.service";
-import type { EccCasalFormData, EccEncontroFormData, EccEquipeFormData } from "../schemas/ecc.schema";
+import type {
+  EccCasalFormData,
+  EccEncontroFormData,
+  EccEquipeFormData,
+  EccParticipacaoFormData,
+  EccProgramacaoFormData,
+  EccTarefaFormData,
+  EccVinculoCasalFormData,
+} from "../schemas/ecc.schema";
+import type { EccProgramacaoStatus, EccTarefaStatus } from "../types/ecc.types";
+
 const service = new EccService();
-export function useEcc(){
-  const listar=useCallback(()=>service.listar(),[]);
-  const criarEncontro=useCallback((dados:EccEncontroFormData)=>service.criarEncontro(dados),[]);
-  const criarCasal=useCallback((dados:EccCasalFormData)=>service.criarCasal(dados),[]);
-  const adicionarEquipe=useCallback((dados:EccEquipeFormData)=>service.adicionarEquipe(dados),[]);
-  return { listar, criarEncontro, criarCasal, adicionarEquipe };
+export function useEcc() {
+  return {
+    listar: useCallback(() => service.listar(), []),
+    criarEncontro: useCallback((dados: EccEncontroFormData) => service.criarEncontro(dados), []),
+    criarCasal: useCallback((dados: EccCasalFormData) => service.criarCasal(dados), []),
+    vincularCasal: useCallback((dados: EccVinculoCasalFormData) => service.vincularCasal(dados), []),
+    adicionarEquipe: useCallback((dados: EccEquipeFormData) => service.adicionarEquipe(dados), []),
+    criarProgramacao: useCallback((dados: EccProgramacaoFormData) => service.criarProgramacao(dados), []),
+    criarTarefa: useCallback((dados: EccTarefaFormData) => service.criarTarefa(dados), []),
+    atualizarParticipacao: useCallback((id: string, dados: EccParticipacaoFormData) => service.atualizarParticipacao(id, dados), []),
+    atualizarTarefa: useCallback((id: string, status: EccTarefaStatus) => service.atualizarTarefa(id, status), []),
+    atualizarProgramacao: useCallback((id: string, status: EccProgramacaoStatus) => service.atualizarProgramacao(id, status), []),
+  };
 }

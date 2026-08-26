@@ -1,6 +1,9 @@
 export type EccEncontroStatus = "PLANEJAMENTO" | "INSCRICOES" | "PREPARACAO" | "REALIZADO" | "ENCERRADO";
 export type EccCasalSituacao = "ELEGIVEL" | "CONVIDADO" | "INSCRITO" | "CONFIRMADO" | "LISTA_ESPERA" | "DESISTENTE" | "PARTICIPOU";
 export type EccEquipeStatus = "CONVIDADO" | "CONFIRMADO" | "INDISPONIVEL" | "PARTICIPOU";
+export type EccParticipacaoSituacao = "CONVIDADO" | "INSCRITO" | "CONFIRMADO" | "LISTA_ESPERA" | "DESISTENTE" | "PARTICIPOU";
+export type EccProgramacaoStatus = "PLANEJADA" | "CONFIRMADA" | "CONCLUIDA" | "CANCELADA";
+export type EccTarefaStatus = "PENDENTE" | "EM_ANDAMENTO" | "CONCLUIDA" | "CANCELADA";
 
 export type EccEncontro = {
   id: string; numero: number; nome: string; tema: string; lema: string; dataInicio: string; dataFim: string;
@@ -10,6 +13,8 @@ export type EccEncontro = {
 export type EccCasal = {
   id: string; conjugeUmNome: string; conjugeDoisNome: string; telefone: string; email: string;
   dataCasamento: string; voluntarioUmId: string; voluntarioDoisId: string; situacao: EccCasalSituacao; observacoes: string;
+  cep: string; logradouro: string; numero: string; complemento: string; bairro: string; cidade: string; estado: string;
+  latitude: number | null; longitude: number | null;
 };
 
 export type EccEquipe = {
@@ -17,4 +22,25 @@ export type EccEquipe = {
   coordenador: boolean; status: EccEquipeStatus; observacoes: string;
 };
 
-export type EccPainel = { encontros: EccEncontro[]; casais: EccCasal[]; equipe: EccEquipe[]; voluntarios: Array<{ id: string; nome: string }> };
+export type EccParticipacao = {
+  id: string; encontroId: string; casalId: string; casalNome: string; situacao: EccParticipacaoSituacao;
+  inscritoEm: string; observacoes: string;
+};
+
+export type EccProgramacao = {
+  id: string; encontroId: string; titulo: string; descricao: string; data: string; horaInicio: string; horaFim: string;
+  ambiente: string; equipe: string; responsavelVoluntarioId: string; responsavelNome: string;
+  status: EccProgramacaoStatus; observacoes: string;
+};
+
+export type EccTarefa = {
+  id: string; encontroId: string; titulo: string; descricao: string; equipe: string;
+  responsavelVoluntarioId: string; responsavelNome: string; prazo: string; prioridade: "BAIXA" | "MEDIA" | "ALTA" | "URGENTE";
+  status: EccTarefaStatus; observacoes: string;
+};
+
+export type EccPainel = {
+  encontros: EccEncontro[]; casais: EccCasal[]; participacoes: EccParticipacao[]; equipe: EccEquipe[];
+  programacao: EccProgramacao[]; tarefas: EccTarefa[]; voluntarios: Array<{ id: string; nome: string }>;
+  paroquia: { nome: string; latitude: number | null; longitude: number | null };
+};

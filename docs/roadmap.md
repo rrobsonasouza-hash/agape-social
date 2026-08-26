@@ -196,11 +196,18 @@ Fundação   Auth +      Cadastros   Operação    Inteligência  Qualidade
 - [x] Equipes formadas a partir dos voluntários existentes
 - [x] Isolamento por paróquia, permissões e manual ilustrado
 
+### Fase 2 — Operação por edição
+
+- [x] Inscrições, confirmações, lista de espera e desistências por edição
+- [x] Cronograma com data, horário, ambiente, equipe e responsável
+- [x] Tarefas com prazo, prioridade, equipe, responsável e andamento
+- [x] Vínculo opcional dos cônjuges aos voluntários existentes
+- [x] Endereço e geolocalização dos casais encontristas
+- [x] Mapa por edição com pinos e relatório de distância até a paróquia
+
 ### Próximas fases
 
-- [ ] Ficha detalhada e acompanhamento pastoral do casal
-- [ ] Inscrições, confirmação, lista de espera e desistências por edição
-- [ ] Cronograma do encontro, ambientes, tarefas e escalas das equipes
+- [ ] Ficha detalhada, visita e acompanhamento pastoral do casal
 - [ ] Comunicação, documentos, relatórios e indicadores do ECC
 
 ---
