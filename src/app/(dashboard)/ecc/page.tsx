@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   CalendarDays, ClipboardCheck, Clock3, HeartHandshake, ListTodo,
   MapPin, Plus, RefreshCw, Search, Users,
@@ -80,6 +80,7 @@ export default function EccPage() {
   const [busca, setBusca] = useState("");
   const [consultandoCep, setConsultandoCep] = useState(false);
   const [casalEmEdicao, setCasalEmEdicao] = useState("");
+  const formularioRef = useRef<HTMLDivElement>(null);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -92,6 +93,11 @@ export default function EccPage() {
   }, [listar]);
 
   useEffect(() => { void carregar(); }, [carregar]);
+  useEffect(() => {
+    if (!formulario) return;
+    const quadro = window.requestAnimationFrame(() => formularioRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    return () => window.cancelAnimationFrame(quadro);
+  }, [formulario]);
   useEffect(() => {
     if (!encontroId) return;
     setCasal((atual) => ({ ...atual, encontroId: atual.encontroId || encontroId }));
@@ -179,7 +185,6 @@ export default function EccPage() {
     if (!registro) return;
     setNovoVoluntario({ ...novoVoluntarioInicial, casalId, posicao, telefone: registro.telefone, email: registro.email });
     setFormulario("voluntario");
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
   function vincularCasal() {
     if (!casalParaVinculo || !encontroId) return;
@@ -192,7 +197,6 @@ export default function EccPage() {
     setCasalEmEdicao(id);
     setCasal({ ...registro, encontroId: "" });
     setFormulario("casal");
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return <main className="mx-auto max-w-7xl space-y-6">
@@ -219,7 +223,7 @@ export default function EccPage() {
 
     {aba === "secretaria" && participacoes.some((item) => { const registro = dados.casais.find((casalItem) => casalItem.id === item.casalId); return registro && (!registro.voluntarioUmId || !registro.voluntarioDoisId); }) && <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4"><h2 className="font-black text-emerald-950">Cadastrar cônjuge como voluntário</h2><p className="mt-1 text-sm text-emerald-800">Use apenas quando a pessoa também atuar como voluntária. O casal e seu histórico no ECC serão preservados.</p><div className="mt-3 grid gap-2 md:grid-cols-2">{participacoes.map((item) => { const registro = dados.casais.find((casalItem) => casalItem.id === item.casalId); if (!registro || (registro.voluntarioUmId && registro.voluntarioDoisId)) return null; return <div key={item.id} className="rounded-xl bg-white p-3"><strong className="text-sm">{item.casalNome}</strong><div className="mt-2 flex flex-wrap gap-2">{!registro.voluntarioUmId && <button type="button" onClick={() => abrirCadastroVoluntario(registro.id, "UM")} className="rounded-lg border border-emerald-300 px-3 py-2 text-xs font-bold text-emerald-800">Cadastrar {registro.conjugeUmNome}</button>}{!registro.voluntarioDoisId && <button type="button" onClick={() => abrirCadastroVoluntario(registro.id, "DOIS")} className="rounded-lg border border-emerald-300 px-3 py-2 text-xs font-bold text-emerald-800">Cadastrar {registro.conjugeDoisNome}</button>}</div></div>; })}</div></section>}
 
-    <div className="flex flex-wrap gap-2">
+    <div ref={formularioRef} className="scroll-mt-4 flex flex-wrap gap-2">
       {aba === "secretaria" && <button onClick={() => { setCasalEmEdicao(""); setCasal({ ...casalInicial, encontroId }); setFormulario("casal"); }} className={botao}><Plus size={16} className="mr-2 inline" />Cadastrar casal</button>}
       {aba === "cronograma" && <button onClick={() => setFormulario("programacao")} className={botao}><Plus size={16} className="mr-2 inline" />Nova atividade</button>}
       {aba === "tarefas" && <button onClick={() => setFormulario("tarefa")} className={botao}><Plus size={16} className="mr-2 inline" />Nova tarefa</button>}
