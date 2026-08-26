@@ -37,6 +37,11 @@ describe("validação server-side dos cadastros", () => {
     assert.equal(resultado.success, false);
   });
 
+  it("aceita cônjuge e endereço no cadastro do voluntário", () => {
+    const resultado = voluntarioSchema.safeParse({ nome: "João da Silva", cpf: "123.456.789-00", telefone: "(11) 99999-9999", conjugeNome: "Maria da Silva", cep: "02401-100", logradouro: "Rua Teste", numero: "10", cidade: "São Paulo", estado: "SP", pastoral: "ECC", funcao: "Acolhida", disponibilidade: { segunda: false, terca: false, quarta: false, quinta: false, sexta: false, sabado: true, domingo: false }, status: "ATIVO" });
+    assert.equal(resultado.success, true);
+  });
+
   it("rejeita doador sem documento", () => {
     assert.equal(doadorSchema.safeParse({ nome: "Empresa Solidária", tipoPessoa: "JURIDICA", documento: "", telefone: "11999999999", interesseDoacao: "Alimentos", frequencia: "MENSAL", status: "ATIVO" }).success, false);
   });

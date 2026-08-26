@@ -32,13 +32,19 @@ export class EnderecoService {
     };
 
     try {
-      const respostaCoordenadas =
-        await this.repository.buscarCoordenadasPorCep(cep);
-      const coordenadas = coordenadasCepResponseSchema.parse(
-        respostaCoordenadas
-      ).location.coordinates;
-      const latitude = Number(coordenadas.latitude);
-      const longitude = Number(coordenadas.longitude);
+      // Prioriza rua e CEP: algumas bases de CEP retornam apenas o centro da cidade.
+      const respostaAlternativa = await this.repository.buscarCoordenadasAlternativasPorCep(cep, {
+        logradouro: dados.logradouro,
+        cidade: dados.localidade,
+        estado: dados.uf,
+      });
+      const coordenadas = coordenadasNominatimResponseSchema.parse(respostaAlternativa)[0];
+      const latitude = Number(coordenadas?.lat);
+      const longitude = Number(coordenadas?.lon);
+
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        throw new Error("Endereço sem coordenadas precisas.");
+      }
 
       if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
         endereco.latitude = latitude;
@@ -46,23 +52,13 @@ export class EnderecoService {
       }
     } catch {
       try {
-        const respostaAlternativa =
-          await this.repository.buscarCoordenadasAlternativasPorCep(cep, {
-            logradouro: dados.logradouro,
-            cidade: dados.localidade,
-            estado: dados.uf,
-          });
-        const coordenadasAlternativas =
-          coordenadasNominatimResponseSchema.parse(respostaAlternativa)[0];
-
-        if (coordenadasAlternativas) {
-          const latitude = Number(coordenadasAlternativas.lat);
-          const longitude = Number(coordenadasAlternativas.lon);
-
-          if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
-            endereco.latitude = latitude;
-            endereco.longitude = longitude;
-          }
+        const respostaCoordenadas = await this.repository.buscarCoordenadasPorCep(cep);
+        const coordenadas = coordenadasCepResponseSchema.parse(respostaCoordenadas).location.coordinates;
+        const latitude = Number(coordenadas.latitude);
+        const longitude = Number(coordenadas.longitude);
+        if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+          endereco.latitude = latitude;
+          endereco.longitude = longitude;
         }
       } catch {
         // O endereço continua válido e o ponto pode ser ajustado manualmente.

@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   eccCasalSchema, eccEncontroSchema, eccEquipeSchema, eccParticipacaoSchema,
   eccProgramacaoSchema, eccTarefaSchema,
+  eccNovoVoluntarioSchema,
 } from "../../src/modules/ecc/schemas/ecc.schema.ts";
 
 describe("ECC", () => {
@@ -34,5 +35,10 @@ describe("ECC", () => {
   });
   it("controla a situacao do casal por edicao", () => {
     assert.equal(eccParticipacaoSchema.parse({ situacao: "CONFIRMADO" }).situacao, "CONFIRMADO");
+  });
+  it("exige dados pastorais e CPF ao transformar conjuge em voluntario", () => {
+    const entrada = eccNovoVoluntarioSchema.parse({ casalId: "11111111-1111-4111-8111-111111111111", posicao: "DOIS", cpf: "123.456.789-00", telefone: "11999999999", pastoral: "ECC", funcao: "Acolhida" });
+    assert.equal(entrada.posicao, "DOIS");
+    assert.throws(() => eccNovoVoluntarioSchema.parse({ ...entrada, cpf: "123" }));
   });
 });

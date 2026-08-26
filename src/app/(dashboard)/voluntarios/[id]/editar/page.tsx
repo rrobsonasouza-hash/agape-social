@@ -51,6 +51,16 @@ export default function EditarVoluntarioPage() {
           email: voluntario.email || "",
           dataNascimento:
             voluntario.dataNascimento || "",
+          conjugeNome: voluntario.conjugeNome || "",
+          cep: voluntario.cep || "",
+          logradouro: voluntario.logradouro || "",
+          numero: voluntario.numero || "",
+          complemento: voluntario.complemento || "",
+          bairro: voluntario.bairro || "",
+          cidade: voluntario.cidade || "",
+          estado: voluntario.estado || "",
+          latitude: voluntario.latitude ?? null,
+          longitude: voluntario.longitude ?? null,
           pastoral:
             voluntario.pastoral || "",
           funcao:

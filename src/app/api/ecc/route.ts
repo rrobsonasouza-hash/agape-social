@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
@@ -13,6 +14,7 @@ import {
   eccTarefaSchema,
   eccTarefaStatusSchema,
   eccVinculoCasalSchema,
+  eccNovoVoluntarioSchema,
 } from "@/modules/ecc/schemas/ecc.schema";
 
 const PERFIS_ESCRITA = ["admin_plataforma", "admin_paroquia", "coordenador", "operador"];
@@ -128,7 +130,19 @@ export async function GET(request: NextRequest) {
         prazo: item.prazo ?? "", prioridade: item.prioridade, status: item.status, observacoes: item.observacoes,
       })),
       voluntarios: (voluntarios.data ?? [])
-        .map((item) => ({ id: item.id, nome: nomesVoluntarios.get(item.id) ?? "Voluntário" }))
+        .map((item) => {
+          const dados = item.dados as Record<string, unknown>;
+          return {
+            id: item.id, nome: nomesVoluntarios.get(item.id) ?? "Voluntário",
+            telefone: String(dados.telefone ?? ""), email: String(dados.email ?? ""),
+            conjugeNome: String(dados.conjugeNome ?? ""), cep: String(dados.cep ?? ""),
+            logradouro: String(dados.logradouro ?? ""), numero: String(dados.numero ?? ""),
+            complemento: String(dados.complemento ?? ""), bairro: String(dados.bairro ?? ""),
+            cidade: String(dados.cidade ?? ""), estado: String(dados.estado ?? ""),
+            latitude: typeof dados.latitude === "number" ? dados.latitude : null,
+            longitude: typeof dados.longitude === "number" ? dados.longitude : null,
+          };
+        })
         .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
       paroquia: {
         nome: String(paroquia.nome),
@@ -192,6 +206,40 @@ export async function POST(request: NextRequest) {
         if (vinculo.error) throw vinculo.error;
       }
       return NextResponse.json({ id: data.id }, { status: 201 });
+    }
+    if (entrada.tipo === "voluntario") {
+      if (!["admin_plataforma", "admin_paroquia", "coordenador"].includes(usuario.role)) throw new Error("FORBIDDEN");
+      const dados = eccNovoVoluntarioSchema.parse(entrada.dados);
+      const casal = await supabase.from("ecc_casais").select("*").eq("id", dados.casalId).eq("paroquia_id", paroquiaId).maybeSingle();
+      if (casal.error || !casal.data) throw casal.error ?? new Error("Casal não encontrado nesta paróquia.");
+      const coluna = dados.posicao === "UM" ? "voluntario_um_id" : "voluntario_dois_id";
+      if (casal.data[coluna]) throw new Error("Este cônjuge já está vinculado a um voluntário.");
+      const cpf = dados.cpf.replace(/\D/g, "");
+      const existentes = await supabase.from("voluntarios").select("id,dados").eq("paroquia_id", paroquiaId);
+      if (existentes.error) throw existentes.error;
+      if ((existentes.data ?? []).some((item) => String((item.dados as Record<string, unknown>).cpf ?? "").replace(/\D/g, "") === cpf))
+        throw new Error("Já existe um voluntário com este CPF nesta paróquia.");
+      const nome = dados.posicao === "UM" ? casal.data.conjuge_um_nome : casal.data.conjuge_dois_nome;
+      const conjugeNome = dados.posicao === "UM" ? casal.data.conjuge_dois_nome : casal.data.conjuge_um_nome;
+      const id = randomUUID();
+      const registro = {
+        nome, cpf, telefone: dados.telefone, email: dados.email, dataNascimento: "", conjugeNome,
+        cep: casal.data.cep ?? "", logradouro: casal.data.logradouro ?? "", numero: casal.data.numero ?? "",
+        complemento: casal.data.complemento ?? "", bairro: casal.data.bairro ?? "", cidade: casal.data.cidade ?? "",
+        estado: casal.data.estado ?? "", latitude: casal.data.latitude === null ? null : Number(casal.data.latitude),
+        longitude: casal.data.longitude === null ? null : Number(casal.data.longitude), pastoral: dados.pastoral,
+        funcao: dados.funcao, dataIngresso: dados.dataIngresso,
+        disponibilidade: { segunda: false, terca: false, quarta: false, quinta: false, sexta: false, sabado: false, domingo: false },
+        observacoes: "Cadastro originado pelo vínculo de casal no ECC.", status: "ATIVO",
+      };
+      const inclusao = await supabase.from("voluntarios").insert({ id, paroquia_id: paroquiaId, dados: registro });
+      if (inclusao.error) throw inclusao.error;
+      const vinculo = await supabase.from("ecc_casais").update({ [coluna]: id, updated_at: new Date().toISOString() }).eq("id", dados.casalId).eq("paroquia_id", paroquiaId);
+      if (vinculo.error) {
+        await supabase.from("voluntarios").delete().eq("id", id).eq("paroquia_id", paroquiaId);
+        throw vinculo.error;
+      }
+      return NextResponse.json({ id }, { status: 201 });
     }
     if (entrada.tipo === "participacao") {
       const dados = eccVinculoCasalSchema.parse(entrada.dados);

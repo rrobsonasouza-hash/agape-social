@@ -41,8 +41,14 @@ export type EccTarefa = {
   status: EccTarefaStatus; observacoes: string;
 };
 
+export type EccVoluntarioResumo = {
+  id: string; nome: string; telefone: string; email: string; conjugeNome: string;
+  cep: string; logradouro: string; numero: string; complemento: string; bairro: string; cidade: string; estado: string;
+  latitude: number | null; longitude: number | null;
+};
+
 export type EccPainel = {
   encontros: EccEncontro[]; casais: EccCasal[]; participacoes: EccParticipacao[]; equipe: EccEquipe[];
-  programacao: EccProgramacao[]; tarefas: EccTarefa[]; voluntarios: Array<{ id: string; nome: string }>;
+  programacao: EccProgramacao[]; tarefas: EccTarefa[]; voluntarios: EccVoluntarioResumo[];
   paroquia: { nome: string; latitude: number | null; longitude: number | null };
 };

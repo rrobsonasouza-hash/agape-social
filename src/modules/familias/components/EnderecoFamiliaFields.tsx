@@ -127,7 +127,7 @@ export function EnderecoFamiliaFields({
           <div>
             <h3 className="font-medium text-slate-900">Localização no mapa</h3>
             <p className="mt-1 text-sm text-slate-500">
-              Clique no mapa para posicionar o imóvel. O endereço não é enviado a serviços de geocodificação.
+              Confira o ponto aproximado encontrado pelo CEP e clique no mapa para posicionar exatamente o imóvel.
             </p>
           </div>
         </div>

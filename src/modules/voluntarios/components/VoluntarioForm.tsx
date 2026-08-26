@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
@@ -11,6 +11,7 @@ import { DateField } from "@/components/forms/DateField";
 import { FormSection } from "@/components/forms/FormSection";
 import { TextAreaField } from "@/components/forms/TextAreaField";
 import { TextField } from "@/components/forms/TextField";
+import { EnderecoService } from "@/modules/enderecos/services/endereco.service";
 
 import {
   voluntarioSchema,
@@ -31,6 +32,9 @@ const valoresPadrao: VoluntarioFormData = {
   telefone: "",
   email: "",
   dataNascimento: "",
+  conjugeNome: "",
+  cep: "", logradouro: "", numero: "", complemento: "", bairro: "", cidade: "", estado: "",
+  latitude: null, longitude: null,
   pastoral: "Pastoral Social",
   funcao: "Voluntário",
   dataIngresso: "",
@@ -47,6 +51,8 @@ const valoresPadrao: VoluntarioFormData = {
   status: "ATIVO",
 };
 
+const enderecoService = new EnderecoService();
+
 export function VoluntarioForm({
   valoresIniciais,
   textoBotao = "Salvar Voluntário",
@@ -58,6 +64,8 @@ export function VoluntarioForm({
     register,
     handleSubmit,
     reset,
+    getValues,
+    setValue,
     formState: {
       errors,
       isSubmitting,
@@ -66,6 +74,7 @@ export function VoluntarioForm({
     resolver: zodResolver(voluntarioSchema),
     defaultValues: valoresIniciais ?? valoresPadrao,
   });
+  const [consultandoCep, setConsultandoCep] = useState(false);
 
   useEffect(() => {
     reset(valoresIniciais ?? valoresPadrao);
@@ -81,6 +90,24 @@ export function VoluntarioForm({
     toast.error(
       "Revise os campos obrigatórios do formulário."
     );
+  }
+
+  async function consultarCep() {
+    setConsultandoCep(true);
+    try {
+      const endereco = await enderecoService.buscarPorCep(getValues("cep") || "");
+      setValue("cep", endereco.cep, { shouldDirty: true });
+      setValue("logradouro", endereco.logradouro, { shouldDirty: true });
+      setValue("complemento", endereco.complemento, { shouldDirty: true });
+      setValue("bairro", endereco.bairro, { shouldDirty: true });
+      setValue("cidade", endereco.cidade, { shouldDirty: true });
+      setValue("estado", endereco.estado, { shouldDirty: true });
+      setValue("latitude", endereco.latitude ?? null, { shouldDirty: true });
+      setValue("longitude", endereco.longitude ?? null, { shouldDirty: true });
+      toast.success("Endereço residencial preenchido.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível consultar o CEP.");
+    } finally { setConsultandoCep(false); }
   }
 
   return (
@@ -135,6 +162,25 @@ export function VoluntarioForm({
             {...register("dataNascimento")}
             error={errors.dataNascimento?.message}
           />
+        </div>
+      </FormSection>
+
+      <FormSection
+        title="Cônjuge e endereço residencial"
+        description="Esses dados poderão ser reaproveitados ao formar um casal no ECC. O cônjuge não será transformado em voluntário automaticamente."
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          <TextField label="Nome do cônjuge" placeholder="Opcional" {...register("conjugeNome")} error={errors.conjugeNome?.message} />
+          <div>
+            <TextField label="CEP" placeholder="00000-000" mask="cep" inputMode="numeric" {...register("cep")} error={errors.cep?.message} />
+            <button type="button" onClick={() => void consultarCep()} disabled={consultandoCep} className="mt-2 text-sm font-bold text-blue-700 disabled:opacity-50">{consultandoCep ? "Consultando..." : "Buscar endereço"}</button>
+          </div>
+          <TextField label="Logradouro" {...register("logradouro")} error={errors.logradouro?.message} />
+          <TextField label="Número" {...register("numero")} error={errors.numero?.message} />
+          <TextField label="Complemento" {...register("complemento")} error={errors.complemento?.message} />
+          <TextField label="Bairro" {...register("bairro")} error={errors.bairro?.message} />
+          <TextField label="Cidade" {...register("cidade")} error={errors.cidade?.message} />
+          <TextField label="UF" maxLength={2} {...register("estado")} error={errors.estado?.message} />
         </div>
       </FormSection>
 

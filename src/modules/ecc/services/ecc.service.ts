@@ -7,6 +7,7 @@ import {
   eccProgramacaoSchema,
   eccTarefaSchema,
   eccVinculoCasalSchema,
+  eccNovoVoluntarioSchema,
   type EccCasalFormData,
   type EccEncontroFormData,
   type EccEquipeFormData,
@@ -14,6 +15,7 @@ import {
   type EccProgramacaoFormData,
   type EccTarefaFormData,
   type EccVinculoCasalFormData,
+  type EccNovoVoluntarioFormData,
 } from "../schemas/ecc.schema";
 import type { EccProgramacaoStatus, EccTarefaStatus } from "../types/ecc.types";
 
@@ -27,6 +29,7 @@ export class EccService {
   adicionarEquipe(dados: EccEquipeFormData) { return this.repository.adicionarEquipe(eccEquipeSchema.parse(dados)); }
   criarProgramacao(dados: EccProgramacaoFormData) { return this.repository.criarProgramacao(eccProgramacaoSchema.parse(dados)); }
   criarTarefa(dados: EccTarefaFormData) { return this.repository.criarTarefa(eccTarefaSchema.parse(dados)); }
+  cadastrarConjugeComoVoluntario(dados: EccNovoVoluntarioFormData) { return this.repository.cadastrarConjugeComoVoluntario(eccNovoVoluntarioSchema.parse(dados)); }
   atualizarParticipacao(id: string, dados: EccParticipacaoFormData) { return this.repository.atualizarParticipacao(id, eccParticipacaoSchema.parse(dados)); }
   atualizarTarefa(id: string, status: EccTarefaStatus) { return this.repository.atualizarTarefa(id, status); }
   atualizarProgramacao(id: string, status: EccProgramacaoStatus) { return this.repository.atualizarProgramacao(id, status); }

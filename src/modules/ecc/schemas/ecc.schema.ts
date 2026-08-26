@@ -73,6 +73,17 @@ export const eccVinculoCasalSchema = eccParticipacaoSchema.extend({
   casalId: z.string().uuid("Selecione um casal."),
 });
 
+export const eccNovoVoluntarioSchema = z.object({
+  casalId: z.string().uuid("Selecione um casal."),
+  posicao: z.enum(["UM", "DOIS"]),
+  cpf: z.string().trim().refine((valor) => valor.replace(/\D/g, "").length === 11, "Informe um CPF válido."),
+  telefone: z.string().trim().min(10, "Informe o telefone."),
+  email: z.string().trim().email("E-mail inválido.").or(z.literal("")).default(""),
+  pastoral: z.string().trim().min(2, "Informe a pastoral ou área de atuação."),
+  funcao: z.string().trim().min(2, "Informe a função do voluntário."),
+  dataIngresso: z.string().date().or(z.literal("")).default(""),
+});
+
 export type EccEncontroFormData = z.infer<typeof eccEncontroSchema>;
 export type EccCasalFormData = z.infer<typeof eccCasalSchema>;
 export type EccEquipeFormData = z.infer<typeof eccEquipeSchema>;
@@ -80,3 +91,4 @@ export type EccProgramacaoFormData = z.infer<typeof eccProgramacaoSchema>;
 export type EccTarefaFormData = z.infer<typeof eccTarefaSchema>;
 export type EccParticipacaoFormData = z.infer<typeof eccParticipacaoSchema>;
 export type EccVinculoCasalFormData = z.infer<typeof eccVinculoCasalSchema>;
+export type EccNovoVoluntarioFormData = z.infer<typeof eccNovoVoluntarioSchema>;

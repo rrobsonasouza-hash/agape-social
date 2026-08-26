@@ -7,6 +7,7 @@ import type {
   EccProgramacaoFormData,
   EccTarefaFormData,
   EccVinculoCasalFormData,
+  EccNovoVoluntarioFormData,
 } from "../schemas/ecc.schema";
 import type { EccPainel, EccProgramacaoStatus, EccTarefaStatus } from "../types/ecc.types";
 
@@ -36,6 +37,7 @@ export class EccRepository {
   adicionarEquipe(dados: EccEquipeFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "equipe", dados }) }); }
   criarProgramacao(dados: EccProgramacaoFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "programacao", dados }) }); }
   criarTarefa(dados: EccTarefaFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "tarefa", dados }) }); }
+  cadastrarConjugeComoVoluntario(dados: EccNovoVoluntarioFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "voluntario", dados }) }); }
   atualizarParticipacao(id: string, dados: EccParticipacaoFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "participacao", id, dados }) }); }
   atualizarTarefa(id: string, status: EccTarefaStatus) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "tarefa", id, dados: { status } }) }); }
   atualizarProgramacao(id: string, status: EccProgramacaoStatus) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "programacao", id, dados: { status } }) }); }

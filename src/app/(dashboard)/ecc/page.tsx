@@ -13,7 +13,7 @@ import { EnderecoService } from "@/modules/enderecos/services/endereco.service";
 import { useEcc } from "@/modules/ecc/hooks/useEcc";
 import type {
   EccCasalFormData, EccEncontroFormData, EccEquipeFormData, EccProgramacaoFormData,
-  EccTarefaFormData, EccVinculoCasalFormData,
+  EccTarefaFormData, EccVinculoCasalFormData, EccNovoVoluntarioFormData,
 } from "@/modules/ecc/schemas/ecc.schema";
 import type {
   EccClassificacaoParticipacao, EccPainel, EccParticipacaoSituacao, EccProgramacaoStatus, EccTarefaStatus,
@@ -46,6 +46,7 @@ const tarefaInicial: EccTarefaFormData = {
   encontroId: "", titulo: "", descricao: "", equipe: "", responsavelVoluntarioId: "", prazo: "",
   prioridade: "MEDIA", status: "PENDENTE", observacoes: "",
 };
+const novoVoluntarioInicial: EccNovoVoluntarioFormData = { casalId: "", posicao: "UM", cpf: "", telefone: "", email: "", pastoral: "ECC", funcao: "Voluntário", dataIngresso: hoje };
 
 const campo = "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
 const label = "grid gap-1 text-sm font-semibold text-slate-700";
@@ -62,18 +63,19 @@ function Metrica({ icon: Icon, titulo, valor, apoio }: { icon: typeof Users; tit
 
 export default function EccPage() {
   const { listar, criarEncontro, criarCasal, atualizarCasal, vincularCasal: vincularCasalApi, adicionarEquipe,
-    criarProgramacao, criarTarefa, atualizarParticipacao, atualizarProgramacao, atualizarTarefa } = useEcc();
+    criarProgramacao, criarTarefa, cadastrarConjugeComoVoluntario, atualizarParticipacao, atualizarProgramacao, atualizarTarefa } = useEcc();
   const [dados, setDados] = useState(vazio);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState("");
   const [aba, setAba] = useState<"secretaria" | "mapa" | "cronograma" | "tarefas" | "equipes">("secretaria");
-  const [formulario, setFormulario] = useState<"encontro" | "casal" | "equipe" | "programacao" | "tarefa" | null>(null);
+  const [formulario, setFormulario] = useState<"encontro" | "casal" | "equipe" | "programacao" | "tarefa" | "voluntario" | null>(null);
   const [encontroId, setEncontroId] = useState("");
   const [encontro, setEncontro] = useState(encontroInicial);
   const [casal, setCasal] = useState(casalInicial);
   const [equipe, setEquipe] = useState(equipeInicial);
   const [programacao, setProgramacao] = useState(programacaoInicial);
   const [tarefa, setTarefa] = useState(tarefaInicial);
+  const [novoVoluntario, setNovoVoluntario] = useState(novoVoluntarioInicial);
   const [casalParaVinculo, setCasalParaVinculo] = useState("");
   const [busca, setBusca] = useState("");
   const [consultandoCep, setConsultandoCep] = useState(false);
@@ -97,6 +99,32 @@ export default function EccPage() {
     setProgramacao((atual) => ({ ...atual, encontroId }));
     setTarefa((atual) => ({ ...atual, encontroId }));
   }, [encontroId]);
+
+  useEffect(() => {
+    const primeiro = dados.voluntarios.find((item) => item.id === casal.voluntarioUmId);
+    const segundo = dados.voluntarios.find((item) => item.id === casal.voluntarioDoisId);
+    if (!primeiro && !segundo) return;
+    setCasal((atual) => {
+      const referencia = primeiro ?? segundo!;
+      const proximo = {
+        ...atual,
+        conjugeUmNome: primeiro?.nome ?? atual.conjugeUmNome,
+        conjugeDoisNome: segundo?.nome ?? (primeiro?.conjugeNome || atual.conjugeDoisNome),
+        telefone: atual.telefone || referencia.telefone,
+        email: atual.email || referencia.email,
+        cep: atual.cep || referencia.cep,
+        logradouro: atual.logradouro || referencia.logradouro,
+        numero: atual.numero || referencia.numero,
+        complemento: atual.complemento || referencia.complemento,
+        bairro: atual.bairro || referencia.bairro,
+        cidade: atual.cidade || referencia.cidade,
+        estado: atual.estado || referencia.estado,
+        latitude: atual.latitude ?? referencia.latitude,
+        longitude: atual.longitude ?? referencia.longitude,
+      };
+      return JSON.stringify(proximo) === JSON.stringify(atual) ? atual : proximo;
+    });
+  }, [casal.voluntarioUmId, casal.voluntarioDoisId, dados.voluntarios]);
 
   const edicao = dados.encontros.find((item) => item.id === encontroId);
   const participacoes = useMemo(() => dados.participacoes.filter((item) => item.encontroId === encontroId), [dados.participacoes, encontroId]);
@@ -145,6 +173,14 @@ export default function EccPage() {
   function salvarEquipe(event: FormEvent) { event.preventDefault(); void executar("equipe", () => adicionarEquipe(equipe)); }
   function salvarProgramacao(event: FormEvent) { event.preventDefault(); void executar("programacao", () => criarProgramacao(programacao)); }
   function salvarTarefa(event: FormEvent) { event.preventDefault(); void executar("tarefa", () => criarTarefa(tarefa)); }
+  function salvarNovoVoluntario(event: FormEvent) { event.preventDefault(); void executar("voluntario", () => cadastrarConjugeComoVoluntario(novoVoluntario), "Cônjuge cadastrado e vinculado como voluntário."); }
+  function abrirCadastroVoluntario(casalId: string, posicao: "UM" | "DOIS") {
+    const registro = dados.casais.find((item) => item.id === casalId);
+    if (!registro) return;
+    setNovoVoluntario({ ...novoVoluntarioInicial, casalId, posicao, telefone: registro.telefone, email: registro.email });
+    setFormulario("voluntario");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
   function vincularCasal() {
     if (!casalParaVinculo || !encontroId) return;
     const entrada: EccVinculoCasalFormData = { casalId: casalParaVinculo, encontroId, situacao: "INSCRITO", observacoes: "" };
@@ -181,6 +217,8 @@ export default function EccPage() {
 
     {aba === "secretaria" && participacoes.length > 0 && <section className="rounded-2xl border bg-white p-4 shadow-sm"><p className="text-sm font-black text-slate-900">Papel do casal na edição e atualização cadastral</p><p className="mt-1 text-xs text-slate-500">O papel pertence somente à edição selecionada e preserva o histórico dos outros encontros.</p><div className="mt-3 grid gap-2 md:grid-cols-2">{participacoes.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-3"><strong className="text-sm">{item.casalNome}</strong><div className="flex gap-2"><select value={item.classificacao} onChange={(e) => void executar(`classificacao-${item.id}`, () => atualizarParticipacao(item.id, { situacao: item.situacao, classificacao: e.target.value as EccClassificacaoParticipacao, observacoes: item.observacoes }), "Papel do casal atualizado nesta edição.")} className="rounded-lg border bg-white px-2 py-2 text-xs font-bold">{Object.entries(classificacaoParticipacao).map(([valor, nome]) => <option key={valor} value={valor}>{nome}</option>)}</select><button type="button" onClick={() => editarCasal(item.casalId)} className="rounded-lg border px-3 py-2 text-xs font-bold text-blue-700">Cadastro</button></div></div>)}</div></section>}
 
+    {aba === "secretaria" && participacoes.some((item) => { const registro = dados.casais.find((casalItem) => casalItem.id === item.casalId); return registro && (!registro.voluntarioUmId || !registro.voluntarioDoisId); }) && <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4"><h2 className="font-black text-emerald-950">Cadastrar cônjuge como voluntário</h2><p className="mt-1 text-sm text-emerald-800">Use apenas quando a pessoa também atuar como voluntária. O casal e seu histórico no ECC serão preservados.</p><div className="mt-3 grid gap-2 md:grid-cols-2">{participacoes.map((item) => { const registro = dados.casais.find((casalItem) => casalItem.id === item.casalId); if (!registro || (registro.voluntarioUmId && registro.voluntarioDoisId)) return null; return <div key={item.id} className="rounded-xl bg-white p-3"><strong className="text-sm">{item.casalNome}</strong><div className="mt-2 flex flex-wrap gap-2">{!registro.voluntarioUmId && <button type="button" onClick={() => abrirCadastroVoluntario(registro.id, "UM")} className="rounded-lg border border-emerald-300 px-3 py-2 text-xs font-bold text-emerald-800">Cadastrar {registro.conjugeUmNome}</button>}{!registro.voluntarioDoisId && <button type="button" onClick={() => abrirCadastroVoluntario(registro.id, "DOIS")} className="rounded-lg border border-emerald-300 px-3 py-2 text-xs font-bold text-emerald-800">Cadastrar {registro.conjugeDoisNome}</button>}</div></div>; })}</div></section>}
+
     <div className="flex flex-wrap gap-2">
       {aba === "secretaria" && <button onClick={() => { setCasalEmEdicao(""); setCasal({ ...casalInicial, encontroId }); setFormulario("casal"); }} className={botao}><Plus size={16} className="mr-2 inline" />Cadastrar casal</button>}
       {aba === "cronograma" && <button onClick={() => setFormulario("programacao")} className={botao}><Plus size={16} className="mr-2 inline" />Nova atividade</button>}
@@ -188,7 +226,8 @@ export default function EccPage() {
       {aba === "equipes" && <button onClick={() => setFormulario("equipe")} className={botao}><Plus size={16} className="mr-2 inline" />Adicionar voluntário</button>}
     </div>
 
-    {formulario && <section className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5 shadow-sm"><div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-black text-slate-900">{formulario === "encontro" ? "Nova edição" : formulario === "casal" ? "Cadastro do casal" : formulario === "equipe" ? "Equipe de trabalho" : formulario === "programacao" ? "Atividade do cronograma" : "Tarefa da edição"}</h2><button onClick={() => setFormulario(null)} className="text-sm font-bold text-slate-600">Fechar</button></div>
+    {formulario && <section className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5 shadow-sm"><div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-black text-slate-900">{formulario === "encontro" ? "Nova edição" : formulario === "casal" ? "Cadastro do casal" : formulario === "equipe" ? "Equipe de trabalho" : formulario === "programacao" ? "Atividade do cronograma" : formulario === "voluntario" ? "Cadastrar cônjuge como voluntário" : "Tarefa da edição"}</h2><button onClick={() => setFormulario(null)} className="text-sm font-bold text-slate-600">Fechar</button></div>
+      {formulario === "voluntario" && <form onSubmit={salvarNovoVoluntario} className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"><div className="rounded-xl bg-white p-4 md:col-span-2 lg:col-span-3"><strong>{novoVoluntario.posicao === "UM" ? dados.casais.find((item) => item.id === novoVoluntario.casalId)?.conjugeUmNome : dados.casais.find((item) => item.id === novoVoluntario.casalId)?.conjugeDoisNome}</strong><p className="text-sm text-slate-500">O endereço e o nome do cônjuge serão reaproveitados do cadastro do casal.</p></div><label className={label}>CPF<input required className={campo} value={novoVoluntario.cpf} onChange={(e) => setNovoVoluntario({ ...novoVoluntario, cpf: e.target.value })} /></label><label className={label}>Telefone<input required className={campo} value={novoVoluntario.telefone} onChange={(e) => setNovoVoluntario({ ...novoVoluntario, telefone: e.target.value })} /></label><label className={label}>E-mail<input type="email" className={campo} value={novoVoluntario.email} onChange={(e) => setNovoVoluntario({ ...novoVoluntario, email: e.target.value })} /></label><label className={label}>Pastoral ou área<input required className={campo} value={novoVoluntario.pastoral} onChange={(e) => setNovoVoluntario({ ...novoVoluntario, pastoral: e.target.value })} /></label><label className={label}>Função<input required className={campo} value={novoVoluntario.funcao} onChange={(e) => setNovoVoluntario({ ...novoVoluntario, funcao: e.target.value })} /></label><label className={label}>Data de ingresso<input type="date" className={campo} value={novoVoluntario.dataIngresso} onChange={(e) => setNovoVoluntario({ ...novoVoluntario, dataIngresso: e.target.value })} /></label><button disabled={salvando === "voluntario"} className={botao}>Cadastrar e vincular</button></form>}
       {formulario === "encontro" && <form onSubmit={salvarEncontro} className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"><label className={label}>Número<input className={campo} type="number" min="1" value={encontro.numero} onChange={(e) => setEncontro({ ...encontro, numero: Number(e.target.value) })} /></label><label className={`${label} lg:col-span-2`}>Nome<input className={campo} value={encontro.nome} onChange={(e) => setEncontro({ ...encontro, nome: e.target.value })} /></label><label className={label}>Situação<select className={campo} value={encontro.status} onChange={(e) => setEncontro({ ...encontro, status: e.target.value as EccEncontroFormData["status"] })}>{Object.entries(encontroStatus).map(([v, n]) => <option key={v} value={v}>{n}</option>)}</select></label><label className={`${label} md:col-span-2`}>Tema<input className={campo} value={encontro.tema} onChange={(e) => setEncontro({ ...encontro, tema: e.target.value })} /></label><label className={label}>Início<input className={campo} type="date" value={encontro.dataInicio} onChange={(e) => setEncontro({ ...encontro, dataInicio: e.target.value })} /></label><label className={label}>Término<input className={campo} type="date" value={encontro.dataFim} onChange={(e) => setEncontro({ ...encontro, dataFim: e.target.value })} /></label><label className={`${label} md:col-span-2 lg:col-span-3`}>Local<input className={campo} value={encontro.local} onChange={(e) => setEncontro({ ...encontro, local: e.target.value })} /></label><button disabled={salvando === "encontro"} className={botao}>Criar edição</button></form>}
       {formulario === "casal" && <form onSubmit={salvarCasal} className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"><label className={label}>Primeiro cônjuge<input required className={campo} value={casal.conjugeUmNome} onChange={(e) => setCasal({ ...casal, conjugeUmNome: e.target.value })} /></label><label className={label}>Segundo cônjuge<input required className={campo} value={casal.conjugeDoisNome} onChange={(e) => setCasal({ ...casal, conjugeDoisNome: e.target.value })} /></label><label className={label}>Telefone<input className={campo} value={casal.telefone} onChange={(e) => setCasal({ ...casal, telefone: e.target.value })} /></label><label className={label}>Vínculo do primeiro cônjuge<select className={campo} value={casal.voluntarioUmId} onChange={(e) => setCasal({ ...casal, voluntarioUmId: e.target.value })}><option value="">Não é voluntário</option>{dados.voluntarios.map((v) => <option key={v.id} value={v.id}>{v.nome}</option>)}</select></label><label className={label}>Vínculo do segundo cônjuge<select className={campo} value={casal.voluntarioDoisId} onChange={(e) => setCasal({ ...casal, voluntarioDoisId: e.target.value })}><option value="">Não é voluntário</option>{dados.voluntarios.map((v) => <option key={v.id} value={v.id}>{v.nome}</option>)}</select></label><label className={label}>Edição<select className={campo} value={casal.encontroId} onChange={(e) => setCasal({ ...casal, encontroId: e.target.value })}><option value="">Somente banco de casais</option>{dados.encontros.map((i) => <option key={i.id} value={i.id}>{i.numero}º ECC</option>)}</select></label><div className="md:col-span-2 lg:col-span-3 border-t pt-4"><h3 className="font-black">Endereço para o mapa</h3></div><label className={label}>CEP<div className="flex gap-2"><input className={campo} value={casal.cep} onChange={(e) => setCasal({ ...casal, cep: e.target.value })} /><button type="button" onClick={() => void consultarCep()} disabled={consultandoCep} className="rounded-xl border bg-white px-3 text-blue-700"><Search size={18} /></button></div></label><label className={`${label} md:col-span-2`}>Logradouro<input className={campo} value={casal.logradouro} onChange={(e) => setCasal({ ...casal, logradouro: e.target.value })} /></label><label className={label}>Número<input className={campo} value={casal.numero} onChange={(e) => setCasal({ ...casal, numero: e.target.value })} /></label><label className={label}>Bairro<input className={campo} value={casal.bairro} onChange={(e) => setCasal({ ...casal, bairro: e.target.value })} /></label><label className={label}>Cidade / UF<div className="grid grid-cols-[1fr_70px] gap-2"><input className={campo} value={casal.cidade} onChange={(e) => setCasal({ ...casal, cidade: e.target.value })} /><input className={campo} maxLength={2} value={casal.estado} onChange={(e) => setCasal({ ...casal, estado: e.target.value.toUpperCase() })} /></div></label><button disabled={salvando === "casal"} className={botao}>Cadastrar casal</button></form>}
       {formulario === "equipe" && <form onSubmit={salvarEquipe} className="grid gap-4 md:grid-cols-3"><label className={label}>Voluntário<select required className={campo} value={equipe.voluntarioId} onChange={(e) => setEquipe({ ...equipe, voluntarioId: e.target.value })}><option value="">Selecione</option>{dados.voluntarios.map((v) => <option key={v.id} value={v.id}>{v.nome}</option>)}</select></label><label className={label}>Equipe<input required className={campo} value={equipe.equipe} onChange={(e) => setEquipe({ ...equipe, equipe: e.target.value })} placeholder="Cozinha, Secretaria..." /></label><label className={label}>Função<input required className={campo} value={equipe.funcao} onChange={(e) => setEquipe({ ...equipe, funcao: e.target.value })} /></label><label className={label}><span className="mt-4 flex gap-2"><input type="checkbox" checked={equipe.coordenador} onChange={(e) => setEquipe({ ...equipe, coordenador: e.target.checked })} />Coordena a equipe</span></label><button disabled={salvando === "equipe"} className={botao}>Adicionar</button></form>}
