@@ -34,5 +34,7 @@ describe("controle de acesso por perfil",()=>{
     assert.equal(podeAcessarRota("operador","/usuarios",permissoesPadrao),false);
     assert.equal(podeAcessarRota("leitor","/relatorios",permissoesPadrao),true);
     assert.equal(podeAcessarRota("leitor","/familias",permissoesPadrao),false);
+    assert.equal(podeAcessarRota("coordenador","/ecc",permissoesPadrao),true);
+    assert.equal(podeAcessarRota("voluntario","/ecc",permissoesPadrao),true);
   });
 });

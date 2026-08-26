@@ -17,6 +17,7 @@ export const navigationItems: NavigationItem[] = [
   { titulo: "Estoque", href: "/estoque" },
   { titulo: "Cestas", href: "/cestas" },
   { titulo: "Visitas", href: "/visitas" },
+  { titulo: "ECC", href: "/ecc" },
   { titulo: "Relatórios", href: "/relatorios" },
   { titulo: "Usuários", href: "/usuarios" },
 ];

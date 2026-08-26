@@ -21,6 +21,7 @@ const pastoral: Grupo = { id: "pastoral", title: "Pastoral Social", icon: HeartH
   { title: "Rotas", href: "/rotas", icon: Route }, { title: "Relatórios pastorais", href: "/relatorios", icon: BarChart3 },
 ] };
 const modulos: Item[] = [
+  { title: "ECC", href: "/ecc", icon: HeartHandshake },
   { title: "Secretaria", href: "/secretaria", icon: ShoppingCart },
   { title: "Tesouraria", href: "/tesouraria", icon: Landmark },
   { title: "Manual do sistema", href: "/manual", icon: BookOpen },

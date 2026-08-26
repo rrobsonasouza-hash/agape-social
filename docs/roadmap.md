@@ -186,6 +186,25 @@ Fundação   Auth +      Cadastros   Operação    Inteligência  Qualidade
 
 ---
 
+## ECC — Encontro de Casais com Cristo
+
+### Fase 1 — Fundação operacional
+
+- [x] Edições do encontro por paróquia
+- [x] Banco de casais elegíveis, convidados e participantes
+- [x] Vínculo opcional do casal com uma edição
+- [x] Equipes formadas a partir dos voluntários existentes
+- [x] Isolamento por paróquia, permissões e manual ilustrado
+
+### Próximas fases
+
+- [ ] Ficha detalhada e acompanhamento pastoral do casal
+- [ ] Inscrições, confirmação, lista de espera e desistências por edição
+- [ ] Cronograma do encontro, ambientes, tarefas e escalas das equipes
+- [ ] Comunicação, documentos, relatórios e indicadores do ECC
+
+---
+
 ## Cronograma estimado (referência)
 
 | Fase | Duração estimada |

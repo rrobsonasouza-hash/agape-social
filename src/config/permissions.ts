@@ -9,14 +9,14 @@ export const modulosConfiguraveis = [
   { rota: "/estoque", nome: "Estoque" }, { rota: "/cestas", nome: "Cestas e distribuições" },
   { rota: "/visitas", nome: "Visitas" }, { rota: "/parceiros", nome: "Parceiros" },
   { rota: "/areas-pastorais", nome: "Áreas pastorais" }, { rota: "/rotas", nome: "Rotas" },
-  { rota: "/relatorios", nome: "Relatórios" },
+  { rota: "/ecc", nome: "ECC — Encontro de Casais" }, { rota: "/relatorios", nome: "Relatórios" },
 ] as const;
 
 export const permissoesPadrao: PermissoesPorPerfil = {
-  coordenador: ["/dashboard", "/familias", "/voluntarios", "/doadores", "/estoque", "/cestas", "/visitas", "/parceiros", "/areas-pastorais", "/rotas", "/relatorios"],
-  operador: ["/dashboard", "/familias", "/doadores", "/estoque", "/cestas", "/visitas", "/rotas"],
-  voluntario: ["/dashboard", "/cestas", "/visitas", "/rotas"],
-  leitor: ["/dashboard", "/relatorios"],
+  coordenador: ["/dashboard", "/familias", "/voluntarios", "/doadores", "/estoque", "/cestas", "/visitas", "/parceiros", "/areas-pastorais", "/rotas", "/ecc", "/relatorios"],
+  operador: ["/dashboard", "/familias", "/doadores", "/estoque", "/cestas", "/visitas", "/rotas", "/ecc"],
+  voluntario: ["/dashboard", "/cestas", "/visitas", "/rotas", "/ecc"],
+  leitor: ["/dashboard", "/ecc", "/relatorios"],
 };
 
 function rotaNaArea(rota: string, area: string) { return rota === area || rota.startsWith(`${area}/`); }
