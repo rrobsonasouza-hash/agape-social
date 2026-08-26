@@ -105,6 +105,7 @@ export async function GET(request: NextRequest) {
       participacoes: (participacoes.data ?? []).map((item) => ({
         id: item.id, encontroId: item.encontro_id, casalId: item.casal_id,
         casalNome: nomesCasais.get(item.casal_id) ?? "Casal não encontrado", situacao: item.situacao,
+        classificacao: item.classificacao ?? "INDICADO",
         inscritoEm: item.inscrito_em, observacoes: item.observacoes,
       })),
       equipe: (equipes.data ?? []).map((item) => ({
@@ -199,7 +200,7 @@ export async function POST(request: NextRequest) {
       if (casal.error || !casal.data) throw casal.error ?? new Error("Casal não encontrado nesta paróquia.");
       const { data, error } = await supabase.from("ecc_encontro_casais").insert({
         paroquia_id: paroquiaId, encontro_id: dados.encontroId, casal_id: dados.casalId,
-        situacao: dados.situacao, observacoes: dados.observacoes,
+        situacao: dados.situacao, classificacao: dados.classificacao ?? "INDICADO", observacoes: dados.observacoes,
       }).select("id").single();
       if (error) throw error;
       return NextResponse.json({ id: data.id }, { status: 201 });
@@ -256,10 +257,23 @@ export async function PATCH(request: NextRequest) {
     if (!entrada.id) return NextResponse.json({ erro: "Informe o registro." }, { status: 400 });
     let tabela = "";
     let alteracoes: Record<string, unknown> = {};
-    if (entrada.tipo === "participacao") {
+    if (entrada.tipo === "casal") {
+      const dados = eccCasalSchema.parse(entrada.dados);
+      tabela = "ecc_casais";
+      alteracoes = {
+        conjuge_um_nome: dados.conjugeUmNome, conjuge_dois_nome: dados.conjugeDoisNome,
+        telefone: dados.telefone, email: dados.email, data_casamento: dados.dataCasamento || null,
+        voluntario_um_id: dados.voluntarioUmId || null, voluntario_dois_id: dados.voluntarioDoisId || null,
+        cep: dados.cep.replace(/\D/g, ""), logradouro: dados.logradouro, numero: dados.numero,
+        complemento: dados.complemento, bairro: dados.bairro, cidade: dados.cidade,
+        estado: dados.estado.toUpperCase(), latitude: dados.latitude, longitude: dados.longitude,
+        situacao: dados.situacao, observacoes: dados.observacoes,
+      };
+    } else if (entrada.tipo === "participacao") {
       const dados = eccParticipacaoSchema.parse(entrada.dados);
       tabela = "ecc_encontro_casais";
       alteracoes = { situacao: dados.situacao, observacoes: dados.observacoes };
+      if (dados.classificacao) alteracoes.classificacao = dados.classificacao;
     } else if (entrada.tipo === "tarefa") {
       const dados = eccTarefaStatusSchema.parse((entrada.dados as { status?: unknown })?.status);
       tabela = "ecc_tarefas";

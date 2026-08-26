@@ -31,6 +31,7 @@ export class EccRepository {
   listar() { return requisicao<EccPainel>(); }
   criarEncontro(dados: EccEncontroFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "encontro", dados }) }); }
   criarCasal(dados: EccCasalFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "casal", dados }) }); }
+  atualizarCasal(id: string, dados: EccCasalFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "casal", id, dados }) }); }
   vincularCasal(dados: EccVinculoCasalFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "participacao", dados }) }); }
   adicionarEquipe(dados: EccEquipeFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "equipe", dados }) }); }
   criarProgramacao(dados: EccProgramacaoFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "programacao", dados }) }); }

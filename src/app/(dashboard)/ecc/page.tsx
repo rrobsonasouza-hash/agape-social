@@ -16,7 +16,7 @@ import type {
   EccTarefaFormData, EccVinculoCasalFormData,
 } from "@/modules/ecc/schemas/ecc.schema";
 import type {
-  EccPainel, EccParticipacaoSituacao, EccProgramacaoStatus, EccTarefaStatus,
+  EccClassificacaoParticipacao, EccPainel, EccParticipacaoSituacao, EccProgramacaoStatus, EccTarefaStatus,
 } from "@/modules/ecc/types/ecc.types";
 
 const hoje = new Date().toISOString().slice(0, 10);
@@ -52,6 +52,7 @@ const label = "grid gap-1 text-sm font-semibold text-slate-700";
 const botao = "rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:opacity-50";
 const encontroStatus: Record<string, string> = { PLANEJAMENTO: "Planejamento", INSCRICOES: "Inscrições", PREPARACAO: "Preparação", REALIZADO: "Realizado", ENCERRADO: "Encerrado" };
 const participacaoStatus: Record<EccParticipacaoSituacao, string> = { CONVIDADO: "Convidado", INSCRITO: "Inscrito", CONFIRMADO: "Confirmado", LISTA_ESPERA: "Lista de espera", DESISTENTE: "Desistente", PARTICIPOU: "Participou" };
+const classificacaoParticipacao: Record<EccClassificacaoParticipacao, string> = { INDICADO: "Casal indicado", ENCONTRISTA: "Casal encontrista", CONVIDADO: "Casal convidado", VISITANTE: "Casal visitante", EQUIPE: "Casal de equipe", COORDENADOR: "Casal coordenador" };
 const programacaoStatus: Record<EccProgramacaoStatus, string> = { PLANEJADA: "Planejada", CONFIRMADA: "Confirmada", CONCLUIDA: "Concluída", CANCELADA: "Cancelada" };
 const tarefaStatus: Record<EccTarefaStatus, string> = { PENDENTE: "Pendente", EM_ANDAMENTO: "Em andamento", CONCLUIDA: "Concluída", CANCELADA: "Cancelada" };
 
@@ -60,7 +61,7 @@ function Metrica({ icon: Icon, titulo, valor, apoio }: { icon: typeof Users; tit
 }
 
 export default function EccPage() {
-  const { listar, criarEncontro, criarCasal, vincularCasal: vincularCasalApi, adicionarEquipe,
+  const { listar, criarEncontro, criarCasal, atualizarCasal, vincularCasal: vincularCasalApi, adicionarEquipe,
     criarProgramacao, criarTarefa, atualizarParticipacao, atualizarProgramacao, atualizarTarefa } = useEcc();
   const [dados, setDados] = useState(vazio);
   const [carregando, setCarregando] = useState(true);
@@ -76,6 +77,7 @@ export default function EccPage() {
   const [casalParaVinculo, setCasalParaVinculo] = useState("");
   const [busca, setBusca] = useState("");
   const [consultandoCep, setConsultandoCep] = useState(false);
+  const [casalEmEdicao, setCasalEmEdicao] = useState("");
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -139,7 +141,7 @@ export default function EccPage() {
   }
 
   function salvarEncontro(event: FormEvent) { event.preventDefault(); void executar("encontro", () => criarEncontro(encontro)); }
-  function salvarCasal(event: FormEvent) { event.preventDefault(); void executar("casal", () => criarCasal(casal), "Casal cadastrado e localizado no ECC."); }
+  function salvarCasal(event: FormEvent) { event.preventDefault(); void executar("casal", () => casalEmEdicao ? atualizarCasal(casalEmEdicao, casal) : criarCasal(casal), casalEmEdicao ? "Cadastro e localização do casal atualizados." : "Casal cadastrado e localizado no ECC."); }
   function salvarEquipe(event: FormEvent) { event.preventDefault(); void executar("equipe", () => adicionarEquipe(equipe)); }
   function salvarProgramacao(event: FormEvent) { event.preventDefault(); void executar("programacao", () => criarProgramacao(programacao)); }
   function salvarTarefa(event: FormEvent) { event.preventDefault(); void executar("tarefa", () => criarTarefa(tarefa)); }
@@ -147,6 +149,14 @@ export default function EccPage() {
     if (!casalParaVinculo || !encontroId) return;
     const entrada: EccVinculoCasalFormData = { casalId: casalParaVinculo, encontroId, situacao: "INSCRITO", observacoes: "" };
     void executar("vinculo", () => vincularCasalApi(entrada), "Casal incluído nesta edição.");
+  }
+  function editarCasal(id: string) {
+    const registro = dados.casais.find((item) => item.id === id);
+    if (!registro) return;
+    setCasalEmEdicao(id);
+    setCasal({ ...registro, encontroId: "" });
+    setFormulario("casal");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return <main className="mx-auto max-w-7xl space-y-6">
@@ -169,8 +179,10 @@ export default function EccPage() {
       ["secretaria", "Secretaria", Users], ["mapa", "Mapa e distâncias", MapPin], ["cronograma", "Cronograma", Clock3], ["tarefas", "Tarefas", ClipboardCheck], ["equipes", "Equipes", HeartHandshake],
     ].map(([valor, nome, Icon]) => <button key={String(valor)} onClick={() => setAba(valor as typeof aba)} className={`inline-flex min-w-max items-center gap-2 rounded-xl px-4 py-3 text-sm font-black ${aba === valor ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}><Icon size={17} />{String(nome)}</button>)}</nav>
 
+    {aba === "secretaria" && participacoes.length > 0 && <section className="rounded-2xl border bg-white p-4 shadow-sm"><p className="text-sm font-black text-slate-900">Papel do casal na edição e atualização cadastral</p><p className="mt-1 text-xs text-slate-500">O papel pertence somente à edição selecionada e preserva o histórico dos outros encontros.</p><div className="mt-3 grid gap-2 md:grid-cols-2">{participacoes.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-3"><strong className="text-sm">{item.casalNome}</strong><div className="flex gap-2"><select value={item.classificacao} onChange={(e) => void executar(`classificacao-${item.id}`, () => atualizarParticipacao(item.id, { situacao: item.situacao, classificacao: e.target.value as EccClassificacaoParticipacao, observacoes: item.observacoes }), "Papel do casal atualizado nesta edição.")} className="rounded-lg border bg-white px-2 py-2 text-xs font-bold">{Object.entries(classificacaoParticipacao).map(([valor, nome]) => <option key={valor} value={valor}>{nome}</option>)}</select><button type="button" onClick={() => editarCasal(item.casalId)} className="rounded-lg border px-3 py-2 text-xs font-bold text-blue-700">Cadastro</button></div></div>)}</div></section>}
+
     <div className="flex flex-wrap gap-2">
-      {aba === "secretaria" && <button onClick={() => setFormulario("casal")} className={botao}><Plus size={16} className="mr-2 inline" />Cadastrar casal</button>}
+      {aba === "secretaria" && <button onClick={() => { setCasalEmEdicao(""); setCasal({ ...casalInicial, encontroId }); setFormulario("casal"); }} className={botao}><Plus size={16} className="mr-2 inline" />Cadastrar casal</button>}
       {aba === "cronograma" && <button onClick={() => setFormulario("programacao")} className={botao}><Plus size={16} className="mr-2 inline" />Nova atividade</button>}
       {aba === "tarefas" && <button onClick={() => setFormulario("tarefa")} className={botao}><Plus size={16} className="mr-2 inline" />Nova tarefa</button>}
       {aba === "equipes" && <button onClick={() => setFormulario("equipe")} className={botao}><Plus size={16} className="mr-2 inline" />Adicionar voluntário</button>}

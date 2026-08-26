@@ -14,6 +14,15 @@ alter table public.ecc_casais
 create index if not exists ecc_casais_paroquia_localizacao_idx
   on public.ecc_casais(paroquia_id, latitude, longitude);
 
+alter table public.ecc_encontro_casais
+  add column if not exists classificacao text not null default 'INDICADO';
+
+alter table public.ecc_encontro_casais
+  drop constraint if exists ecc_encontro_casais_classificacao_check;
+alter table public.ecc_encontro_casais
+  add constraint ecc_encontro_casais_classificacao_check
+  check (classificacao in ('INDICADO', 'ENCONTRISTA', 'CONVIDADO', 'VISITANTE', 'EQUIPE', 'COORDENADOR'));
+
 create table if not exists public.ecc_programacao (
   id uuid primary key default gen_random_uuid(),
   paroquia_id uuid not null references public.paroquias(id) on delete cascade,

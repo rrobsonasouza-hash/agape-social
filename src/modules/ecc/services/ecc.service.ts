@@ -22,6 +22,7 @@ export class EccService {
   listar() { return this.repository.listar(); }
   criarEncontro(dados: EccEncontroFormData) { return this.repository.criarEncontro(eccEncontroSchema.parse(dados)); }
   criarCasal(dados: EccCasalFormData) { return this.repository.criarCasal(eccCasalSchema.parse(dados)); }
+  atualizarCasal(id: string, dados: EccCasalFormData) { return this.repository.atualizarCasal(id, eccCasalSchema.parse(dados)); }
   vincularCasal(dados: EccVinculoCasalFormData) { return this.repository.vincularCasal(eccVinculoCasalSchema.parse(dados)); }
   adicionarEquipe(dados: EccEquipeFormData) { return this.repository.adicionarEquipe(eccEquipeSchema.parse(dados)); }
   criarProgramacao(dados: EccProgramacaoFormData) { return this.repository.criarProgramacao(eccProgramacaoSchema.parse(dados)); }

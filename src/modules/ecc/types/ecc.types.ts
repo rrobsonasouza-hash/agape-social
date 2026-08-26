@@ -2,6 +2,7 @@ export type EccEncontroStatus = "PLANEJAMENTO" | "INSCRICOES" | "PREPARACAO" | "
 export type EccCasalSituacao = "ELEGIVEL" | "CONVIDADO" | "INSCRITO" | "CONFIRMADO" | "LISTA_ESPERA" | "DESISTENTE" | "PARTICIPOU";
 export type EccEquipeStatus = "CONVIDADO" | "CONFIRMADO" | "INDISPONIVEL" | "PARTICIPOU";
 export type EccParticipacaoSituacao = "CONVIDADO" | "INSCRITO" | "CONFIRMADO" | "LISTA_ESPERA" | "DESISTENTE" | "PARTICIPOU";
+export type EccClassificacaoParticipacao = "INDICADO" | "ENCONTRISTA" | "CONVIDADO" | "VISITANTE" | "EQUIPE" | "COORDENADOR";
 export type EccProgramacaoStatus = "PLANEJADA" | "CONFIRMADA" | "CONCLUIDA" | "CANCELADA";
 export type EccTarefaStatus = "PENDENTE" | "EM_ANDAMENTO" | "CONCLUIDA" | "CANCELADA";
 
@@ -24,6 +25,7 @@ export type EccEquipe = {
 
 export type EccParticipacao = {
   id: string; encontroId: string; casalId: string; casalNome: string; situacao: EccParticipacaoSituacao;
+  classificacao: EccClassificacaoParticipacao;
   inscritoEm: string; observacoes: string;
 };
 

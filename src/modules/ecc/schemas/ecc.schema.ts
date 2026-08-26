@@ -31,6 +31,7 @@ export const eccEquipeSchema = z.object({
 
 export const eccProgramacaoStatusSchema = z.enum(["PLANEJADA", "CONFIRMADA", "CONCLUIDA", "CANCELADA"]);
 export const eccTarefaStatusSchema = z.enum(["PENDENTE", "EM_ANDAMENTO", "CONCLUIDA", "CANCELADA"]);
+export const eccClassificacaoParticipacaoSchema = z.enum(["INDICADO", "ENCONTRISTA", "CONVIDADO", "VISITANTE", "EQUIPE", "COORDENADOR"]);
 
 export const eccProgramacaoSchema = z.object({
   encontroId: z.string().uuid("Selecione uma edição do ECC."),
@@ -63,6 +64,7 @@ export const eccTarefaSchema = z.object({
 
 export const eccParticipacaoSchema = z.object({
   situacao: z.enum(["CONVIDADO", "INSCRITO", "CONFIRMADO", "LISTA_ESPERA", "DESISTENTE", "PARTICIPOU"]),
+  classificacao: eccClassificacaoParticipacaoSchema.optional(),
   observacoes: textoOpcional,
 });
 
