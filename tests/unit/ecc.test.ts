@@ -19,6 +19,12 @@ describe("ECC", () => {
   it("permite casal no banco sem vinculo imediato com uma edicao", () => {
     const casal = eccCasalSchema.parse({ conjugeUmNome: "Maria Silva", conjugeDoisNome: "Joao Silva" });
     assert.equal(casal.encontroId, ""); assert.equal(casal.situacao, "ELEGIVEL");
+    assert.equal(casal.classificacaoEncontro, "INDICADO");
+  });
+  it("reserva equipe e coordenacao para o fluxo de voluntarios", () => {
+    const base = { conjugeUmNome: "Maria Silva", conjugeDoisNome: "Joao Silva", encontroId: "11111111-1111-4111-8111-111111111111" };
+    assert.equal(eccCasalSchema.parse({ ...base, classificacaoEncontro: "ENCONTRISTA" }).classificacaoEncontro, "ENCONTRISTA");
+    assert.throws(() => eccCasalSchema.parse({ ...base, classificacaoEncontro: "COORDENADOR" }));
   });
   it("exige edicao, voluntario e equipe ao formar a equipe", () => {
     assert.throws(() => eccEquipeSchema.parse({ encontroId: "", voluntarioId: "", equipe: "" }));

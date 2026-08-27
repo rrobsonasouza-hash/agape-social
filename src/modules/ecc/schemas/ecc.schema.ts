@@ -20,7 +20,9 @@ export const eccCasalSchema = z.object({
   cidade: z.string().trim().max(120).default(""), estado: z.string().trim().max(2).default(""),
   latitude: z.coerce.number().min(-90).max(90).nullable().default(null),
   longitude: z.coerce.number().min(-180).max(180).nullable().default(null),
-  situacao: z.enum(["ELEGIVEL", "CONVIDADO", "INSCRITO", "CONFIRMADO", "LISTA_ESPERA", "DESISTENTE", "PARTICIPOU"]).default("ELEGIVEL"), observacoes: textoOpcional,
+  situacao: z.enum(["ELEGIVEL", "CONVIDADO", "INSCRITO", "CONFIRMADO", "LISTA_ESPERA", "DESISTENTE", "PARTICIPOU"]).default("ELEGIVEL"),
+  classificacaoEncontro: z.enum(["INDICADO", "ENCONTRISTA", "CONVIDADO", "VISITANTE"]).default("INDICADO"),
+  observacoes: textoOpcional,
 });
 
 export const eccEquipeSchema = z.object({

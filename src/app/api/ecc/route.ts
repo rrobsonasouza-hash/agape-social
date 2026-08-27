@@ -234,6 +234,7 @@ export async function POST(request: NextRequest) {
         const situacao = dados.situacao === "ELEGIVEL" ? "INSCRITO" : dados.situacao;
         const vinculo = await supabase.from("ecc_encontro_casais").insert({
           paroquia_id: paroquiaId, encontro_id: dados.encontroId, casal_id: data.id, situacao,
+          classificacao: dados.classificacaoEncontro,
         });
         if (vinculo.error) throw vinculo.error;
       }
