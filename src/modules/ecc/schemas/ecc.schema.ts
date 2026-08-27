@@ -31,6 +31,7 @@ export const eccEquipeSchema = z.object({
 
 export const eccProgramacaoStatusSchema = z.enum(["PLANEJADA", "CONFIRMADA", "CONCLUIDA", "CANCELADA"]);
 export const eccTarefaStatusSchema = z.enum(["PENDENTE", "EM_ANDAMENTO", "CONCLUIDA", "CANCELADA"]);
+export const eccVisitaStatusSchema = z.enum(["PENDENTE", "AGENDADA", "REALIZADA", "RETORNO_NECESSARIO", "CANCELADA"]);
 export const eccClassificacaoParticipacaoSchema = z.enum(["INDICADO", "ENCONTRISTA", "CONVIDADO", "VISITANTE", "EQUIPE", "COORDENADOR"]);
 
 export const eccProgramacaoSchema = z.object({
@@ -84,6 +85,36 @@ export const eccNovoVoluntarioSchema = z.object({
   dataIngresso: z.string().date().or(z.literal("")).default(""),
 });
 
+export const eccVisitaSchema = z.object({
+  encontroId: z.string().uuid("Selecione uma edição do ECC."),
+  casalId: z.string().uuid("Selecione o casal que será visitado."),
+  visitadorVoluntarioId: z.string().min(1, "Selecione o responsável pela visita."),
+  dataAgendada: z.string().date("Informe a data da visita."),
+  horaAgendada: z.string().regex(/^\d{2}:\d{2}$/).or(z.literal("")).default(""),
+  dataRealizada: z.string().date().or(z.literal("")).default(""),
+  retornoData: z.string().date().or(z.literal("")).default(""),
+  status: eccVisitaStatusSchema.default("AGENDADA"),
+  questionario: z.object({
+    motivoParticipacao: z.string().trim().max(1000).default(""),
+    expectativas: z.string().trim().max(1000).default(""),
+    participacaoParoquial: z.string().trim().max(500).default(""),
+    filhosCuidados: z.string().trim().max(500).default(""),
+    restricoesAlimentares: z.string().trim().max(500).default(""),
+    necessidadesAcessibilidade: z.string().trim().max(500).default(""),
+    contatoEmergencia: z.string().trim().max(300).default(""),
+    observacoesPastorais: z.string().trim().max(1500).default(""),
+    consentimentoInformacoes: z.boolean().default(false),
+  }),
+  observacoes: textoOpcional,
+}).superRefine((dados, contexto) => {
+  if (["REALIZADA", "RETORNO_NECESSARIO"].includes(dados.status) && !dados.dataRealizada)
+    contexto.addIssue({ code: "custom", path: ["dataRealizada"], message: "Informe a data em que a visita foi realizada." });
+  if (["REALIZADA", "RETORNO_NECESSARIO"].includes(dados.status) && !dados.questionario.consentimentoInformacoes)
+    contexto.addIssue({ code: "custom", path: ["questionario", "consentimentoInformacoes"], message: "Confirme o consentimento para registrar o questionário." });
+  if (dados.status === "RETORNO_NECESSARIO" && !dados.retornoData)
+    contexto.addIssue({ code: "custom", path: ["retornoData"], message: "Informe a data prevista para o retorno." });
+});
+
 export type EccEncontroFormData = z.infer<typeof eccEncontroSchema>;
 export type EccCasalFormData = z.infer<typeof eccCasalSchema>;
 export type EccEquipeFormData = z.infer<typeof eccEquipeSchema>;
@@ -92,3 +123,4 @@ export type EccTarefaFormData = z.infer<typeof eccTarefaSchema>;
 export type EccParticipacaoFormData = z.infer<typeof eccParticipacaoSchema>;
 export type EccVinculoCasalFormData = z.infer<typeof eccVinculoCasalSchema>;
 export type EccNovoVoluntarioFormData = z.infer<typeof eccNovoVoluntarioSchema>;
+export type EccVisitaFormData = z.infer<typeof eccVisitaSchema>;

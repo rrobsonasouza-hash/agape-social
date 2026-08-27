@@ -10,6 +10,7 @@ import type {
   EccTarefaFormData,
   EccVinculoCasalFormData,
   EccNovoVoluntarioFormData,
+  EccVisitaFormData,
 } from "../schemas/ecc.schema";
 import type { EccProgramacaoStatus, EccTarefaStatus } from "../types/ecc.types";
 
@@ -25,6 +26,8 @@ export function useEcc() {
     criarProgramacao: useCallback((dados: EccProgramacaoFormData) => service.criarProgramacao(dados), []),
     criarTarefa: useCallback((dados: EccTarefaFormData) => service.criarTarefa(dados), []),
     cadastrarConjugeComoVoluntario: useCallback((dados: EccNovoVoluntarioFormData) => service.cadastrarConjugeComoVoluntario(dados), []),
+    criarVisita: useCallback((dados: EccVisitaFormData) => service.criarVisita(dados), []),
+    atualizarVisita: useCallback((id: string, dados: EccVisitaFormData) => service.atualizarVisita(id, dados), []),
     atualizarParticipacao: useCallback((id: string, dados: EccParticipacaoFormData) => service.atualizarParticipacao(id, dados), []),
     atualizarTarefa: useCallback((id: string, status: EccTarefaStatus) => service.atualizarTarefa(id, status), []),
     atualizarProgramacao: useCallback((id: string, status: EccProgramacaoStatus) => service.atualizarProgramacao(id, status), []),

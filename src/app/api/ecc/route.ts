@@ -15,6 +15,7 @@ import {
   eccTarefaStatusSchema,
   eccVinculoCasalSchema,
   eccNovoVoluntarioSchema,
+  eccVisitaSchema,
 } from "@/modules/ecc/schemas/ecc.schema";
 
 const PERFIS_ESCRITA = ["admin_plataforma", "admin_paroquia", "coordenador", "operador"];
@@ -61,8 +62,8 @@ function erro(error: unknown) {
 
 export async function GET(request: NextRequest) {
   try {
-    const { supabase, paroquiaId, paroquia } = await contexto(request);
-    const [encontros, casais, participacoes, equipes, programacao, tarefas, voluntarios] =
+    const { supabase, paroquiaId, paroquia, usuario } = await contexto(request);
+    const [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, voluntarios] =
       await Promise.all([
         supabase.from("ecc_encontros").select("*").eq("paroquia_id", paroquiaId).order("data_inicio", { ascending: false }),
         supabase.from("ecc_casais").select("*").eq("paroquia_id", paroquiaId).order("conjuge_um_nome"),
@@ -70,9 +71,10 @@ export async function GET(request: NextRequest) {
         supabase.from("ecc_equipes").select("*").eq("paroquia_id", paroquiaId).order("equipe").order("funcao"),
         supabase.from("ecc_programacao").select("*").eq("paroquia_id", paroquiaId).order("data").order("hora_inicio"),
         supabase.from("ecc_tarefas").select("*").eq("paroquia_id", paroquiaId).order("prazo", { ascending: true, nullsFirst: false }),
+        supabase.from("ecc_visitas").select("*").eq("paroquia_id", paroquiaId).order("data_agendada", { ascending: false }),
         supabase.from("voluntarios").select("id,dados").eq("paroquia_id", paroquiaId).order("created_at", { ascending: false }),
       ]);
-    for (const resultado of [encontros, casais, participacoes, equipes, programacao, tarefas, voluntarios])
+    for (const resultado of [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, voluntarios])
       if (resultado.error) throw resultado.error;
 
     const nomesVoluntarios = new Map(
@@ -129,6 +131,25 @@ export async function GET(request: NextRequest) {
         responsavelNome: nomesVoluntarios.get(item.responsavel_voluntario_id) ?? "Não definido",
         prazo: item.prazo ?? "", prioridade: item.prioridade, status: item.status, observacoes: item.observacoes,
       })),
+      visitas: (PERFIS_ESCRITA.includes(usuario.role) ? visitas.data ?? [] : []).map((item) => ({
+        id: item.id, encontroId: item.encontro_id, casalId: item.casal_id,
+        casalNome: nomesCasais.get(item.casal_id) ?? "Casal não encontrado",
+        visitadorVoluntarioId: item.visitador_voluntario_id ?? "",
+        visitadorNome: nomesVoluntarios.get(item.visitador_voluntario_id) ?? "Não definido",
+        dataAgendada: item.data_agendada, horaAgendada: item.hora_agendada ? String(item.hora_agendada).slice(0, 5) : "",
+        dataRealizada: item.data_realizada ?? "", retornoData: item.retorno_data ?? "",
+        status: item.status, questionario: {
+          motivoParticipacao: String(item.questionario?.motivoParticipacao ?? ""),
+          expectativas: String(item.questionario?.expectativas ?? ""),
+          participacaoParoquial: String(item.questionario?.participacaoParoquial ?? ""),
+          filhosCuidados: String(item.questionario?.filhosCuidados ?? ""),
+          restricoesAlimentares: String(item.questionario?.restricoesAlimentares ?? ""),
+          necessidadesAcessibilidade: String(item.questionario?.necessidadesAcessibilidade ?? ""),
+          contatoEmergencia: String(item.questionario?.contatoEmergencia ?? ""),
+          observacoesPastorais: String(item.questionario?.observacoesPastorais ?? ""),
+          consentimentoInformacoes: item.questionario?.consentimentoInformacoes === true,
+        }, observacoes: item.observacoes ?? "",
+      })),
       voluntarios: (voluntarios.data ?? [])
         .map((item) => {
           const dados = item.dados as Record<string, unknown>;
@@ -149,6 +170,7 @@ export async function GET(request: NextRequest) {
         latitude: paroquia.latitude === null ? null : Number(paroquia.latitude),
         longitude: paroquia.longitude === null ? null : Number(paroquia.longitude),
       },
+      podeGerenciarVisitas: PERFIS_ESCRITA.includes(usuario.role),
     });
   } catch (error) {
     return erro(error);
@@ -241,6 +263,25 @@ export async function POST(request: NextRequest) {
       }
       return NextResponse.json({ id }, { status: 201 });
     }
+    if (entrada.tipo === "visita") {
+      const dados = eccVisitaSchema.parse(entrada.dados);
+      await validarEncontro(supabase, paroquiaId, dados.encontroId);
+      const [participacao, visitador] = await Promise.all([
+        supabase.from("ecc_encontro_casais").select("id").eq("encontro_id", dados.encontroId).eq("casal_id", dados.casalId).eq("paroquia_id", paroquiaId).maybeSingle(),
+        supabase.from("voluntarios").select("id").eq("id", dados.visitadorVoluntarioId).eq("paroquia_id", paroquiaId).maybeSingle(),
+      ]);
+      if (participacao.error || !participacao.data) throw participacao.error ?? new Error("O casal não pertence à edição selecionada.");
+      if (visitador.error || !visitador.data) throw visitador.error ?? new Error("Responsável pela visita não encontrado nesta paróquia.");
+      const { data, error } = await supabase.from("ecc_visitas").insert({
+        paroquia_id: paroquiaId, encontro_id: dados.encontroId, casal_id: dados.casalId,
+        visitador_voluntario_id: dados.visitadorVoluntarioId, data_agendada: dados.dataAgendada,
+        hora_agendada: dados.horaAgendada || null, data_realizada: dados.dataRealizada || null,
+        retorno_data: dados.retornoData || null, status: dados.status,
+        questionario: dados.questionario, observacoes: dados.observacoes,
+      }).select("id").single();
+      if (error) throw error;
+      return NextResponse.json({ id: data.id }, { status: 201 });
+    }
     if (entrada.tipo === "participacao") {
       const dados = eccVinculoCasalSchema.parse(entrada.dados);
       await validarEncontro(supabase, paroquiaId, dados.encontroId);
@@ -316,6 +357,23 @@ export async function PATCH(request: NextRequest) {
         complemento: dados.complemento, bairro: dados.bairro, cidade: dados.cidade,
         estado: dados.estado.toUpperCase(), latitude: dados.latitude, longitude: dados.longitude,
         situacao: dados.situacao, observacoes: dados.observacoes,
+      };
+    } else if (entrada.tipo === "visita") {
+      const dados = eccVisitaSchema.parse(entrada.dados);
+      await validarEncontro(supabase, paroquiaId, dados.encontroId);
+      const [participacao, visitador] = await Promise.all([
+        supabase.from("ecc_encontro_casais").select("id").eq("encontro_id", dados.encontroId).eq("casal_id", dados.casalId).eq("paroquia_id", paroquiaId).maybeSingle(),
+        supabase.from("voluntarios").select("id").eq("id", dados.visitadorVoluntarioId).eq("paroquia_id", paroquiaId).maybeSingle(),
+      ]);
+      if (participacao.error || !participacao.data) throw participacao.error ?? new Error("O casal não pertence à edição selecionada.");
+      if (visitador.error || !visitador.data) throw visitador.error ?? new Error("Responsável pela visita não encontrado nesta paróquia.");
+      tabela = "ecc_visitas";
+      alteracoes = {
+        encontro_id: dados.encontroId, casal_id: dados.casalId,
+        visitador_voluntario_id: dados.visitadorVoluntarioId, data_agendada: dados.dataAgendada,
+        hora_agendada: dados.horaAgendada || null, data_realizada: dados.dataRealizada || null,
+        retorno_data: dados.retornoData || null, status: dados.status,
+        questionario: dados.questionario, observacoes: dados.observacoes,
       };
     } else if (entrada.tipo === "participacao") {
       const dados = eccParticipacaoSchema.parse(entrada.dados);

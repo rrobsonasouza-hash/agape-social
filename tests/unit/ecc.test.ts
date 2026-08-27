@@ -4,6 +4,7 @@ import {
   eccCasalSchema, eccEncontroSchema, eccEquipeSchema, eccParticipacaoSchema,
   eccProgramacaoSchema, eccTarefaSchema,
   eccNovoVoluntarioSchema,
+  eccVisitaSchema,
 } from "../../src/modules/ecc/schemas/ecc.schema.ts";
 
 describe("ECC", () => {
@@ -40,5 +41,17 @@ describe("ECC", () => {
     const entrada = eccNovoVoluntarioSchema.parse({ casalId: "11111111-1111-4111-8111-111111111111", posicao: "DOIS", cpf: "123.456.789-00", telefone: "11999999999", pastoral: "ECC", funcao: "Acolhida" });
     assert.equal(entrada.posicao, "DOIS");
     assert.throws(() => eccNovoVoluntarioSchema.parse({ ...entrada, cpf: "123" }));
+  });
+  it("agenda visita e protege o questionario realizado com consentimento", () => {
+    const base = { encontroId: "11111111-1111-4111-8111-111111111111", casalId: "22222222-2222-4222-8222-222222222222", visitadorVoluntarioId: "voluntario-1", dataAgendada: "2026-09-10", questionario: {} };
+    assert.equal(eccVisitaSchema.parse(base).status, "AGENDADA");
+    assert.throws(() => eccVisitaSchema.parse({ ...base, status: "REALIZADA", dataRealizada: "2026-09-10" }));
+    const realizada = eccVisitaSchema.parse({ ...base, status: "REALIZADA", dataRealizada: "2026-09-10", questionario: { consentimentoInformacoes: true } });
+    assert.equal(realizada.questionario.consentimentoInformacoes, true);
+  });
+  it("exige data para retorno pastoral", () => {
+    const base = { encontroId: "11111111-1111-4111-8111-111111111111", casalId: "22222222-2222-4222-8222-222222222222", visitadorVoluntarioId: "voluntario-1", dataAgendada: "2026-09-10", dataRealizada: "2026-09-10", status: "RETORNO_NECESSARIO", questionario: { consentimentoInformacoes: true } };
+    assert.throws(() => eccVisitaSchema.parse(base));
+    assert.equal(eccVisitaSchema.parse({ ...base, retornoData: "2026-09-17" }).retornoData, "2026-09-17");
   });
 });

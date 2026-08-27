@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
-  CalendarDays, ClipboardCheck, Clock3, HeartHandshake, ListTodo,
+  CalendarDays, ClipboardCheck, Clock3, HeartHandshake, House, ListTodo,
   MapPin, Plus, RefreshCw, Search, Users,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { MapaEcc, type PontoCasalEcc } from "@/components/maps/MapaEcc";
+import { VisitasEccSection } from "@/modules/ecc/components/VisitasEccSection";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { calcularDistanciaKm } from "@/lib/geo/distance";
 import { EnderecoService } from "@/modules/enderecos/services/endereco.service";
@@ -22,8 +23,9 @@ import type {
 const hoje = new Date().toISOString().slice(0, 10);
 const enderecoService = new EnderecoService();
 const vazio: EccPainel = {
-  encontros: [], casais: [], participacoes: [], equipe: [], programacao: [], tarefas: [], voluntarios: [],
+  encontros: [], casais: [], participacoes: [], equipe: [], programacao: [], tarefas: [], visitas: [], voluntarios: [],
   paroquia: { nome: "Paróquia", latitude: null, longitude: null },
+  podeGerenciarVisitas: false,
 };
 const encontroInicial: EccEncontroFormData = {
   numero: 1, nome: "Encontro de Casais com Cristo", tema: "", lema: "", dataInicio: hoje,
@@ -67,7 +69,7 @@ export default function EccPage() {
   const [dados, setDados] = useState(vazio);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState("");
-  const [aba, setAba] = useState<"secretaria" | "mapa" | "cronograma" | "tarefas" | "equipes">("secretaria");
+  const [aba, setAba] = useState<"secretaria" | "visitas" | "mapa" | "cronograma" | "tarefas" | "equipes">("secretaria");
   const [formulario, setFormulario] = useState<"encontro" | "casal" | "equipe" | "programacao" | "tarefa" | "voluntario" | null>(null);
   const [encontroId, setEncontroId] = useState("");
   const [encontro, setEncontro] = useState(encontroInicial);
@@ -216,8 +218,8 @@ export default function EccPage() {
     </section>
 
     <nav className="flex gap-2 overflow-x-auto rounded-2xl border bg-white p-2 shadow-sm">{[
-      ["secretaria", "Secretaria", Users], ["mapa", "Mapa e distâncias", MapPin], ["cronograma", "Cronograma", Clock3], ["tarefas", "Tarefas", ClipboardCheck], ["equipes", "Equipes", HeartHandshake],
-    ].map(([valor, nome, Icon]) => <button key={String(valor)} onClick={() => { setAba(valor as typeof aba); setFormulario(null); setCasalEmEdicao(""); }} className={`inline-flex min-w-max items-center gap-2 rounded-xl px-4 py-3 text-sm font-black ${aba === valor ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}><Icon size={17} />{String(nome)}</button>)}</nav>
+      ["secretaria", "Secretaria", Users], ["visitas", "Visitas", House], ["mapa", "Mapa e distâncias", MapPin], ["cronograma", "Cronograma", Clock3], ["tarefas", "Tarefas", ClipboardCheck], ["equipes", "Equipes", HeartHandshake],
+    ].filter(([valor]) => valor !== "visitas" || dados.podeGerenciarVisitas).map(([valor, nome, Icon]) => <button key={String(valor)} onClick={() => { setAba(valor as typeof aba); setFormulario(null); setCasalEmEdicao(""); }} className={`inline-flex min-w-max items-center gap-2 rounded-xl px-4 py-3 text-sm font-black ${aba === valor ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}><Icon size={17} />{String(nome)}</button>)}</nav>
 
     {aba === "secretaria" && participacoes.length > 0 && <section className="rounded-2xl border bg-white p-4 shadow-sm"><p className="text-sm font-black text-slate-900">Papel do casal na edição e atualização cadastral</p><p className="mt-1 text-xs text-slate-500">O papel pertence somente à edição selecionada e preserva o histórico dos outros encontros.</p><div className="mt-3 grid gap-2 md:grid-cols-2">{participacoes.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-slate-50 p-3"><strong className="text-sm">{item.casalNome}</strong><div className="flex gap-2"><select value={item.classificacao} onChange={(e) => void executar(`classificacao-${item.id}`, () => atualizarParticipacao(item.id, { situacao: item.situacao, classificacao: e.target.value as EccClassificacaoParticipacao, observacoes: item.observacoes }), "Papel do casal atualizado nesta edição.")} className="rounded-lg border bg-white px-2 py-2 text-xs font-bold">{Object.entries(classificacaoParticipacao).map(([valor, nome]) => <option key={valor} value={valor}>{nome}</option>)}</select><button type="button" onClick={() => editarCasal(item.casalId)} className="rounded-lg border px-3 py-2 text-xs font-bold text-blue-700">Cadastro</button></div></div>)}</div></section>}
 
@@ -239,6 +241,7 @@ export default function EccPage() {
       {formulario === "tarefa" && <form onSubmit={salvarTarefa} className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"><label className={`${label} md:col-span-2`}>Tarefa<input required className={campo} value={tarefa.titulo} onChange={(e) => setTarefa({ ...tarefa, titulo: e.target.value })} /></label><label className={label}>Equipe<input className={campo} value={tarefa.equipe} onChange={(e) => setTarefa({ ...tarefa, equipe: e.target.value })} /></label><label className={label}>Prazo<input className={campo} type="date" value={tarefa.prazo} onChange={(e) => setTarefa({ ...tarefa, prazo: e.target.value })} /></label><label className={label}>Responsável<select className={campo} value={tarefa.responsavelVoluntarioId} onChange={(e) => setTarefa({ ...tarefa, responsavelVoluntarioId: e.target.value })}><option value="">Não definido</option>{dados.voluntarios.map((v) => <option key={v.id} value={v.id}>{v.nome}</option>)}</select></label><label className={label}>Prioridade<select className={campo} value={tarefa.prioridade} onChange={(e) => setTarefa({ ...tarefa, prioridade: e.target.value as EccTarefaFormData["prioridade"] })}><option value="BAIXA">Baixa</option><option value="MEDIA">Média</option><option value="ALTA">Alta</option><option value="URGENTE">Urgente</option></select></label><button disabled={salvando === "tarefa"} className={botao}>Salvar tarefa</button></form>}
     </section>}
 
+    {!carregando && edicao && aba === "visitas" && <VisitasEccSection encontroId={encontroId} participacoes={participacoes} casais={dados.casais} voluntarios={dados.voluntarios} visitas={dados.visitas} onSaved={carregar} />}
     {carregando ? <div className="rounded-2xl bg-white p-12 text-center text-slate-500">Carregando operação do ECC...</div> : !edicao ? <div className="rounded-2xl border bg-white p-12 text-center text-slate-500">Cadastre uma edição para começar.</div> : <>
       {aba === "secretaria" && <section className="rounded-2xl border bg-white p-5 shadow-sm"><div className="flex flex-wrap items-end justify-between gap-4"><div><h2 className="text-xl font-black">Casais desta edição</h2><p className="text-sm text-slate-500">Convites, inscrições, confirmações e lista de espera.</p></div><div className="flex flex-wrap gap-2"><select className={campo} value={casalParaVinculo} onChange={(e) => setCasalParaVinculo(e.target.value)}><option value="">Incluir casal já cadastrado</option>{casaisDisponiveis.map((i) => <option key={i.id} value={i.id}>{i.conjugeUmNome} e {i.conjugeDoisNome}</option>)}</select><button onClick={vincularCasal} disabled={!casalParaVinculo || salvando === "vinculo"} className={botao}>Incluir</button></div></div><div className="relative mt-5"><Search className="absolute left-3 top-3 text-slate-400" size={18} /><input className={`${campo} pl-10`} placeholder="Localizar casal" value={busca} onChange={(e) => setBusca(e.target.value)} /></div><div className="mt-4 grid gap-2">{participacoes.filter((i) => i.casalNome.toLowerCase().includes(busca.toLowerCase())).map((item) => <article key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 p-4"><div><strong>{item.casalNome}</strong><p className="text-xs text-slate-500">Inscrito em {new Date(item.inscritoEm).toLocaleDateString("pt-BR")}</p></div><select className="rounded-xl border bg-white px-3 py-2 text-sm font-bold" value={item.situacao} onChange={(e) => void executar(`participacao-${item.id}`, () => atualizarParticipacao(item.id, { situacao: e.target.value as EccParticipacaoSituacao, observacoes: item.observacoes }), "Situação do casal atualizada.")}>{Object.entries(participacaoStatus).map(([v, n]) => <option key={v} value={v}>{n}</option>)}</select></article>)}{!participacoes.length && <p className="py-10 text-center text-slate-500">Nenhum casal incluído nesta edição.</p>}</div></section>}
 
