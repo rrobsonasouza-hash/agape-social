@@ -390,26 +390,22 @@ export default function DetalhesVoluntarioPage() {
               />
 
               <div>
-                <dt className="text-sm text-slate-500">
-                  Pastoral ou área
-                </dt>
-
+                <dt className="text-sm text-slate-500">Promoção Humana</dt>
                 <dd className="font-medium text-slate-900">
-                  {voluntario.pastoral ||
-                    "Não informada"}
+                  {(voluntario.atuaPromocaoHumana ?? (!/(^|\W)ECC(\W|$)/i.test(voluntario.pastoral || "") || /SOCIAL|PROMOÇÃO HUMANA/i.test(voluntario.pastoral || "")))
+                    ? voluntario.funcaoPromocaoHumana || voluntario.funcao || "Voluntário"
+                    : "Não atua"}
                 </dd>
               </div>
             </div>
 
             <div>
-              <dt className="text-sm text-slate-500">
-                Função
-              </dt>
-
-              <dd className="font-medium text-slate-900">
-                {voluntario.funcao ||
-                  "Não informada"}
-              </dd>
+                <dt className="text-sm text-slate-500">Encontro de Casais com Cristo (ECC)</dt>
+                <dd className="font-medium text-slate-900">
+                  {(voluntario.atuaEcc ?? /(^|\W)ECC(\W|$)/i.test(voluntario.pastoral || ""))
+                    ? voluntario.funcaoEcc || voluntario.funcao || "Voluntário"
+                    : "Não atua"}
+                </dd>
             </div>
 
             <div>

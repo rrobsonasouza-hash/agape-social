@@ -17,6 +17,7 @@ import {
   eccNovoVoluntarioSchema,
   eccVisitaSchema,
 } from "@/modules/ecc/schemas/ecc.schema";
+import { voluntarioAtuaNoEcc } from "@/modules/ecc/server/sincronizar-casal-voluntario";
 
 const PERFIS_ESCRITA = ["admin_plataforma", "admin_paroquia", "coordenador", "operador"];
 const PERFIS_LEITURA = [...PERFIS_ESCRITA, "voluntario", "leitor"];
@@ -162,8 +163,11 @@ export async function GET(request: NextRequest) {
             cidade: String(dados.cidade ?? ""), estado: String(dados.estado ?? ""),
             latitude: typeof dados.latitude === "number" ? dados.latitude : null,
             longitude: typeof dados.longitude === "number" ? dados.longitude : null,
+            funcaoEcc: String(dados.funcaoEcc ?? (voluntarioAtuaNoEcc(dados) ? dados.funcao ?? "Voluntário" : "")),
+            atuaEcc: voluntarioAtuaNoEcc(dados), status: String(dados.status ?? "ATIVO"),
           };
         })
+        .filter((item) => item.atuaEcc && item.status === "ATIVO")
         .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
       paroquia: {
         nome: String(paroquia.nome),
@@ -249,8 +253,9 @@ export async function POST(request: NextRequest) {
         cep: casal.data.cep ?? "", logradouro: casal.data.logradouro ?? "", numero: casal.data.numero ?? "",
         complemento: casal.data.complemento ?? "", bairro: casal.data.bairro ?? "", cidade: casal.data.cidade ?? "",
         estado: casal.data.estado ?? "", latitude: casal.data.latitude === null ? null : Number(casal.data.latitude),
-        longitude: casal.data.longitude === null ? null : Number(casal.data.longitude), pastoral: dados.pastoral,
-        funcao: dados.funcao, dataIngresso: dados.dataIngresso,
+        longitude: casal.data.longitude === null ? null : Number(casal.data.longitude), pastoral: "ECC",
+        funcao: dados.funcao, atuaPromocaoHumana: false, funcaoPromocaoHumana: "",
+        atuaEcc: true, funcaoEcc: dados.funcao, dataIngresso: dados.dataIngresso,
         disponibilidade: { segunda: false, terca: false, quarta: false, quinta: false, sexta: false, sabado: false, domingo: false },
         observacoes: "Cadastro originado pelo vínculo de casal no ECC.", status: "ATIVO",
       };

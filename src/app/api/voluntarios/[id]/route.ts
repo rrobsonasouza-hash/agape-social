@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
 import { exigirPermissaoServidor } from "@/lib/auth/server-permissions";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
-import { voluntarioSchema } from "@/modules/voluntarios/schemas/voluntario.schema";
+import { normalizarAtuacoesVoluntario, voluntarioSchema } from "@/modules/voluntarios/schemas/voluntario.schema";
+import { sincronizarCasalDoVoluntario } from "@/modules/ecc/server/sincronizar-casal-voluntario";
 import { ZodError } from "zod";
 
 const PERFIS_ESCRITA = ["admin_plataforma", "admin_paroquia", "coordenador"];
@@ -44,10 +45,11 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     const atual = await supabase.from("voluntarios").select("dados").eq("id", id).eq("paroquia_id", paroquiaId).maybeSingle();
     if (atual.error) throw atual.error;
     if (!atual.data) return NextResponse.json({ erro: "Voluntário não encontrado." }, { status: 404 });
-    const dados = voluntarioSchema.parse({ ...(atual.data.dados as Record<string, unknown>), ...alteracoes });
+    const dados = voluntarioSchema.parse(normalizarAtuacoesVoluntario({ ...(atual.data.dados as Record<string, unknown>), ...alteracoes }));
     const { error } = await supabase.from("voluntarios").update({ dados, updated_at: new Date().toISOString() }).eq("id", id).eq("paroquia_id", paroquiaId);
     if (error) throw error;
-    return NextResponse.json({ id });
+    const casalEccId = await sincronizarCasalDoVoluntario(supabase, paroquiaId, id, dados);
+    return NextResponse.json({ id, casalEccId });
   } catch (error) {
     return respostaErro(error);
   }

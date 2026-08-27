@@ -65,6 +65,14 @@ export default function EditarVoluntarioPage() {
             voluntario.pastoral || "",
           funcao:
             voluntario.funcao || "",
+          atuaPromocaoHumana:
+            voluntario.atuaPromocaoHumana ?? (!String(voluntario.pastoral || "").toUpperCase().includes("ECC") || /SOCIAL|PROMOÇÃO HUMANA/i.test(voluntario.pastoral || "")),
+          funcaoPromocaoHumana:
+            voluntario.funcaoPromocaoHumana || ((!String(voluntario.pastoral || "").toUpperCase().includes("ECC") || /SOCIAL|PROMOÇÃO HUMANA/i.test(voluntario.pastoral || "")) ? voluntario.funcao || "Voluntário" : ""),
+          atuaEcc:
+            voluntario.atuaEcc ?? String(voluntario.pastoral || "").toUpperCase().includes("ECC"),
+          funcaoEcc:
+            voluntario.funcaoEcc || (String(voluntario.pastoral || "").toUpperCase().includes("ECC") ? voluntario.funcao || "Voluntário" : ""),
           dataIngresso:
             voluntario.dataIngresso || "",
           disponibilidade: {

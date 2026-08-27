@@ -46,6 +46,7 @@ export type EccVoluntarioResumo = {
   id: string; nome: string; telefone: string; email: string; conjugeNome: string;
   cep: string; logradouro: string; numero: string; complemento: string; bairro: string; cidade: string; estado: string;
   latitude: number | null; longitude: number | null;
+  atuaEcc: boolean; funcaoEcc: string; status: string;
 };
 
 export type EccVisita = {

@@ -16,6 +16,14 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useVoluntarios } from "@/modules/voluntarios/hooks/useVoluntarios";
 import { VoluntarioDocumento } from "@/modules/voluntarios/types/voluntario-documento";
 
+function atuaNoEcc(voluntario: VoluntarioDocumento) {
+  return voluntario.atuaEcc ?? /(^|\W)ECC(\W|$)/i.test(voluntario.pastoral || "");
+}
+
+function atuaNaPromocaoHumana(voluntario: VoluntarioDocumento) {
+  return voluntario.atuaPromocaoHumana ?? (!atuaNoEcc(voluntario) || /SOCIAL|PROMOÇÃO HUMANA/i.test(voluntario.pastoral || ""));
+}
+
 export default function VoluntariosPage() {
   const { listar } = useVoluntarios();
 
@@ -71,12 +79,18 @@ export default function VoluntariosPage() {
       const funcao =
         voluntario.funcao?.toLowerCase() ?? "";
 
+      const frentes = [
+        atuaNaPromocaoHumana(voluntario) ? `promoção humana ${voluntario.funcaoPromocaoHumana || voluntario.funcao || ""}` : "",
+        atuaNoEcc(voluntario) ? `ecc ${voluntario.funcaoEcc || voluntario.funcao || ""}` : "",
+      ].join(" ").toLowerCase();
+
       return (
         nome.includes(termo) ||
         cpf.includes(termo) ||
         telefone.includes(termo) ||
         pastoral.includes(termo) ||
-        funcao.includes(termo)
+        funcao.includes(termo) ||
+        frentes.includes(termo)
       );
     });
   }, [pesquisa, voluntarios]);
@@ -95,16 +109,18 @@ export default function VoluntariosPage() {
         voluntario.telefone || "Não informado",
     },
     {
-      key: "pastoral",
-      title: "Pastoral",
-      render: (voluntario) =>
-        voluntario.pastoral || "Não informada",
+      key: "promocaoHumana",
+      title: "Promoção Humana",
+      render: (voluntario) => atuaNaPromocaoHumana(voluntario)
+        ? <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-800">{voluntario.funcaoPromocaoHumana || voluntario.funcao || "Voluntário"}</span>
+        : <span className="text-slate-400">—</span>,
     },
     {
-      key: "funcao",
-      title: "Função",
-      render: (voluntario) =>
-        voluntario.funcao || "Não informada",
+      key: "ecc",
+      title: "ECC",
+      render: (voluntario) => atuaNoEcc(voluntario)
+        ? <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-800">{voluntario.funcaoEcc || voluntario.funcao || "Voluntário"}</span>
+        : <span className="text-slate-400">—</span>,
     },
     {
       key: "status",
@@ -160,7 +176,7 @@ export default function VoluntariosPage() {
               setPesquisa(event.target.value)
             }
             className="w-full rounded-lg border border-slate-300 py-3 pl-12 pr-4 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-            placeholder="Pesquisar por nome, CPF, telefone, pastoral ou função..."
+            placeholder="Pesquisar por nome, telefone, Promoção Humana, ECC ou função..."
           />
         </div>
       </Card>

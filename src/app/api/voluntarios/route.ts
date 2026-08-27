@@ -4,7 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
 import { exigirPermissaoServidor } from "@/lib/auth/server-permissions";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
-import { voluntarioSchema } from "@/modules/voluntarios/schemas/voluntario.schema";
+import { normalizarAtuacoesVoluntario, voluntarioSchema } from "@/modules/voluntarios/schemas/voluntario.schema";
+import { sincronizarCasalDoVoluntario } from "@/modules/ecc/server/sincronizar-casal-voluntario";
 import { ZodError } from "zod";
 
 const PERFIS_ESCRITA = ["admin_plataforma", "admin_paroquia", "coordenador"];
@@ -39,11 +40,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { supabase, paroquiaId } = await contexto(request, true);
-    const dados = voluntarioSchema.parse(await request.json());
+    const dados = voluntarioSchema.parse(normalizarAtuacoesVoluntario(await request.json()));
     const id = randomUUID();
     const { error } = await supabase.from("voluntarios").insert({ id, paroquia_id: paroquiaId, dados });
     if (error) throw error;
-    return NextResponse.json({ id }, { status: 201 });
+    const casalEccId = await sincronizarCasalDoVoluntario(supabase, paroquiaId, id, dados);
+    return NextResponse.json({ id, casalEccId }, { status: 201 });
   } catch (error) {
     return respostaErro(error);
   }

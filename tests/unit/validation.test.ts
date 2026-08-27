@@ -5,7 +5,7 @@ import { doadorSchema } from "../../src/modules/doadores/schemas/doador.schema.t
 import { familiaCadastroSchema, familiaSchema } from "../../src/modules/familias/schemas/familia.schema.ts";
 import { parceiroSchema } from "../../src/modules/parceiros/schemas/parceiro.schema.ts";
 import { visitaSchema } from "../../src/modules/visitas/schemas/visita.schema.ts";
-import { voluntarioSchema } from "../../src/modules/voluntarios/schemas/voluntario.schema.ts";
+import { normalizarAtuacoesVoluntario, voluntarioSchema } from "../../src/modules/voluntarios/schemas/voluntario.schema.ts";
 
 describe("validação server-side dos cadastros", () => {
   it("rejeita família com CPF inválido", () => {
@@ -38,8 +38,14 @@ describe("validação server-side dos cadastros", () => {
   });
 
   it("aceita cônjuge e endereço no cadastro do voluntário", () => {
-    const resultado = voluntarioSchema.safeParse({ nome: "João da Silva", cpf: "123.456.789-00", telefone: "(11) 99999-9999", conjugeNome: "Maria da Silva", cep: "02401-100", logradouro: "Rua Teste", numero: "10", cidade: "São Paulo", estado: "SP", pastoral: "ECC", funcao: "Acolhida", disponibilidade: { segunda: false, terca: false, quarta: false, quinta: false, sexta: false, sabado: true, domingo: false }, status: "ATIVO" });
+    const resultado = voluntarioSchema.safeParse(normalizarAtuacoesVoluntario({ nome: "João da Silva", cpf: "123.456.789-00", telefone: "(11) 99999-9999", conjugeNome: "Maria da Silva", cep: "02401-100", logradouro: "Rua Teste", numero: "10", cidade: "São Paulo", estado: "SP", pastoral: "ECC", funcao: "Acolhida", disponibilidade: { segunda: false, terca: false, quarta: false, quinta: false, sexta: false, sabado: true, domingo: false }, status: "ATIVO" }));
     assert.equal(resultado.success, true);
+  });
+
+  it("separa as funções da Promoção Humana e do ECC", () => {
+    const resultado = voluntarioSchema.safeParse({ nome: "João da Silva", cpf: "123.456.789-00", telefone: "(11) 99999-9999", pastoral: "Promoção Humana / ECC", funcao: "Visitas / Secretaria", atuaPromocaoHumana: true, funcaoPromocaoHumana: "Visitas", atuaEcc: true, funcaoEcc: "Secretaria", disponibilidade: { segunda: false, terca: false, quarta: false, quinta: false, sexta: false, sabado: true, domingo: false }, status: "ATIVO" });
+    assert.equal(resultado.success, true);
+    if (resultado.success) assert.equal(resultado.data.funcaoEcc, "Secretaria");
   });
 
   it("rejeita doador sem documento", () => {

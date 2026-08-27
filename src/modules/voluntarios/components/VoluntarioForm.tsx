@@ -37,6 +37,10 @@ const valoresPadrao: VoluntarioFormData = {
   latitude: null, longitude: null,
   pastoral: "Pastoral Social",
   funcao: "Voluntário",
+  atuaPromocaoHumana: true,
+  funcaoPromocaoHumana: "Voluntário",
+  atuaEcc: false,
+  funcaoEcc: "",
   dataIngresso: "",
   disponibilidade: {
     segunda: false,
@@ -66,6 +70,7 @@ export function VoluntarioForm({
     reset,
     getValues,
     setValue,
+    watch,
     formState: {
       errors,
       isSubmitting,
@@ -75,6 +80,8 @@ export function VoluntarioForm({
     defaultValues: valoresIniciais ?? valoresPadrao,
   });
   const [consultandoCep, setConsultandoCep] = useState(false);
+  const atuaPromocaoHumana = watch("atuaPromocaoHumana");
+  const atuaEcc = watch("atuaEcc");
 
   useEffect(() => {
     reset(valoresIniciais ?? valoresPadrao);
@@ -83,7 +90,9 @@ export function VoluntarioForm({
   async function enviarFormulario(
     data: VoluntarioFormData
   ) {
-    await onSubmit(data);
+    const areas = [data.atuaPromocaoHumana ? "Promoção Humana" : "", data.atuaEcc ? "ECC" : ""].filter(Boolean);
+    const funcoes = [data.atuaPromocaoHumana ? data.funcaoPromocaoHumana : "", data.atuaEcc ? data.funcaoEcc : ""].filter(Boolean);
+    await onSubmit({ ...data, pastoral: areas.join(" / "), funcao: funcoes.join(" / ") });
   }
 
   function erroFormulario() {
@@ -185,23 +194,22 @@ export function VoluntarioForm({
       </FormSection>
 
       <FormSection
-        title="Atuação pastoral"
-        description="Informe onde e como o voluntário atua na paróquia."
+        title="Frentes de atuação"
+        description="Marque todas as frentes em que o voluntário atua. Cada frente possui sua própria função."
       >
+        <input type="hidden" {...register("pastoral")} />
+        <input type="hidden" {...register("funcao")} />
         <div className="grid gap-4 md:grid-cols-2">
-          <TextField
-            label="Pastoral ou área de atuação"
-            placeholder="Ex.: Pastoral Social"
-            {...register("pastoral")}
-            error={errors.pastoral?.message}
-          />
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <CheckboxField label="Promoção Humana" {...register("atuaPromocaoHumana")} />
+            {atuaPromocaoHumana && <div className="mt-3"><TextField label="Função na Promoção Humana" placeholder="Ex.: Visitas, cestas, estoque ou coordenação" list="funcoes-promocao-humana" {...register("funcaoPromocaoHumana")} error={errors.funcaoPromocaoHumana?.message} /><datalist id="funcoes-promocao-humana"><option value="Coordenação" /><option value="Cadastro e triagem" /><option value="Visitas" /><option value="Cestas e distribuições" /><option value="Estoque social" /><option value="Doações" /><option value="Rotas e entregas" /><option value="Voluntário" /></datalist></div>}
+          </div>
+          <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4">
+            <CheckboxField label="Encontro de Casais com Cristo (ECC)" {...register("atuaEcc")} />
+            {atuaEcc && <div className="mt-3"><TextField label="Função no ECC" placeholder="Ex.: Secretaria, cozinha, visitação ou coordenação" list="funcoes-ecc" {...register("funcaoEcc")} error={errors.funcaoEcc?.message} /><datalist id="funcoes-ecc"><option value="Coordenação geral" /><option value="Secretaria" /><option value="Visitação" /><option value="Acolhida" /><option value="Cozinha" /><option value="Sala" /><option value="Compras" /><option value="Liturgia e espiritualidade" /><option value="Ordem" /><option value="Limpeza" /><option value="Voluntário" /></datalist></div>}
+          </div>
 
-          <TextField
-            label="Função"
-            placeholder="Ex.: Coordenador ou voluntário"
-            {...register("funcao")}
-            error={errors.funcao?.message}
-          />
+          {errors.atuaPromocaoHumana?.message && <p className="text-sm text-red-600 md:col-span-2">{errors.atuaPromocaoHumana.message}</p>}
 
           <DateField
             label="Data de ingresso"

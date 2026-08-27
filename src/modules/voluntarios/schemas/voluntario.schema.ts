@@ -1,5 +1,19 @@
 import { z } from "zod";
 
+export function normalizarAtuacoesVoluntario(entrada: Record<string, unknown>) {
+  const pastoral = String(entrada.pastoral ?? "");
+  const funcao = String(entrada.funcao ?? "Voluntário");
+  const legadoEcc = /(^|\W)ECC(\W|$)/i.test(pastoral);
+  const legadoPromocao = !legadoEcc || /SOCIAL|PROMOÇÃO HUMANA/i.test(pastoral);
+  return {
+    ...entrada,
+    atuaPromocaoHumana: entrada.atuaPromocaoHumana ?? legadoPromocao,
+    funcaoPromocaoHumana: entrada.funcaoPromocaoHumana ?? (legadoPromocao ? funcao : ""),
+    atuaEcc: entrada.atuaEcc ?? legadoEcc,
+    funcaoEcc: entrada.funcaoEcc ?? (legadoEcc ? funcao : ""),
+  };
+}
+
 export const voluntarioSchema = z.object({
   nome: z
     .string()
@@ -43,6 +57,11 @@ export const voluntarioSchema = z.object({
     .string()
     .min(2, "Informe a função do voluntário."),
 
+  atuaPromocaoHumana: z.boolean(),
+  funcaoPromocaoHumana: z.string().trim().max(120).optional().or(z.literal("")),
+  atuaEcc: z.boolean(),
+  funcaoEcc: z.string().trim().max(120).optional().or(z.literal("")),
+
   dataIngresso: z
     .string()
     .optional()
@@ -65,6 +84,16 @@ export const voluntarioSchema = z.object({
     .or(z.literal("")),
 
   status: z.enum(["ATIVO", "INATIVO"]),
+}).superRefine((dados, contexto) => {
+  if (!dados.atuaPromocaoHumana && !dados.atuaEcc) {
+    contexto.addIssue({ code: "custom", path: ["atuaPromocaoHumana"], message: "Selecione ao menos uma frente de atuação." });
+  }
+  if (dados.atuaPromocaoHumana && !dados.funcaoPromocaoHumana?.trim()) {
+    contexto.addIssue({ code: "custom", path: ["funcaoPromocaoHumana"], message: "Informe a função na Promoção Humana." });
+  }
+  if (dados.atuaEcc && !dados.funcaoEcc?.trim()) {
+    contexto.addIssue({ code: "custom", path: ["funcaoEcc"], message: "Informe a função no ECC." });
+  }
 });
 
 export type VoluntarioFormData = z.infer<typeof voluntarioSchema>;
