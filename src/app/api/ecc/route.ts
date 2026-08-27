@@ -84,6 +84,12 @@ export async function GET(request: NextRequest) {
         String((item.dados as { nome?: string }).nome ?? "Voluntário"),
       ]),
     );
+    const nomesCasaisVisitadores = new Map(
+      (voluntarios.data ?? []).map((item) => {
+        const dados = item.dados as Record<string, unknown>;
+        return [item.id, [String(dados.nome ?? "Voluntário"), String(dados.conjugeNome ?? "")].filter(Boolean).join(" e ")];
+      }),
+    );
     const nomesCasais = new Map(
       (casais.data ?? []).map((item) => [
         item.id,
@@ -136,7 +142,7 @@ export async function GET(request: NextRequest) {
         id: item.id, encontroId: item.encontro_id, casalId: item.casal_id,
         casalNome: nomesCasais.get(item.casal_id) ?? "Casal não encontrado",
         visitadorVoluntarioId: item.visitador_voluntario_id ?? "",
-        visitadorNome: nomesVoluntarios.get(item.visitador_voluntario_id) ?? "Não definido",
+        visitadorNome: nomesCasaisVisitadores.get(item.visitador_voluntario_id) ?? nomesVoluntarios.get(item.visitador_voluntario_id) ?? "Não definido",
         dataAgendada: item.data_agendada, horaAgendada: item.hora_agendada ? String(item.hora_agendada).slice(0, 5) : "",
         dataRealizada: item.data_realizada ?? "", retornoData: item.retorno_data ?? "",
         status: item.status, questionario: {

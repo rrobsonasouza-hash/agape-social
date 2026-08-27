@@ -17,21 +17,35 @@ export async function sincronizarCasalDoVoluntario(
 ) {
   if (!dados.atuaEcc || dados.status !== "ATIVO" || !dados.conjugeNome?.trim()) return null;
 
-  const consulta = await supabase
+  const rpc = await supabase.rpc("sincronizar_casal_voluntario_ecc", {
+    p_paroquia_id: paroquiaId,
+    p_voluntario_id: voluntarioId,
+    p_dados: dados,
+  });
+  if (!rpc.error) return (rpc.data as string | null) ?? null;
+  const funcaoAindaNaoDisponivel = rpc.error.code === "PGRST202" || /sincronizar_casal_voluntario_ecc|schema cache|function/i.test(rpc.error.message);
+  if (!funcaoAindaNaoDisponivel) throw rpc.error;
+
+  const porVinculo = await supabase
     .from("ecc_casais")
     .select("id,conjuge_um_nome,conjuge_dois_nome,voluntario_um_id,voluntario_dois_id")
     .eq("paroquia_id", paroquiaId)
-    .limit(500);
-  if (consulta.error) throw consulta.error;
+    .or(`voluntario_um_id.eq.${voluntarioId},voluntario_dois_id.eq.${voluntarioId}`)
+    .limit(1)
+    .maybeSingle();
+  if (porVinculo.error) throw porVinculo.error;
 
   const nome = normalizarNome(dados.nome);
-  const conjuge = normalizarNome(dados.conjugeNome);
-  const existente = (consulta.data ?? []).find((item) =>
-    item.voluntario_um_id === voluntarioId ||
-    item.voluntario_dois_id === voluntarioId ||
-    (normalizarNome(item.conjuge_um_nome) === nome && normalizarNome(item.conjuge_dois_nome) === conjuge) ||
-    (normalizarNome(item.conjuge_dois_nome) === nome && normalizarNome(item.conjuge_um_nome) === conjuge),
-  );
+  let existente = porVinculo.data;
+  if (!existente) {
+    const [ordemDireta, ordemInversa] = await Promise.all([
+      supabase.from("ecc_casais").select("id,conjuge_um_nome,conjuge_dois_nome,voluntario_um_id,voluntario_dois_id").eq("paroquia_id", paroquiaId).eq("conjuge_um_nome", dados.nome.trim()).eq("conjuge_dois_nome", dados.conjugeNome.trim()).limit(1).maybeSingle(),
+      supabase.from("ecc_casais").select("id,conjuge_um_nome,conjuge_dois_nome,voluntario_um_id,voluntario_dois_id").eq("paroquia_id", paroquiaId).eq("conjuge_um_nome", dados.conjugeNome.trim()).eq("conjuge_dois_nome", dados.nome.trim()).limit(1).maybeSingle(),
+    ]);
+    if (ordemDireta.error) throw ordemDireta.error;
+    if (ordemInversa.error) throw ordemInversa.error;
+    existente = ordemDireta.data ?? ordemInversa.data;
+  }
 
   const endereco = {
     telefone: dados.telefone,
