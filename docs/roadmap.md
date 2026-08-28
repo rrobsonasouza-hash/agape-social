@@ -212,7 +212,7 @@ Fundação   Auth +      Cadastros   Operação    Inteligência  Qualidade
 - [x] Controle de fichas, listas, roteiros, termos e materiais por edição
 - [x] Indicadores de confirmações, tarefas, comunicações, documentos e visitas
 - [x] Relatórios de casais e operação em CSV e resumo gerencial para impressão/PDF
-- [x] Arrecadação de alimentos, bebidas, materiais e valores com acompanhamento do prometido, recebido e pendências
+- [x] Área de Compras com lista de doações por casal, alimentos, bebidas, materiais, valores e acompanhamento do prometido, recebido e pendências
 
 ### Próximas fases
 
