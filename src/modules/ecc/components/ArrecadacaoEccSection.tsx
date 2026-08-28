@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import { CircleDollarSign, PackageCheck, Pencil, Plus, ShoppingCart, TriangleAlert, type LucideIcon } from "lucide-react";
+import { BarChart3, CircleDollarSign, Download, PackageCheck, Pencil, Plus, Search, ShoppingCart, TriangleAlert, type LucideIcon } from "lucide-react";
 import { useEcc } from "../hooks/useEcc";
 import type { EccArrecadacaoFormData } from "../schemas/ecc.schema";
 import type { EccArrecadacao, EccCasalDoador } from "../types/ecc.types";
@@ -25,6 +25,9 @@ export function ArrecadacaoEccSection({ encontroId, arrecadacoes, casaisDoadores
   const [aberto, setAberto] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState("");
+  const [filtroStatus, setFiltroStatus] = useState("TODOS");
+  const [filtroCategoria, setFiltroCategoria] = useState("TODAS");
+  const [busca, setBusca] = useState("");
 
   const resumo = useMemo(() => ({
     materiais: arrecadacoes.filter((item) => item.categoria !== "VALOR" && item.status !== "CANCELADO").length,
@@ -33,6 +36,46 @@ export function ArrecadacaoEccSection({ encontroId, arrecadacoes, casaisDoadores
     valorPrometido: arrecadacoes.filter((item) => item.status !== "CANCELADO").reduce((total, item) => total + item.valorPrometido, 0),
     valorRecebido: arrecadacoes.filter((item) => item.status !== "CANCELADO").reduce((total, item) => total + item.valorRecebido, 0),
   }), [arrecadacoes]);
+
+  const evolucao = useMemo(() => {
+    const ativos = arrecadacoes.filter((item) => item.status !== "CANCELADO");
+    const percentuais = ativos.map((item) => {
+      const prometido = item.categoria === "VALOR" ? item.valorPrometido : item.quantidadePrometida;
+      const recebido = item.categoria === "VALOR" ? item.valorRecebido : item.quantidadeRecebida;
+      return prometido > 0 ? Math.min(100, (recebido / prometido) * 100) : 0;
+    });
+    const geral = percentuais.length ? Math.round(percentuais.reduce((total, valor) => total + valor, 0) / percentuais.length) : 0;
+    const grupos = new Map<string, { item: string; unidade: string; categoria: EccArrecadacao["categoria"]; prometido: number; recebido: number; casais: Set<string> }>();
+    for (const registro of ativos) {
+      const unidade = registro.categoria === "VALOR" ? "R$" : registro.unidade;
+      const chave = `${registro.categoria}|${registro.item.toLocaleLowerCase("pt-BR")}|${unidade}`;
+      const atual = grupos.get(chave) ?? { item: registro.item, unidade, categoria: registro.categoria, prometido: 0, recebido: 0, casais: new Set<string>() };
+      atual.prometido += registro.categoria === "VALOR" ? registro.valorPrometido : registro.quantidadePrometida;
+      atual.recebido += registro.categoria === "VALOR" ? registro.valorRecebido : registro.quantidadeRecebida;
+      if (registro.responsavel) atual.casais.add(registro.responsavel);
+      grupos.set(chave, atual);
+    }
+    const itens = [...grupos.values()]
+      .map((grupo) => ({ ...grupo, percentual: grupo.prometido > 0 ? Math.min(100, Math.round((grupo.recebido / grupo.prometido) * 100)) : 0 }))
+      .sort((a, b) => a.percentual - b.percentual || a.item.localeCompare(b.item, "pt-BR"));
+    return { geral, itens };
+  }, [arrecadacoes]);
+
+  const registrosFiltrados = useMemo(() => arrecadacoes.filter((item) => {
+    const termo = busca.trim().toLocaleLowerCase("pt-BR");
+    return (filtroStatus === "TODOS" || item.status === filtroStatus)
+      && (filtroCategoria === "TODAS" || item.categoria === filtroCategoria)
+      && (!termo || `${item.item} ${item.responsavel}`.toLocaleLowerCase("pt-BR").includes(termo));
+  }), [arrecadacoes, busca, filtroCategoria, filtroStatus]);
+
+  function exportarRelatorio() {
+    const escapar = (valor: unknown) => `"${String(valor ?? "").replaceAll('"', '""')}"`;
+    const linhas = [["Categoria", "Item", "Casal doador", "Telefone", "Prometido", "Recebido", "Unidade", "Situação"], ...registrosFiltrados.map((item) => [nomesCategoria[item.categoria], item.item, item.responsavel, item.telefone, item.categoria === "VALOR" ? item.valorPrometido : item.quantidadePrometida, item.categoria === "VALOR" ? item.valorRecebido : item.quantidadeRecebida, item.categoria === "VALOR" ? "R$" : item.unidade, nomesStatus[item.status]])];
+    const arquivo = new Blob(["\uFEFF", linhas.map((linha) => linha.map(escapar).join(";")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(arquivo);
+    const link = document.createElement("a");
+    link.href = url; link.download = "doacoes-ecc.csv"; link.click(); URL.revokeObjectURL(url);
+  }
 
   function novo() {
     setFormulario(formularioInicial(encontroId)); setEditando(""); setMensagem(""); setAberto(true);
@@ -62,6 +105,19 @@ export function ArrecadacaoEccSection({ encontroId, arrecadacoes, casaisDoadores
       ] as Array<[string, string | number, LucideIcon]>).map(([titulo, valor, Icone]) => <article key={titulo} className="rounded-2xl border bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-700"><Icone size={20} /></span><div><p className="text-xs font-black uppercase tracking-wide text-slate-500">{titulo}</p><strong className="text-xl text-slate-900">{valor}</strong></div></div></article>)}
     </div>
 
+    <div className="grid gap-4 lg:grid-cols-[.8fr_1.2fr]">
+      <article className="rounded-2xl border bg-white p-5 shadow-sm">
+        <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-700"><BarChart3 size={22} /></span><div><p className="text-xs font-black uppercase tracking-widest text-blue-700">Evolução geral</p><h2 className="text-xl font-black">Recebimento das doações</h2></div></div>
+        <div className="mt-6 flex flex-wrap items-end justify-between gap-2"><strong className="text-4xl text-slate-950">{evolucao.geral}%</strong><span className="text-sm font-bold text-slate-500">{resumo.concluidos} de {arrecadacoes.filter((item) => item.status !== "CANCELADO").length} compromisso(s) concluído(s)</span></div>
+        <div className="mt-3 h-4 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-emerald-500 transition-all" style={{ width: `${evolucao.geral}%` }} /></div>
+        <p className="mt-3 text-xs text-slate-500">Percentual médio recebido em cada compromisso, sem misturar quilos, litros, unidades e valores.</p>
+      </article>
+      <article className="rounded-2xl border bg-white p-5 shadow-sm">
+        <div><p className="text-xs font-black uppercase tracking-widest text-amber-700">Atenção da coordenação</p><h2 className="mt-1 text-xl font-black">Itens com menor evolução</h2></div>
+        <div className="mt-4 space-y-3">{evolucao.itens.slice(0, 5).map((grupo) => <div key={`${grupo.categoria}-${grupo.item}-${grupo.unidade}`}><div className="mb-1 flex items-center justify-between gap-3 text-sm"><div><strong>{grupo.item}</strong><span className="ml-2 text-xs text-slate-500">{grupo.casais.size} casal(is)</span></div><span className="font-black text-slate-700">{grupo.categoria === "VALOR" ? `${dinheiro.format(grupo.recebido)} / ${dinheiro.format(grupo.prometido)}` : `${grupo.recebido} / ${grupo.prometido} ${grupo.unidade}`}</span></div><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${grupo.percentual >= 100 ? "bg-emerald-500" : grupo.percentual > 0 ? "bg-amber-500" : "bg-red-400"}`} style={{ width: `${grupo.percentual}%` }} /></div></div>)}{!evolucao.itens.length && <p className="py-6 text-center text-sm text-slate-500">Registre as primeiras doações para acompanhar a evolução.</p>}</div>
+      </article>
+    </div>
+
     <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl border bg-white p-5 shadow-sm">
       <div><p className="text-xs font-black uppercase tracking-widest text-blue-700">Equipe de Compras</p><h2 className="mt-1 text-xl font-black">Lista de doações do encontro</h2><p className="mt-1 text-sm text-slate-500">Registre o que cada casal escolheu doar a partir da lista de alimentos, bebidas e materiais necessários.</p></div>
       <button type="button" onClick={novo} className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white"><Plus size={18} /> Registrar doação</button>
@@ -87,15 +143,25 @@ export function ArrecadacaoEccSection({ encontroId, arrecadacoes, casaisDoadores
       <div className="flex gap-2 md:col-span-2 lg:col-span-4"><button disabled={salvando} className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:opacity-60">{salvando ? "Salvando..." : editando ? "Salvar recebimento" : "Registrar doação combinada"}</button><button type="button" onClick={() => setAberto(false)} className="rounded-xl border bg-white px-5 py-3 text-sm font-bold">Cancelar</button></div>
     </form>}
 
+    <div className="rounded-2xl border bg-white p-4 shadow-sm">
+      <div className="grid gap-3 md:grid-cols-[1fr_190px_190px_auto]">
+        <label className="relative"><Search className="absolute left-3 top-3 text-slate-400" size={18} /><input className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3 text-sm" value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar por item ou casal" /></label>
+        <select className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold" value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)}><option value="TODAS">Todas as categorias</option>{Object.entries(nomesCategoria).map(([valor, nome]) => <option key={valor} value={valor}>{nome}</option>)}</select>
+        <select className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}><option value="TODOS">Todas as situações</option>{Object.entries(nomesStatus).map(([valor, nome]) => <option key={valor} value={valor}>{nome}</option>)}</select>
+        <button type="button" onClick={exportarRelatorio} className="flex items-center justify-center gap-2 rounded-xl border border-blue-200 px-4 py-2.5 text-sm font-black text-blue-700"><Download size={17} /> Exportar</button>
+      </div>
+      <p className="mt-3 text-xs text-slate-500">{registrosFiltrados.length} registro(s) exibido(s)</p>
+    </div>
+
     <div className="grid gap-3 md:grid-cols-2">
-      {arrecadacoes.map((item) => {
+      {registrosFiltrados.map((item) => {
         const valor = item.categoria === "VALOR";
         const prometido = valor ? dinheiro.format(item.valorPrometido) : `${item.quantidadePrometida} ${item.unidade}`;
         const recebido = valor ? dinheiro.format(item.valorRecebido) : `${item.quantidadeRecebida} ${item.unidade}`;
         const cor = item.status === "RECEBIDO" ? "bg-emerald-100 text-emerald-800" : item.status === "CANCELADO" ? "bg-slate-100 text-slate-600" : "bg-amber-100 text-amber-800";
         return <article key={item.id} className="rounded-2xl border bg-white p-5 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><span className="text-xs font-black uppercase tracking-wide text-blue-700">{nomesCategoria[item.categoria]}</span><h3 className="mt-1 text-lg font-black">{item.item}</h3><p className="text-sm text-slate-500">{item.responsavel || "Responsável não informado"}{item.telefone && ` · ${item.telefone}`}</p></div><span className={`rounded-full px-3 py-1 text-xs font-black ${cor}`}>{nomesStatus[item.status]}</span></div><div className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-3 text-sm"><div><span className="text-slate-500">Prometido</span><strong className="block">{prometido}</strong></div><div><span className="text-slate-500">Recebido</span><strong className="block">{recebido}</strong></div></div>{item.observacoes && <p className="mt-3 text-sm text-slate-600">{item.observacoes}</p>}<button type="button" onClick={() => editar(item)} className="mt-4 flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-bold text-blue-700"><Pencil size={16} /> Atualizar recebimento</button></article>;
       })}
-      {!arrecadacoes.length && <div className="rounded-2xl border border-dashed bg-white p-10 text-center text-slate-500 md:col-span-2"><ShoppingCart className="mx-auto mb-3 text-blue-500" /><strong className="block text-slate-800">A lista de doações ainda está vazia</strong><span className="mt-1 block text-sm">Comece registrando o item escolhido por cada casal.</span></div>}
+      {!registrosFiltrados.length && <div className="rounded-2xl border border-dashed bg-white p-10 text-center text-slate-500 md:col-span-2"><ShoppingCart className="mx-auto mb-3 text-blue-500" /><strong className="block text-slate-800">{arrecadacoes.length ? "Nenhuma doação encontrada nos filtros" : "A lista de doações ainda está vazia"}</strong><span className="mt-1 block text-sm">{arrecadacoes.length ? "Altere os filtros para consultar outros registros." : "Comece registrando o item escolhido por cada casal."}</span></div>}
     </div>
   </section>;
 }
