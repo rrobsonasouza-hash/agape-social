@@ -216,7 +216,7 @@ Fundação   Auth +      Cadastros   Operação    Inteligência  Qualidade
 ### Próximas fases
 
 - [ ] Integração de disparos com e-mail e WhatsApp após configuração dos provedores
-- [ ] Upload protegido de documentos no Storage, além dos links externos
+- [x] Upload protegido de documentos no Storage, além dos links externos
 - [x] Credenciamento, presença, entrega de crachá e materiais nos dias do encontro
 
 ---

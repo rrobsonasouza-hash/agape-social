@@ -172,7 +172,9 @@ export async function GET(request: NextRequest) {
       })),
       documentos: (documentos.data ?? []).map((item) => ({
         id: item.id, encontroId: item.encontro_id, titulo: item.titulo, categoria: item.categoria,
-        url: item.url, observacoes: item.observacoes, status: item.status, criadoEm: item.created_at,
+        url: item.url, caminhoStorage: item.caminho_storage ?? "", nomeArquivo: item.nome_arquivo ?? "",
+        tipoArquivo: item.tipo_arquivo ?? "", tamanhoBytes: Number(item.tamanho_bytes ?? 0),
+        observacoes: item.observacoes, status: item.status, criadoEm: item.created_at,
       })),
       credenciamentos: (credenciamentos.data ?? []).map((item) => ({
         id: item.id, encontroId: item.encontro_id, casalId: item.casal_id,

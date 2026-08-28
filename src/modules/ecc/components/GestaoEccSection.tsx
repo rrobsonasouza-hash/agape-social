@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import { BarChart3, CheckCircle2, ClipboardCopy, FileDown, FileText, Mail, MessageCircle, Plus, Printer, Users } from "lucide-react";
+import { BarChart3, CheckCircle2, ClipboardCopy, ExternalLink, FileDown, FileText, Mail, MessageCircle, Plus, Printer, Trash2, UploadCloud, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import { useEcc } from "../hooks/useEcc";
 import type { EccComunicacaoFormData, EccDocumentoFormData } from "../schemas/ecc.schema";
@@ -29,11 +29,12 @@ function baixarCsv(nome: string, linhas: unknown[][]) {
 }
 
 export function GestaoEccSection({ encontroId, dados, onSaved }: Props) {
-  const { criarComunicacao, criarDocumento, atualizarComunicacao, atualizarDocumento } = useEcc();
+  const { criarComunicacao, criarDocumento, enviarDocumento, abrirDocumento, excluirDocumento, atualizarComunicacao, atualizarDocumento } = useEcc();
   const [formulario, setFormulario] = useState<"comunicacao" | "documento" | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [comunicacao, setComunicacao] = useState<EccComunicacaoFormData>({ encontroId, titulo: "", mensagem: "", canal: "WHATSAPP", publico: "TODOS", status: "RASCUNHO", programadaPara: "" });
   const [documento, setDocumento] = useState<EccDocumentoFormData>({ encontroId, titulo: "", categoria: "OUTRO", url: "", observacoes: "", status: "PENDENTE" });
+  const [arquivoDocumento, setArquivoDocumento] = useState<File | null>(null);
 
   const edicao = dados.encontros.find((item) => item.id === encontroId);
   const participacoes = useMemo(() => dados.participacoes.filter((item) => item.encontroId === encontroId), [dados.participacoes, encontroId]);
@@ -56,12 +57,20 @@ export function GestaoEccSection({ encontroId, dados, onSaved }: Props) {
   }
   async function salvarDocumento(event: FormEvent) {
     event.preventDefault(); setSalvando(true);
-    try { await criarDocumento({ ...documento, encontroId }); toast.success("Documento incluído na edição."); setFormulario(null); setDocumento({ encontroId, titulo: "", categoria: "OUTRO", url: "", observacoes: "", status: "PENDENTE" }); await onSaved(); }
+    try {
+      if (arquivoDocumento) await enviarDocumento({ ...documento, encontroId, url: "", status: documento.status === "PENDENTE" ? "DISPONIVEL" : documento.status }, arquivoDocumento);
+      else await criarDocumento({ ...documento, encontroId });
+      toast.success(arquivoDocumento ? "Arquivo enviado ao cofre privado do ECC." : "Documento incluído na edição.");
+      setFormulario(null); setArquivoDocumento(null);
+      setDocumento({ encontroId, titulo: "", categoria: "OUTRO", url: "", observacoes: "", status: "PENDENTE" }); await onSaved();
+    }
     catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível registrar o documento."); }
     finally { setSalvando(false); }
   }
   async function mudarComunicacao(id: string, status: EccComunicacaoStatus) { try { await atualizarComunicacao(id, status); await onSaved(); toast.success("Situação da comunicação atualizada."); } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível atualizar."); } }
   async function mudarDocumento(id: string, status: EccDocumentoStatus) { try { await atualizarDocumento(id, status); await onSaved(); toast.success("Situação do documento atualizada."); } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível atualizar."); } }
+  async function abrirArquivo(id: string) { try { const resposta = await abrirDocumento(id); window.open(resposta.url, "_blank", "noopener,noreferrer"); } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível abrir o arquivo."); } }
+  async function removerArquivo(id: string) { if (!window.confirm("Excluir este documento e seu arquivo privado?")) return; try { await excluirDocumento(id); await onSaved(); toast.success("Documento excluído."); } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível excluir o documento."); } }
   function exportarCasais() {
     const linhas = [["Casal", "Papel", "Situação", "Telefone", "E-mail", "Cidade/UF"]];
     for (const item of participacoes) { const casal = dados.casais.find((registro) => registro.id === item.casalId); linhas.push([item.casalNome, item.classificacao, item.situacao, casal?.telefone ?? "", casal?.email ?? "", [casal?.cidade, casal?.estado].filter(Boolean).join("/")]); }
@@ -89,8 +98,17 @@ export function GestaoEccSection({ encontroId, dados, onSaved }: Props) {
       </article>
 
       <article className="rounded-2xl border bg-white p-5 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="flex items-center gap-2 text-xl font-black"><FileText size={20} />Documentos da edição</h2><p className="text-sm text-slate-500">Controle fichas, listas, termos, roteiros e materiais.</p></div><button onClick={() => setFormulario(formulario === "documento" ? null : "documento")} className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white"><Plus size={16} className="mr-1 inline" />Novo documento</button></div>
-        {formulario === "documento" && <form onSubmit={salvarDocumento} className="mt-5 grid gap-3 rounded-xl bg-violet-50 p-4 sm:grid-cols-2"><label className={`${label} sm:col-span-2`}>Documento<input required className={campo} value={documento.titulo} onChange={(e) => setDocumento({ ...documento, titulo: e.target.value })} /></label><label className={label}>Categoria<select className={campo} value={documento.categoria} onChange={(e) => setDocumento({ ...documento, categoria: e.target.value as EccDocumentoFormData["categoria"] })}>{Object.entries(nomesCategoria).map(([v,n]) => <option key={v} value={v}>{n}</option>)}</select></label><label className={label}>Situação<select className={campo} value={documento.status} onChange={(e) => setDocumento({ ...documento, status: e.target.value as EccDocumentoFormData["status"] })}>{Object.entries(nomesDocumento).map(([v,n]) => <option key={v} value={v}>{n}</option>)}</select></label><label className={`${label} sm:col-span-2`}>Link do arquivo<input type="url" className={campo} placeholder="https://..." value={documento.url} onChange={(e) => setDocumento({ ...documento, url: e.target.value })} /></label><label className={`${label} sm:col-span-2`}>Observações<textarea className={`${campo} min-h-20`} value={documento.observacoes} onChange={(e) => setDocumento({ ...documento, observacoes: e.target.value })} /></label><button disabled={salvando} className="rounded-xl bg-blue-600 px-4 py-3 font-black text-white sm:col-span-2">Registrar documento</button></form>}
-        <div className="mt-4 space-y-2">{documentos.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4"><div><strong>{item.titulo}</strong><p className="text-xs text-slate-500">{nomesCategoria[item.categoria]}{item.observacoes && ` · ${item.observacoes}`}</p>{item.url && <a href={item.url} target="_blank" rel="noreferrer" className="mt-1 inline-block text-xs font-black text-blue-700">Abrir arquivo</a>}</div><select className="rounded-lg border bg-white px-2 py-1.5 text-xs font-bold" value={item.status} onChange={(e) => void mudarDocumento(item.id, e.target.value as EccDocumentoStatus)}>{Object.entries(nomesDocumento).map(([v,n]) => <option key={v} value={v}>{n}</option>)}</select></div>)}{!documentos.length && <p className="py-8 text-center text-sm text-slate-500">Nenhum documento registrado.</p>}</div>
+        {formulario === "documento" && <form onSubmit={salvarDocumento} className="mt-5 grid gap-3 rounded-xl bg-violet-50 p-4 sm:grid-cols-2">
+          <label className={`${label} sm:col-span-2`}>Documento<input required className={campo} value={documento.titulo} onChange={(e) => setDocumento({ ...documento, titulo: e.target.value })} /></label>
+          <label className={label}>Categoria<select className={campo} value={documento.categoria} onChange={(e) => setDocumento({ ...documento, categoria: e.target.value as EccDocumentoFormData["categoria"] })}>{Object.entries(nomesCategoria).map(([v,n]) => <option key={v} value={v}>{n}</option>)}</select></label>
+          <label className={label}>Situação<select className={campo} value={documento.status} onChange={(e) => setDocumento({ ...documento, status: e.target.value as EccDocumentoFormData["status"] })}>{Object.entries(nomesDocumento).map(([v,n]) => <option key={v} value={v}>{n}</option>)}</select></label>
+          <label className={`${label} sm:col-span-2`}>Enviar arquivo privado<span className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed border-violet-300 bg-white p-4 text-violet-800"><UploadCloud size={24} /><span><strong>{arquivoDocumento?.name || "Selecionar arquivo"}</strong><small className="block font-normal text-slate-500">PDF, Word, Excel, JPG ou PNG · máximo 10 MB</small></span><input type="file" className="sr-only" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" onChange={(e) => setArquivoDocumento(e.target.files?.[0] ?? null)} /></span></label>
+          <div className="sm:col-span-2 flex items-center gap-3 text-xs font-bold uppercase tracking-wider text-slate-400"><span className="h-px flex-1 bg-slate-200" />ou informe um link externo<span className="h-px flex-1 bg-slate-200" /></div>
+          <label className={`${label} sm:col-span-2`}>Link externo opcional<input type="url" disabled={!!arquivoDocumento} className={`${campo} disabled:bg-slate-100`} placeholder="https://..." value={documento.url} onChange={(e) => setDocumento({ ...documento, url: e.target.value })} /></label>
+          <label className={`${label} sm:col-span-2`}>Observações<textarea className={`${campo} min-h-20`} value={documento.observacoes} onChange={(e) => setDocumento({ ...documento, observacoes: e.target.value })} /></label>
+          <button disabled={salvando} className="rounded-xl bg-blue-600 px-4 py-3 font-black text-white disabled:opacity-50 sm:col-span-2">{salvando ? "Salvando documento..." : arquivoDocumento ? "Enviar para o cofre privado" : documento.url ? "Registrar link externo" : "Registrar documento pendente"}</button>
+        </form>}
+        <div className="mt-4 space-y-2">{documentos.map((item) => <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4"><div><strong>{item.titulo}</strong><p className="text-xs text-slate-500">{nomesCategoria[item.categoria]}{item.nomeArquivo && ` · ${item.nomeArquivo}`}{item.tamanhoBytes > 0 && ` · ${(item.tamanhoBytes / 1024 / 1024).toFixed(1)} MB`}{item.observacoes && ` · ${item.observacoes}`}</p><button type="button" onClick={() => void abrirArquivo(item.id)} className="mt-2 inline-flex items-center gap-1 text-xs font-black text-blue-700"><ExternalLink size={14} />{item.caminhoStorage ? "Abrir arquivo protegido" : "Abrir link externo"}</button></div><div className="flex items-center gap-2"><select className="rounded-lg border bg-white px-2 py-1.5 text-xs font-bold" value={item.status} onChange={(e) => void mudarDocumento(item.id, e.target.value as EccDocumentoStatus)}>{Object.entries(nomesDocumento).map(([v,n]) => <option key={v} value={v}>{n}</option>)}</select><button type="button" title="Excluir documento" onClick={() => void removerArquivo(item.id)} className="rounded-lg border border-red-200 p-2 text-red-700"><Trash2 size={15} /></button></div></div>)}{!documentos.length && <p className="py-8 text-center text-sm text-slate-500">Nenhum documento registrado.</p>}</div>
       </article>
     </div>
 

@@ -32,6 +32,18 @@ async function requisicao<T>(init?: RequestInit): Promise<T> {
   return dados as T;
 }
 
+async function requisicaoDocumento<T>(caminho: string, init?: RequestInit): Promise<T> {
+  const token = await obterTokenAcesso();
+  if (!token) throw new Error("Sessão expirada.");
+  const resposta = await fetch(caminho, {
+    ...init,
+    headers: { Authorization: `Bearer ${token}`, ...init?.headers },
+  });
+  const dados = await resposta.json();
+  if (!resposta.ok) throw new Error(dados.erro || "Não foi possível concluir a operação com o documento.");
+  return dados as T;
+}
+
 export class EccRepository {
   listar() { return requisicao<EccPainel>(); }
   criarEncontro(dados: EccEncontroFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "encontro", dados }) }); }
@@ -45,6 +57,18 @@ export class EccRepository {
   criarVisita(dados: EccVisitaFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "visita", dados }) }); }
   criarComunicacao(dados: EccComunicacaoFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "comunicacao", dados }) }); }
   criarDocumento(dados: EccDocumentoFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "documento", dados }) }); }
+  enviarDocumento(dados: EccDocumentoFormData, arquivo: File) {
+    const formulario = new FormData();
+    formulario.set("arquivo", arquivo);
+    formulario.set("encontroId", dados.encontroId);
+    formulario.set("titulo", dados.titulo);
+    formulario.set("categoria", dados.categoria);
+    formulario.set("observacoes", dados.observacoes);
+    formulario.set("status", dados.status);
+    return requisicaoDocumento<{ id: string }>("/api/ecc/documentos", { method: "POST", body: formulario });
+  }
+  abrirDocumento(id: string) { return requisicaoDocumento<{ url: string }>(`/api/ecc/documentos/${id}`); }
+  excluirDocumento(id: string) { return requisicaoDocumento<{ id: string }>(`/api/ecc/documentos/${id}`, { method: "DELETE" }); }
   registrarCredenciamento(dados: EccCredenciamentoFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "credenciamento", dados }) }); }
   atualizarVisita(id: string, dados: EccVisitaFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "visita", id, dados }) }); }
   atualizarParticipacao(id: string, dados: EccParticipacaoFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "participacao", id, dados }) }); }

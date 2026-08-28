@@ -41,6 +41,9 @@ export class EccService {
   criarVisita(dados: EccVisitaFormData) { return this.repository.criarVisita(eccVisitaSchema.parse(dados)); }
   criarComunicacao(dados: EccComunicacaoFormData) { return this.repository.criarComunicacao(eccComunicacaoSchema.parse(dados)); }
   criarDocumento(dados: EccDocumentoFormData) { return this.repository.criarDocumento(eccDocumentoSchema.parse(dados)); }
+  enviarDocumento(dados: EccDocumentoFormData, arquivo: File) { return this.repository.enviarDocumento(eccDocumentoSchema.parse(dados), arquivo); }
+  abrirDocumento(id: string) { return this.repository.abrirDocumento(id); }
+  excluirDocumento(id: string) { return this.repository.excluirDocumento(id); }
   registrarCredenciamento(dados: EccCredenciamentoFormData) { return this.repository.registrarCredenciamento(eccCredenciamentoSchema.parse(dados)); }
   atualizarVisita(id: string, dados: EccVisitaFormData) { return this.repository.atualizarVisita(id, eccVisitaSchema.parse(dados)); }
   atualizarParticipacao(id: string, dados: EccParticipacaoFormData) { return this.repository.atualizarParticipacao(id, eccParticipacaoSchema.parse(dados)); }

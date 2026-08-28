@@ -73,7 +73,8 @@ export type EccComunicacao = {
 export type EccDocumento = {
   id: string; encontroId: string; titulo: string;
   categoria: "FICHA" | "LISTA" | "ROTEIRO" | "TERMO" | "MATERIAL" | "OUTRO";
-  url: string; observacoes: string; status: EccDocumentoStatus; criadoEm: string;
+  url: string; caminhoStorage: string; nomeArquivo: string; tipoArquivo: string; tamanhoBytes: number;
+  observacoes: string; status: EccDocumentoStatus; criadoEm: string;
 };
 
 export type EccCredenciamento = {
