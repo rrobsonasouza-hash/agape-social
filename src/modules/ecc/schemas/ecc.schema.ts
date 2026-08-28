@@ -145,7 +145,18 @@ export const eccCredenciamentoSchema = z.object({
   status: eccCredenciamentoStatusSchema.default("CREDENCIADO"),
   crachaEntregue: z.boolean().default(false),
   materialEntregue: z.boolean().default(false),
+  restricoesAlimentares: textoOpcional,
+  medicamentos: textoOpcional,
+  contatoEmergencia: textoOpcional,
+  circulo: textoOpcional,
   observacoes: textoOpcional,
+});
+
+export const eccPresencaDiaSchema = z.object({
+  encontroId: z.string().uuid("Selecione uma edição do ECC."),
+  casalId: z.string().uuid("Selecione um casal participante."),
+  data: z.string().date("Informe o dia do encontro."),
+  presente: z.boolean(),
 });
 
 export const eccArrecadacaoSchema = z.object({
@@ -196,5 +207,6 @@ export type EccVisitaFormData = z.infer<typeof eccVisitaSchema>;
 export type EccComunicacaoFormData = z.infer<typeof eccComunicacaoSchema>;
 export type EccDocumentoFormData = z.infer<typeof eccDocumentoSchema>;
 export type EccCredenciamentoFormData = z.infer<typeof eccCredenciamentoSchema>;
+export type EccPresencaDiaFormData = z.infer<typeof eccPresencaDiaSchema>;
 export type EccArrecadacaoFormData = z.infer<typeof eccArrecadacaoSchema>;
 export type EccNecessidadeFormData = z.infer<typeof eccNecessidadeSchema>;

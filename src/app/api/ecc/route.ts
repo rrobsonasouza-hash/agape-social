@@ -21,6 +21,7 @@ import {
   eccDocumentoSchema,
   eccDocumentoStatusSchema,
   eccCredenciamentoSchema,
+  eccPresencaDiaSchema,
   eccArrecadacaoSchema,
   eccNecessidadeSchema,
 } from "@/modules/ecc/schemas/ecc.schema";
@@ -71,7 +72,7 @@ function erro(error: unknown) {
 export async function GET(request: NextRequest) {
   try {
     const { supabase, paroquiaId, paroquia, usuario } = await contexto(request);
-    const [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, credenciamentos, arrecadacoes, necessidades, voluntarios] =
+    const [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, credenciamentos, presencasDiarias, arrecadacoes, necessidades, voluntarios] =
       await Promise.all([
         supabase.from("ecc_encontros").select("*").eq("paroquia_id", paroquiaId).order("data_inicio", { ascending: false }),
         supabase.from("ecc_casais").select("*").eq("paroquia_id", paroquiaId).order("conjuge_um_nome"),
@@ -83,11 +84,12 @@ export async function GET(request: NextRequest) {
         supabase.from("ecc_comunicacoes").select("*").eq("paroquia_id", paroquiaId).order("created_at", { ascending: false }),
         supabase.from("ecc_documentos").select("*").eq("paroquia_id", paroquiaId).order("created_at", { ascending: false }),
         supabase.from("ecc_credenciamentos").select("*").eq("paroquia_id", paroquiaId).order("credenciado_em", { ascending: false, nullsFirst: false }),
+        supabase.from("ecc_presencas_diarias").select("*").eq("paroquia_id", paroquiaId).order("data", { ascending: false }),
         supabase.from("ecc_arrecadacoes").select("*").eq("paroquia_id", paroquiaId).order("created_at", { ascending: false }),
         supabase.from("ecc_necessidades").select("*").eq("paroquia_id", paroquiaId).order("item"),
         supabase.from("voluntarios").select("id,dados").eq("paroquia_id", paroquiaId).order("created_at", { ascending: false }),
       ]);
-    for (const resultado of [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, credenciamentos, arrecadacoes, necessidades, voluntarios])
+    for (const resultado of [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, credenciamentos, presencasDiarias, arrecadacoes, necessidades, voluntarios])
       if (resultado.error) throw resultado.error;
 
     const nomesVoluntarios = new Map(
@@ -196,7 +198,14 @@ export async function GET(request: NextRequest) {
         id: item.id, encontroId: item.encontro_id, casalId: item.casal_id,
         casalNome: nomesCasais.get(item.casal_id) ?? "Casal não encontrado", status: item.status,
         credenciadoEm: item.credenciado_em ?? "", crachaEntregue: item.cracha_entregue === true,
-        materialEntregue: item.material_entregue === true, observacoes: item.observacoes ?? "",
+        materialEntregue: item.material_entregue === true,
+        restricoesAlimentares: item.restricoes_alimentares ?? "", medicamentos: item.medicamentos ?? "",
+        contatoEmergencia: item.contato_emergencia ?? "", circulo: item.circulo ?? "",
+        observacoes: item.observacoes ?? "",
+      })),
+      presencasDiarias: (presencasDiarias.data ?? []).map((item) => ({
+        id: item.id, encontroId: item.encontro_id, casalId: item.casal_id, data: item.data,
+        presente: item.presente === true, registradoEm: item.registrado_em ?? "",
       })),
       arrecadacoes: (arrecadacoes.data ?? []).map((item) => ({
         id: item.id, encontroId: item.encontro_id, categoria: item.categoria, item: item.item,
@@ -393,8 +402,31 @@ export async function POST(request: NextRequest) {
         paroquia_id: paroquiaId, encontro_id: dados.encontroId, casal_id: dados.casalId,
         status: dados.status, credenciado_em: dados.status === "CREDENCIADO" ? agora : null,
         cracha_entregue: dados.crachaEntregue, material_entregue: dados.materialEntregue,
+        restricoes_alimentares: dados.restricoesAlimentares, medicamentos: dados.medicamentos,
+        contato_emergencia: dados.contatoEmergencia, circulo: dados.circulo,
         observacoes: dados.observacoes, registrado_por: usuario.uid, updated_at: agora,
       }, { onConflict: "encontro_id,casal_id" }).select("id").single();
+      if (error) throw error;
+      return NextResponse.json({ id: data.id }, { status: 201 });
+    }
+    if (entrada.tipo === "presenca_dia") {
+      const dados = eccPresencaDiaSchema.parse(entrada.dados);
+      const encontro = await supabase.from("ecc_encontros").select("id,data_inicio,data_fim")
+        .eq("id", dados.encontroId).eq("paroquia_id", paroquiaId).maybeSingle();
+      if (encontro.error || !encontro.data) throw encontro.error ?? new Error("Encontro não encontrado nesta paróquia.");
+      if (dados.data < encontro.data.data_inicio || dados.data > encontro.data.data_fim)
+        throw new Error("A presença deve ser registrada em um dia desta edição.");
+      const participacao = await supabase.from("ecc_encontro_casais").select("id,classificacao")
+        .eq("encontro_id", dados.encontroId).eq("casal_id", dados.casalId).eq("paroquia_id", paroquiaId).maybeSingle();
+      if (participacao.error || !participacao.data) throw participacao.error ?? new Error("O casal não pertence à edição selecionada.");
+      if (["EQUIPE", "COORDENADOR"].includes(participacao.data.classificacao))
+        throw new Error("Utilize a escala das equipes para controlar os voluntários.");
+      const agora = new Date().toISOString();
+      const { data, error } = await supabase.from("ecc_presencas_diarias").upsert({
+        paroquia_id: paroquiaId, encontro_id: dados.encontroId, casal_id: dados.casalId,
+        data: dados.data, presente: dados.presente, registrado_em: agora, registrado_por: usuario.uid,
+        updated_at: agora,
+      }, { onConflict: "encontro_id,casal_id,data" }).select("id").single();
       if (error) throw error;
       return NextResponse.json({ id: data.id }, { status: 201 });
     }

@@ -8,6 +8,7 @@ import {
   eccComunicacaoSchema,
   eccDocumentoSchema,
   eccCredenciamentoSchema,
+  eccPresencaDiaSchema,
   eccArrecadacaoSchema,
 } from "../../src/modules/ecc/schemas/ecc.schema.ts";
 
@@ -75,9 +76,14 @@ describe("ECC", () => {
     assert.throws(() => eccDocumentoSchema.parse({ ...documento, url: "arquivo-invalido" }));
   });
   it("registra credenciamento e entrega de materiais por casal", () => {
-    const registro = eccCredenciamentoSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", casalId: "22222222-2222-4222-8222-222222222222", crachaEntregue: true, materialEntregue: true });
+    const registro = eccCredenciamentoSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", casalId: "22222222-2222-4222-8222-222222222222", crachaEntregue: true, materialEntregue: true, circulo: "Amarelo" });
     assert.equal(registro.status, "CREDENCIADO");
     assert.equal(registro.crachaEntregue, true);
+    assert.equal(registro.circulo, "Amarelo");
+  });
+  it("registra a presença do casal em um dia do encontro", () => {
+    const presenca = eccPresencaDiaSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", casalId: "22222222-2222-4222-8222-222222222222", data: "2026-10-10", presente: true });
+    assert.equal(presenca.presente, true);
   });
   it("registra alimento com quantidade prometida", () => {
     const registro = eccArrecadacaoSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", categoria: "ALIMENTO", item: "Arroz", quantidadePrometida: 30, unidade: "kg" });

@@ -12,6 +12,7 @@ import type {
   EccComunicacaoFormData,
   EccDocumentoFormData,
   EccCredenciamentoFormData,
+  EccPresencaDiaFormData,
   EccArrecadacaoFormData,
   EccNecessidadeFormData,
 } from "../schemas/ecc.schema";
@@ -72,6 +73,7 @@ export class EccRepository {
   abrirDocumento(id: string) { return requisicaoDocumento<{ url: string }>(`/api/ecc/documentos/${id}`); }
   excluirDocumento(id: string) { return requisicaoDocumento<{ id: string }>(`/api/ecc/documentos/${id}`, { method: "DELETE" }); }
   registrarCredenciamento(dados: EccCredenciamentoFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "credenciamento", dados }) }); }
+  registrarPresencaDia(dados: EccPresencaDiaFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "presenca_dia", dados }) }); }
   criarArrecadacao(dados: EccArrecadacaoFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "arrecadacao", dados }) }); }
   atualizarArrecadacao(id: string, dados: EccArrecadacaoFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "arrecadacao", id, dados }) }); }
   criarNecessidade(dados: EccNecessidadeFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "necessidade", dados }) }); }

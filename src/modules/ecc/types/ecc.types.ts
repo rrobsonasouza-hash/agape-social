@@ -85,7 +85,12 @@ export type EccCasalDoador = {
 export type EccCredenciamento = {
   id: string; encontroId: string; casalId: string; casalNome: string;
   status: EccCredenciamentoStatus; credenciadoEm: string; crachaEntregue: boolean;
-  materialEntregue: boolean; observacoes: string;
+  materialEntregue: boolean; restricoesAlimentares: string; medicamentos: string; contatoEmergencia: string;
+  circulo: string; observacoes: string;
+};
+
+export type EccPresencaDia = {
+  id: string; encontroId: string; casalId: string; data: string; presente: boolean; registradoEm: string;
 };
 
 export type EccArrecadacao = {
@@ -104,7 +109,7 @@ export type EccNecessidade = {
 export type EccPainel = {
   encontros: EccEncontro[]; casais: EccCasal[]; participacoes: EccParticipacao[]; equipe: EccEquipe[];
   programacao: EccProgramacao[]; tarefas: EccTarefa[]; visitas: EccVisita[]; comunicacoes: EccComunicacao[];
-  documentos: EccDocumento[]; credenciamentos: EccCredenciamento[]; arrecadacoes: EccArrecadacao[]; necessidades: EccNecessidade[];
+  documentos: EccDocumento[]; credenciamentos: EccCredenciamento[]; presencasDiarias: EccPresencaDia[]; arrecadacoes: EccArrecadacao[]; necessidades: EccNecessidade[];
   voluntarios: EccVoluntarioResumo[]; casaisDoadores: EccCasalDoador[];
   paroquia: { nome: string; latitude: number | null; longitude: number | null };
   podeGerenciarVisitas: boolean;

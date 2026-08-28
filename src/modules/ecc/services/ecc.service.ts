@@ -12,6 +12,7 @@ import {
   eccComunicacaoSchema,
   eccDocumentoSchema,
   eccCredenciamentoSchema,
+  eccPresencaDiaSchema,
   eccArrecadacaoSchema,
   eccNecessidadeSchema,
   type EccCasalFormData,
@@ -26,6 +27,7 @@ import {
   type EccComunicacaoFormData,
   type EccDocumentoFormData,
   type EccCredenciamentoFormData,
+  type EccPresencaDiaFormData,
   type EccArrecadacaoFormData,
   type EccNecessidadeFormData,
 } from "../schemas/ecc.schema";
@@ -49,6 +51,7 @@ export class EccService {
   abrirDocumento(id: string) { return this.repository.abrirDocumento(id); }
   excluirDocumento(id: string) { return this.repository.excluirDocumento(id); }
   registrarCredenciamento(dados: EccCredenciamentoFormData) { return this.repository.registrarCredenciamento(eccCredenciamentoSchema.parse(dados)); }
+  registrarPresencaDia(dados: EccPresencaDiaFormData) { return this.repository.registrarPresencaDia(eccPresencaDiaSchema.parse(dados)); }
   criarArrecadacao(dados: EccArrecadacaoFormData) { return this.repository.criarArrecadacao(eccArrecadacaoSchema.parse(dados)); }
   atualizarArrecadacao(id: string, dados: EccArrecadacaoFormData) { return this.repository.atualizarArrecadacao(id, eccArrecadacaoSchema.parse(dados)); }
   criarNecessidade(dados: EccNecessidadeFormData) { return this.repository.criarNecessidade(eccNecessidadeSchema.parse(dados)); }
