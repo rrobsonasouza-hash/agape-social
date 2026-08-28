@@ -11,6 +11,7 @@ import {
   eccVisitaSchema,
   eccComunicacaoSchema,
   eccDocumentoSchema,
+  eccCredenciamentoSchema,
   type EccCasalFormData,
   type EccEncontroFormData,
   type EccEquipeFormData,
@@ -22,6 +23,7 @@ import {
   type EccVisitaFormData,
   type EccComunicacaoFormData,
   type EccDocumentoFormData,
+  type EccCredenciamentoFormData,
 } from "../schemas/ecc.schema";
 import type { EccComunicacaoStatus, EccDocumentoStatus, EccProgramacaoStatus, EccTarefaStatus } from "../types/ecc.types";
 
@@ -39,6 +41,7 @@ export class EccService {
   criarVisita(dados: EccVisitaFormData) { return this.repository.criarVisita(eccVisitaSchema.parse(dados)); }
   criarComunicacao(dados: EccComunicacaoFormData) { return this.repository.criarComunicacao(eccComunicacaoSchema.parse(dados)); }
   criarDocumento(dados: EccDocumentoFormData) { return this.repository.criarDocumento(eccDocumentoSchema.parse(dados)); }
+  registrarCredenciamento(dados: EccCredenciamentoFormData) { return this.repository.registrarCredenciamento(eccCredenciamentoSchema.parse(dados)); }
   atualizarVisita(id: string, dados: EccVisitaFormData) { return this.repository.atualizarVisita(id, eccVisitaSchema.parse(dados)); }
   atualizarParticipacao(id: string, dados: EccParticipacaoFormData) { return this.repository.atualizarParticipacao(id, eccParticipacaoSchema.parse(dados)); }
   atualizarTarefa(id: string, status: EccTarefaStatus) { return this.repository.atualizarTarefa(id, status); }

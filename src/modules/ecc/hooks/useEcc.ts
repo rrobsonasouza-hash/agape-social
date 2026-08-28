@@ -13,6 +13,7 @@ import type {
   EccVisitaFormData,
   EccComunicacaoFormData,
   EccDocumentoFormData,
+  EccCredenciamentoFormData,
 } from "../schemas/ecc.schema";
 import type { EccComunicacaoStatus, EccDocumentoStatus, EccProgramacaoStatus, EccTarefaStatus } from "../types/ecc.types";
 
@@ -31,6 +32,7 @@ export function useEcc() {
     criarVisita: useCallback((dados: EccVisitaFormData) => service.criarVisita(dados), []),
     criarComunicacao: useCallback((dados: EccComunicacaoFormData) => service.criarComunicacao(dados), []),
     criarDocumento: useCallback((dados: EccDocumentoFormData) => service.criarDocumento(dados), []),
+    registrarCredenciamento: useCallback((dados: EccCredenciamentoFormData) => service.registrarCredenciamento(dados), []),
     atualizarVisita: useCallback((id: string, dados: EccVisitaFormData) => service.atualizarVisita(id, dados), []),
     atualizarParticipacao: useCallback((id: string, dados: EccParticipacaoFormData) => service.atualizarParticipacao(id, dados), []),
     atualizarTarefa: useCallback((id: string, status: EccTarefaStatus) => service.atualizarTarefa(id, status), []),

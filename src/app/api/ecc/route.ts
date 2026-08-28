@@ -20,6 +20,7 @@ import {
   eccComunicacaoStatusSchema,
   eccDocumentoSchema,
   eccDocumentoStatusSchema,
+  eccCredenciamentoSchema,
 } from "@/modules/ecc/schemas/ecc.schema";
 import { voluntarioAtuaNoEcc } from "@/modules/ecc/server/sincronizar-casal-voluntario";
 
@@ -68,7 +69,7 @@ function erro(error: unknown) {
 export async function GET(request: NextRequest) {
   try {
     const { supabase, paroquiaId, paroquia, usuario } = await contexto(request);
-    const [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, voluntarios] =
+    const [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, credenciamentos, voluntarios] =
       await Promise.all([
         supabase.from("ecc_encontros").select("*").eq("paroquia_id", paroquiaId).order("data_inicio", { ascending: false }),
         supabase.from("ecc_casais").select("*").eq("paroquia_id", paroquiaId).order("conjuge_um_nome"),
@@ -79,9 +80,10 @@ export async function GET(request: NextRequest) {
         supabase.from("ecc_visitas").select("*").eq("paroquia_id", paroquiaId).order("data_agendada", { ascending: false }),
         supabase.from("ecc_comunicacoes").select("*").eq("paroquia_id", paroquiaId).order("created_at", { ascending: false }),
         supabase.from("ecc_documentos").select("*").eq("paroquia_id", paroquiaId).order("created_at", { ascending: false }),
+        supabase.from("ecc_credenciamentos").select("*").eq("paroquia_id", paroquiaId).order("credenciado_em", { ascending: false, nullsFirst: false }),
         supabase.from("voluntarios").select("id,dados").eq("paroquia_id", paroquiaId).order("created_at", { ascending: false }),
       ]);
-    for (const resultado of [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, voluntarios])
+    for (const resultado of [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, credenciamentos, voluntarios])
       if (resultado.error) throw resultado.error;
 
     const nomesVoluntarios = new Map(
@@ -171,6 +173,12 @@ export async function GET(request: NextRequest) {
       documentos: (documentos.data ?? []).map((item) => ({
         id: item.id, encontroId: item.encontro_id, titulo: item.titulo, categoria: item.categoria,
         url: item.url, observacoes: item.observacoes, status: item.status, criadoEm: item.created_at,
+      })),
+      credenciamentos: (credenciamentos.data ?? []).map((item) => ({
+        id: item.id, encontroId: item.encontro_id, casalId: item.casal_id,
+        casalNome: nomesCasais.get(item.casal_id) ?? "Casal não encontrado", status: item.status,
+        credenciadoEm: item.credenciado_em ?? "", crachaEntregue: item.cracha_entregue === true,
+        materialEntregue: item.material_entregue === true, observacoes: item.observacoes ?? "",
       })),
       voluntarios: (voluntarios.data ?? [])
         .map((item) => {
@@ -329,6 +337,24 @@ export async function POST(request: NextRequest) {
         categoria: dados.categoria, url: dados.url, observacoes: dados.observacoes,
         status: dados.status, criado_por: usuario.uid,
       }).select("id").single();
+      if (error) throw error;
+      return NextResponse.json({ id: data.id }, { status: 201 });
+    }
+    if (entrada.tipo === "credenciamento") {
+      const dados = eccCredenciamentoSchema.parse(entrada.dados);
+      await validarEncontro(supabase, paroquiaId, dados.encontroId);
+      const participacao = await supabase.from("ecc_encontro_casais").select("id,classificacao")
+        .eq("encontro_id", dados.encontroId).eq("casal_id", dados.casalId).eq("paroquia_id", paroquiaId).maybeSingle();
+      if (participacao.error || !participacao.data) throw participacao.error ?? new Error("O casal não pertence à edição selecionada.");
+      if (["EQUIPE", "COORDENADOR"].includes(participacao.data.classificacao))
+        throw new Error("O credenciamento de casais participantes não se aplica à equipe desta edição.");
+      const agora = new Date().toISOString();
+      const { data, error } = await supabase.from("ecc_credenciamentos").upsert({
+        paroquia_id: paroquiaId, encontro_id: dados.encontroId, casal_id: dados.casalId,
+        status: dados.status, credenciado_em: dados.status === "CREDENCIADO" ? agora : null,
+        cracha_entregue: dados.crachaEntregue, material_entregue: dados.materialEntregue,
+        observacoes: dados.observacoes, registrado_por: usuario.uid, updated_at: agora,
+      }, { onConflict: "encontro_id,casal_id" }).select("id").single();
       if (error) throw error;
       return NextResponse.json({ id: data.id }, { status: 201 });
     }

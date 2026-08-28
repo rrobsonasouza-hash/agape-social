@@ -7,6 +7,7 @@ import {
   eccVisitaSchema,
   eccComunicacaoSchema,
   eccDocumentoSchema,
+  eccCredenciamentoSchema,
 } from "../../src/modules/ecc/schemas/ecc.schema.ts";
 
 describe("ECC", () => {
@@ -71,5 +72,10 @@ describe("ECC", () => {
     const documento = eccDocumentoSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", titulo: "Roteiro geral", categoria: "ROTEIRO", url: "https://example.com/roteiro.pdf" });
     assert.equal(documento.status, "PENDENTE");
     assert.throws(() => eccDocumentoSchema.parse({ ...documento, url: "arquivo-invalido" }));
+  });
+  it("registra credenciamento e entrega de materiais por casal", () => {
+    const registro = eccCredenciamentoSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", casalId: "22222222-2222-4222-8222-222222222222", crachaEntregue: true, materialEntregue: true });
+    assert.equal(registro.status, "CREDENCIADO");
+    assert.equal(registro.crachaEntregue, true);
   });
 });

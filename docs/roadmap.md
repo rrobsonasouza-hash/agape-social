@@ -217,7 +217,7 @@ Fundação   Auth +      Cadastros   Operação    Inteligência  Qualidade
 
 - [ ] Integração de disparos com e-mail e WhatsApp após configuração dos provedores
 - [ ] Upload protegido de documentos no Storage, além dos links externos
-- [ ] Credenciamento e presença nos dias do encontro
+- [x] Credenciamento, presença, entrega de crachá e materiais nos dias do encontro
 
 ---
 

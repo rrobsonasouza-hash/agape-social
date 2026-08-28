@@ -36,6 +36,7 @@ export const eccTarefaStatusSchema = z.enum(["PENDENTE", "EM_ANDAMENTO", "CONCLU
 export const eccVisitaStatusSchema = z.enum(["PENDENTE", "AGENDADA", "REALIZADA", "RETORNO_NECESSARIO", "CANCELADA"]);
 export const eccComunicacaoStatusSchema = z.enum(["RASCUNHO", "PROGRAMADA", "ENVIADA", "CANCELADA"]);
 export const eccDocumentoStatusSchema = z.enum(["PENDENTE", "DISPONIVEL", "ARQUIVADO"]);
+export const eccCredenciamentoStatusSchema = z.enum(["AGUARDANDO", "CREDENCIADO", "AUSENTE", "CANCELADO"]);
 export const eccClassificacaoParticipacaoSchema = z.enum(["INDICADO", "ENCONTRISTA", "CONVIDADO", "VISITANTE", "EQUIPE", "COORDENADOR"]);
 
 export const eccProgramacaoSchema = z.object({
@@ -138,6 +139,15 @@ export const eccDocumentoSchema = z.object({
   status: eccDocumentoStatusSchema.default("PENDENTE"),
 });
 
+export const eccCredenciamentoSchema = z.object({
+  encontroId: z.string().uuid("Selecione uma edição do ECC."),
+  casalId: z.string().uuid("Selecione um casal participante."),
+  status: eccCredenciamentoStatusSchema.default("CREDENCIADO"),
+  crachaEntregue: z.boolean().default(false),
+  materialEntregue: z.boolean().default(false),
+  observacoes: textoOpcional,
+});
+
 export type EccEncontroFormData = z.infer<typeof eccEncontroSchema>;
 export type EccCasalFormData = z.infer<typeof eccCasalSchema>;
 export type EccEquipeFormData = z.infer<typeof eccEquipeSchema>;
@@ -149,3 +159,4 @@ export type EccNovoVoluntarioFormData = z.infer<typeof eccNovoVoluntarioSchema>;
 export type EccVisitaFormData = z.infer<typeof eccVisitaSchema>;
 export type EccComunicacaoFormData = z.infer<typeof eccComunicacaoSchema>;
 export type EccDocumentoFormData = z.infer<typeof eccDocumentoSchema>;
+export type EccCredenciamentoFormData = z.infer<typeof eccCredenciamentoSchema>;
