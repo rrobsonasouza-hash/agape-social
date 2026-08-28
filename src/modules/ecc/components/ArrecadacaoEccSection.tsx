@@ -4,7 +4,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { CircleDollarSign, PackageCheck, Pencil, Plus, ShoppingCart, TriangleAlert, type LucideIcon } from "lucide-react";
 import { useEcc } from "../hooks/useEcc";
 import type { EccArrecadacaoFormData } from "../schemas/ecc.schema";
-import type { EccArrecadacao, EccParticipacao } from "../types/ecc.types";
+import type { EccArrecadacao, EccCasalDoador } from "../types/ecc.types";
 
 const campo = "mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500";
 const label = "text-sm font-bold text-slate-700";
@@ -18,7 +18,7 @@ const nomesCategoria = { ALIMENTO: "Alimento", BEBIDA: "Bebida", VALOR: "Valor e
 const nomesStatus = { PENDENTE: "Pendente", PARCIAL: "Recebido em parte", RECEBIDO: "Recebido", CANCELADO: "Cancelado" } as const;
 const itensSugeridos = ["Arroz", "Feijão", "Óleo", "Açúcar", "Café", "Leite", "Macarrão", "Molho de tomate", "Farinha", "Sal", "Refrigerante", "Água", "Suco", "Carne", "Frango", "Legumes", "Frutas", "Pães", "Descartáveis", "Material de limpeza"];
 
-export function ArrecadacaoEccSection({ encontroId, arrecadacoes, casais, onSaved }: { encontroId: string; arrecadacoes: EccArrecadacao[]; casais: EccParticipacao[]; onSaved: () => Promise<void> }) {
+export function ArrecadacaoEccSection({ encontroId, arrecadacoes, casaisDoadores, onSaved }: { encontroId: string; arrecadacoes: EccArrecadacao[]; casaisDoadores: EccCasalDoador[]; onSaved: () => Promise<void> }) {
   const { criarArrecadacao, atualizarArrecadacao } = useEcc();
   const [formulario, setFormulario] = useState<EccArrecadacaoFormData>(() => formularioInicial(encontroId));
   const [editando, setEditando] = useState<string>("");
@@ -71,7 +71,7 @@ export function ArrecadacaoEccSection({ encontroId, arrecadacoes, casais, onSave
       <div className="md:col-span-2 lg:col-span-4"><h3 className="text-lg font-black">{editando ? "Atualizar recebimento" : "Registrar escolha do casal"}</h3><p className="text-sm text-slate-500">Escolha o casal, informe o item combinado e confirme o recebimento quando a doação chegar.</p></div>
       <label className={label}>Categoria<select className={campo} value={formulario.categoria} onChange={(e) => setFormulario({ ...formulario, categoria: e.target.value as EccArrecadacaoFormData["categoria"] })}>{Object.entries(nomesCategoria).map(([valor, nome]) => <option key={valor} value={valor}>{nome}</option>)}</select></label>
       <label className={`${label} md:col-span-1 lg:col-span-2`}>{formulario.categoria === "VALOR" ? "Finalidade do valor" : "Item da lista de compras"}<input required list="itens-compras-ecc" className={campo} value={formulario.item} onChange={(e) => setFormulario({ ...formulario, item: e.target.value })} placeholder={formulario.categoria === "VALOR" ? "Ex.: compras da cozinha" : "Selecione ou digite outro item"} /><datalist id="itens-compras-ecc">{itensSugeridos.map((item) => <option key={item} value={item} />)}</datalist></label>
-      <label className={label}>Casal responsável<input required list="casais-doadores-ecc" className={campo} value={formulario.responsavel} onChange={(e) => setFormulario({ ...formulario, responsavel: e.target.value })} placeholder="Selecione o casal" /><datalist id="casais-doadores-ecc">{casais.map((casal) => <option key={casal.id} value={casal.casalNome} />)}</datalist></label>
+      <label className={label}>Casal doador<select required className={campo} value={formulario.responsavel} onChange={(e) => { const casal = casaisDoadores.find((item) => item.nome === e.target.value); setFormulario({ ...formulario, responsavel: e.target.value, telefone: casal?.telefone ?? "" }); }}><option value="">Selecione um casal de voluntários</option>{casaisDoadores.map((casal) => <option key={casal.id} value={casal.nome}>{casal.nome}</option>)}</select>{!casaisDoadores.length && <span className="text-xs font-normal text-amber-700">Cadastre o cônjuge no perfil do voluntário para formar o casal doador.</span>}</label>
       <label className={label}>Telefone<input className={campo} value={formulario.telefone} onChange={(e) => setFormulario({ ...formulario, telefone: e.target.value })} /></label>
       {formulario.categoria === "VALOR" ? <>
         <label className={label}>Valor prometido (R$)<input required min="0.01" step="0.01" type="number" className={campo} value={formulario.valorPrometido || ""} onChange={(e) => setFormulario({ ...formulario, valorPrometido: Number(e.target.value) })} /></label>

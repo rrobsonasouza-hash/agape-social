@@ -106,6 +106,17 @@ export async function GET(request: NextRequest) {
         `${item.conjuge_um_nome} e ${item.conjuge_dois_nome}`,
       ]),
     );
+    const casaisDoadores = new Map<string, { id: string; nome: string; telefone: string }>();
+    for (const item of voluntarios.data ?? []) {
+      const dados = item.dados as Record<string, unknown>;
+      const nome = String(dados.nome ?? "").trim();
+      const conjuge = String(dados.conjugeNome ?? "").trim();
+      if (!nome || !conjuge || String(dados.status ?? "ATIVO") !== "ATIVO") continue;
+      const chave = [nome, conjuge].map((valor) => valor.toLocaleLowerCase("pt-BR")).sort().join("|");
+      if (!casaisDoadores.has(chave)) casaisDoadores.set(chave, {
+        id: item.id, nome: `${nome} e ${conjuge}`, telefone: String(dados.telefone ?? ""),
+      });
+    }
 
     return NextResponse.json({
       encontros: (encontros.data ?? []).map((item) => ({
@@ -209,6 +220,7 @@ export async function GET(request: NextRequest) {
         })
         .filter((item) => item.atuaEcc && item.status === "ATIVO")
         .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+      casaisDoadores: [...casaisDoadores.values()].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
       paroquia: {
         nome: String(paroquia.nome),
         latitude: paroquia.latitude === null ? null : Number(paroquia.latitude),

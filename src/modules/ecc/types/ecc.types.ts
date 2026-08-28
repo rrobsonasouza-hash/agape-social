@@ -78,6 +78,10 @@ export type EccDocumento = {
   observacoes: string; status: EccDocumentoStatus; criadoEm: string;
 };
 
+export type EccCasalDoador = {
+  id: string; nome: string; telefone: string;
+};
+
 export type EccCredenciamento = {
   id: string; encontroId: string; casalId: string; casalNome: string;
   status: EccCredenciamentoStatus; credenciadoEm: string; crachaEntregue: boolean;
@@ -94,7 +98,8 @@ export type EccArrecadacao = {
 export type EccPainel = {
   encontros: EccEncontro[]; casais: EccCasal[]; participacoes: EccParticipacao[]; equipe: EccEquipe[];
   programacao: EccProgramacao[]; tarefas: EccTarefa[]; visitas: EccVisita[]; comunicacoes: EccComunicacao[];
-  documentos: EccDocumento[]; credenciamentos: EccCredenciamento[]; arrecadacoes: EccArrecadacao[]; voluntarios: EccVoluntarioResumo[];
+  documentos: EccDocumento[]; credenciamentos: EccCredenciamento[]; arrecadacoes: EccArrecadacao[];
+  voluntarios: EccVoluntarioResumo[]; casaisDoadores: EccCasalDoador[];
   paroquia: { nome: string; latitude: number | null; longitude: number | null };
   podeGerenciarVisitas: boolean;
 };
