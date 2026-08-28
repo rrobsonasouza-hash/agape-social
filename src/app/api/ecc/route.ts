@@ -140,7 +140,8 @@ export async function GET(request: NextRequest) {
         id: item.id, encontroId: item.encontro_id, casalId: item.casal_id,
         casalNome: nomesCasais.get(item.casal_id) ?? "Casal não encontrado", situacao: item.situacao,
         classificacao: item.classificacao ?? "INDICADO",
-        inscritoEm: item.inscrito_em, observacoes: item.observacoes,
+        inscritoEm: item.inscrito_em, conviteEnviadoEm: item.convite_enviado_em ?? "",
+        respostaEm: item.resposta_em ?? "", confirmadoEm: item.confirmado_em ?? "", observacoes: item.observacoes,
       })),
       equipe: (equipes.data ?? []).map((item) => ({
         id: item.id, encontroId: item.encontro_id, voluntarioId: item.voluntario_id,
@@ -515,11 +516,43 @@ export async function PATCH(request: NextRequest) {
         retorno_data: dados.retornoData || null, status: dados.status,
         questionario: dados.questionario, observacoes: dados.observacoes,
       };
+    } else if (entrada.tipo === "convite") {
+      const atual = await supabase.from("ecc_encontro_casais").select("id")
+        .eq("id", entrada.id).eq("paroquia_id", paroquiaId).maybeSingle();
+      if (atual.error || !atual.data) return NextResponse.json({ erro: "Participação não encontrada." }, { status: 404 });
+      tabela = "ecc_encontro_casais";
+      alteracoes = { situacao: "CONVIDADO", convite_enviado_em: new Date().toISOString() };
     } else if (entrada.tipo === "participacao") {
       const dados = eccParticipacaoSchema.parse(entrada.dados);
+      const atual = await supabase.from("ecc_encontro_casais")
+        .select("id,encontro_id,classificacao,situacao,convite_enviado_em,resposta_em,confirmado_em")
+        .eq("id", entrada.id).eq("paroquia_id", paroquiaId).maybeSingle();
+      if (atual.error || !atual.data) return NextResponse.json({ erro: "Participação não encontrada." }, { status: 404 });
+      const classificacao = dados.classificacao ?? atual.data.classificacao ?? "INDICADO";
+      let situacao = dados.situacao;
+      const ocupaVaga = ["INDICADO", "ENCONTRISTA", "CONVIDADO", "VISITANTE"].includes(classificacao);
+      if (situacao === "CONFIRMADO" && ocupaVaga) {
+        const encontro = await supabase.from("ecc_encontros").select("capacidade_casais")
+          .eq("id", atual.data.encontro_id).eq("paroquia_id", paroquiaId).maybeSingle();
+        if (encontro.error || !encontro.data) throw encontro.error ?? new Error("Encontro não encontrado nesta paróquia.");
+        const capacidade = Number(encontro.data.capacidade_casais ?? 0);
+        if (capacidade > 0) {
+          const confirmados = await supabase.from("ecc_encontro_casais").select("id", { count: "exact", head: true })
+            .eq("encontro_id", atual.data.encontro_id).eq("paroquia_id", paroquiaId)
+            .in("situacao", ["CONFIRMADO", "PARTICIPOU"])
+            .in("classificacao", ["INDICADO", "ENCONTRISTA", "CONVIDADO", "VISITANTE"])
+            .neq("id", entrada.id);
+          if (confirmados.error) throw confirmados.error;
+          if ((confirmados.count ?? 0) >= capacidade) situacao = "LISTA_ESPERA";
+        }
+      }
+      const agora = new Date().toISOString();
       tabela = "ecc_encontro_casais";
-      alteracoes = { situacao: dados.situacao, observacoes: dados.observacoes };
+      alteracoes = { situacao, observacoes: dados.observacoes };
       if (dados.classificacao) alteracoes.classificacao = dados.classificacao;
+      if (situacao === "CONVIDADO" && !atual.data.convite_enviado_em) alteracoes.convite_enviado_em = agora;
+      if (["INSCRITO", "CONFIRMADO", "LISTA_ESPERA", "DESISTENTE"].includes(situacao) && !atual.data.resposta_em) alteracoes.resposta_em = agora;
+      if (situacao === "CONFIRMADO" && !atual.data.confirmado_em) alteracoes.confirmado_em = agora;
     } else if (entrada.tipo === "tarefa") {
       const dados = eccTarefaStatusSchema.parse((entrada.dados as { status?: unknown })?.status);
       tabela = "ecc_tarefas";

@@ -55,6 +55,7 @@ export class EccService {
   atualizarNecessidade(id: string, dados: EccNecessidadeFormData) { return this.repository.atualizarNecessidade(id, eccNecessidadeSchema.parse(dados)); }
   atualizarVisita(id: string, dados: EccVisitaFormData) { return this.repository.atualizarVisita(id, eccVisitaSchema.parse(dados)); }
   atualizarParticipacao(id: string, dados: EccParticipacaoFormData) { return this.repository.atualizarParticipacao(id, eccParticipacaoSchema.parse(dados)); }
+  registrarConvite(id: string) { return this.repository.registrarConvite(id); }
   atualizarTarefa(id: string, status: EccTarefaStatus) { return this.repository.atualizarTarefa(id, status); }
   atualizarProgramacao(id: string, status: EccProgramacaoStatus) { return this.repository.atualizarProgramacao(id, status); }
   atualizarComunicacao(id: string, status: EccComunicacaoStatus) { return this.repository.atualizarComunicacao(id, status); }

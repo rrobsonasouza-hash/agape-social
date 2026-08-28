@@ -78,6 +78,7 @@ export class EccRepository {
   atualizarNecessidade(id: string, dados: EccNecessidadeFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "necessidade", id, dados }) }); }
   atualizarVisita(id: string, dados: EccVisitaFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "visita", id, dados }) }); }
   atualizarParticipacao(id: string, dados: EccParticipacaoFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "participacao", id, dados }) }); }
+  registrarConvite(id: string) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "convite", id }) }); }
   atualizarTarefa(id: string, status: EccTarefaStatus) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "tarefa", id, dados: { status } }) }); }
   atualizarProgramacao(id: string, status: EccProgramacaoStatus) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "programacao", id, dados: { status } }) }); }
   atualizarComunicacao(id: string, status: EccComunicacaoStatus) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "comunicacao", id, dados: { status } }) }); }

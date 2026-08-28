@@ -44,6 +44,7 @@ export function useEcc() {
     atualizarNecessidade: useCallback((id: string, dados: EccNecessidadeFormData) => service.atualizarNecessidade(id, dados), []),
     atualizarVisita: useCallback((id: string, dados: EccVisitaFormData) => service.atualizarVisita(id, dados), []),
     atualizarParticipacao: useCallback((id: string, dados: EccParticipacaoFormData) => service.atualizarParticipacao(id, dados), []),
+    registrarConvite: useCallback((id: string) => service.registrarConvite(id), []),
     atualizarTarefa: useCallback((id: string, status: EccTarefaStatus) => service.atualizarTarefa(id, status), []),
     atualizarProgramacao: useCallback((id: string, status: EccProgramacaoStatus) => service.atualizarProgramacao(id, status), []),
     atualizarComunicacao: useCallback((id: string, status: EccComunicacaoStatus) => service.atualizarComunicacao(id, status), []),

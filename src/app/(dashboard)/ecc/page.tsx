@@ -12,6 +12,7 @@ import { VisitasEccSection } from "@/modules/ecc/components/VisitasEccSection";
 import { GestaoEccSection } from "@/modules/ecc/components/GestaoEccSection";
 import { CredenciamentoEccSection } from "@/modules/ecc/components/CredenciamentoEccSection";
 import { ArrecadacaoEccSection } from "@/modules/ecc/components/ArrecadacaoEccSection";
+import { ConvitesEccSection } from "@/modules/ecc/components/ConvitesEccSection";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { calcularDistanciaKm } from "@/lib/geo/distance";
 import { EnderecoService } from "@/modules/enderecos/services/endereco.service";
@@ -21,7 +22,7 @@ import type {
   EccTarefaFormData, EccVinculoCasalFormData, EccNovoVoluntarioFormData,
 } from "@/modules/ecc/schemas/ecc.schema";
 import type {
-  EccClassificacaoParticipacao, EccPainel, EccParticipacaoSituacao, EccProgramacaoStatus, EccTarefaStatus,
+  EccClassificacaoParticipacao, EccPainel, EccProgramacaoStatus, EccTarefaStatus,
 } from "@/modules/ecc/types/ecc.types";
 
 const hoje = new Date().toISOString().slice(0, 10);
@@ -59,7 +60,6 @@ const campo = "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 te
 const label = "grid gap-1 text-sm font-semibold text-slate-700";
 const botao = "rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:opacity-50";
 const encontroStatus: Record<string, string> = { PLANEJAMENTO: "Planejamento", INSCRICOES: "Inscrições", PREPARACAO: "Preparação", REALIZADO: "Realizado", ENCERRADO: "Encerrado" };
-const participacaoStatus: Record<EccParticipacaoSituacao, string> = { CONVIDADO: "Convidado", INSCRITO: "Inscrito", CONFIRMADO: "Confirmado", LISTA_ESPERA: "Lista de espera", DESISTENTE: "Desistente", PARTICIPOU: "Participou" };
 const classificacaoParticipacao: Record<EccClassificacaoParticipacao, string> = { INDICADO: "Casal indicado", ENCONTRISTA: "Casal encontrista", CONVIDADO: "Casal convidado", VISITANTE: "Casal visitante", EQUIPE: "Casal de equipe", COORDENADOR: "Casal coordenador" };
 const papeisParticipantes: EccClassificacaoParticipacao[] = ["INDICADO", "CONVIDADO", "ENCONTRISTA", "VISITANTE"];
 const papeisServico: EccClassificacaoParticipacao[] = ["EQUIPE", "COORDENADOR"];
@@ -83,7 +83,7 @@ function Metrica({ icon: Icon, titulo, valor, apoio }: { icon: typeof Users; tit
 
 export default function EccPage() {
   const { listar, criarEncontro, criarCasal, atualizarCasal, vincularCasal: vincularCasalApi, adicionarEquipe,
-    criarProgramacao, criarTarefa, cadastrarConjugeComoVoluntario, atualizarParticipacao, atualizarProgramacao, atualizarTarefa } = useEcc();
+    criarProgramacao, criarTarefa, cadastrarConjugeComoVoluntario, atualizarParticipacao, registrarConvite, atualizarProgramacao, atualizarTarefa } = useEcc();
   const [dados, setDados] = useState(vazio);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState("");
@@ -308,7 +308,16 @@ export default function EccPage() {
           </div>
         </div>
         <div className="relative mt-5"><Search className="absolute left-3 top-3 text-slate-400" size={18} /><input className={`${campo} pl-10`} placeholder="Localizar casal" value={busca} onChange={(e) => setBusca(e.target.value)} /></div>
-        <div className="mt-4 grid gap-2">{participacoes.filter((i) => i.casalNome.toLowerCase().includes(busca.toLowerCase())).map((item) => <article key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 p-4"><div><strong>{item.casalNome}</strong><p className="text-xs text-slate-500">{classificacaoParticipacao[item.classificacao]} · inscrito em {new Date(item.inscritoEm).toLocaleDateString("pt-BR")}</p></div><select className="rounded-xl border bg-white px-3 py-2 text-sm font-bold" value={item.situacao} onChange={(e) => void executar(`participacao-${item.id}`, () => atualizarParticipacao(item.id, { situacao: e.target.value as EccParticipacaoSituacao, observacoes: item.observacoes }), "Situação do casal atualizada.")}>{Object.entries(participacaoStatus).map(([v, n]) => <option key={v} value={v}>{n}</option>)}</select></article>)}{!participacoes.length && <p className="py-10 text-center text-slate-500">Nenhum casal incluído nesta edição.</p>}</div>
+        <ConvitesEccSection
+          participacoes={participacoes}
+          casais={dados.casais}
+          capacidade={edicao.capacidadeCasais}
+          encontroNome={`${edicao.numero}º ECC`}
+          busca={busca}
+          salvando={salvando}
+          onConvite={(item) => void executar(`convite-${item.id}`, () => registrarConvite(item.id), "Envio do convite registrado.")}
+          onSituacao={(item, situacao) => void executar(`participacao-${item.id}`, () => atualizarParticipacao(item.id, { situacao, observacoes: item.observacoes }), situacao === "CONFIRMADO" ? "Confirmação registrada; se as vagas estiverem completas, o casal irá para a lista de espera." : "Situação do casal atualizada.")}
+        />
       </section>}
 
       {aba === "mapa" && <section className="grid gap-5 lg:grid-cols-[1.5fr_1fr]"><div className="rounded-2xl border bg-white p-4 shadow-sm"><div className="mb-4"><h2 className="text-xl font-black">Mapa dos casais encontristas</h2><p className="text-sm text-slate-500">Pinos numerados e distância em linha reta até a paróquia.</p></div>{dados.paroquia.latitude !== null && dados.paroquia.longitude !== null ? <MapaEcc paroquia={{ nome: dados.paroquia.nome, latitude: dados.paroquia.latitude, longitude: dados.paroquia.longitude }} casais={pontos} /> : <div className="grid h-[480px] place-items-center rounded-2xl bg-amber-50 p-8 text-center text-amber-800">Defina a localização da paróquia em Administração para habilitar o mapa.</div>}</div><div className="rounded-2xl border bg-white p-5 shadow-sm"><h2 className="text-xl font-black">Relatório de distâncias</h2><p className="mt-1 text-sm text-slate-500">Do casal mais próximo ao mais distante.</p><div className="mt-4 max-h-[420px] space-y-2 overflow-y-auto">{pontos.map((ponto, indice) => <article key={ponto.id} className="flex items-start gap-3 rounded-xl bg-slate-50 p-3"><span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-blue-600 text-xs font-black text-white">{indice + 1}</span><div><strong className="text-sm">{ponto.nome}</strong><p className="text-xs text-slate-500">{ponto.endereco}</p><p className="mt-1 text-sm font-black text-blue-700">{ponto.distanciaKm.toFixed(1)} km</p></div></article>)}{!pontos.length && <p className="py-8 text-center text-sm text-slate-500">Nenhum casal com coordenadas disponível.</p>}</div>{semCoordenadas.length > 0 && <div className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-900"><strong>{semCoordenadas.length} pendência(s) cadastral(is)</strong><p className="mt-1">{semCoordenadas.map((i) => i.casalNome).join(", ")}</p></div>}</div></section>}

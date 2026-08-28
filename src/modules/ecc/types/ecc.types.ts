@@ -31,7 +31,7 @@ export type EccEquipe = {
 export type EccParticipacao = {
   id: string; encontroId: string; casalId: string; casalNome: string; situacao: EccParticipacaoSituacao;
   classificacao: EccClassificacaoParticipacao;
-  inscritoEm: string; observacoes: string;
+  inscritoEm: string; conviteEnviadoEm: string; respostaEm: string; confirmadoEm: string; observacoes: string;
 };
 
 export type EccProgramacao = {
