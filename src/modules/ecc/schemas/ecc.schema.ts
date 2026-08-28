@@ -34,6 +34,8 @@ export const eccEquipeSchema = z.object({
 export const eccProgramacaoStatusSchema = z.enum(["PLANEJADA", "CONFIRMADA", "CONCLUIDA", "CANCELADA"]);
 export const eccTarefaStatusSchema = z.enum(["PENDENTE", "EM_ANDAMENTO", "CONCLUIDA", "CANCELADA"]);
 export const eccVisitaStatusSchema = z.enum(["PENDENTE", "AGENDADA", "REALIZADA", "RETORNO_NECESSARIO", "CANCELADA"]);
+export const eccComunicacaoStatusSchema = z.enum(["RASCUNHO", "PROGRAMADA", "ENVIADA", "CANCELADA"]);
+export const eccDocumentoStatusSchema = z.enum(["PENDENTE", "DISPONIVEL", "ARQUIVADO"]);
 export const eccClassificacaoParticipacaoSchema = z.enum(["INDICADO", "ENCONTRISTA", "CONVIDADO", "VISITANTE", "EQUIPE", "COORDENADOR"]);
 
 export const eccProgramacaoSchema = z.object({
@@ -117,6 +119,25 @@ export const eccVisitaSchema = z.object({
     contexto.addIssue({ code: "custom", path: ["retornoData"], message: "Informe a data prevista para o retorno." });
 });
 
+export const eccComunicacaoSchema = z.object({
+  encontroId: z.string().uuid("Selecione uma edição do ECC."),
+  titulo: z.string().trim().min(3, "Informe o assunto da comunicação."),
+  mensagem: z.string().trim().min(5, "Escreva a mensagem."),
+  canal: z.enum(["WHATSAPP", "EMAIL", "AVISO"]).default("WHATSAPP"),
+  publico: z.enum(["TODOS", "PARTICIPANTES", "EQUIPE", "COORDENACAO"]).default("TODOS"),
+  status: eccComunicacaoStatusSchema.default("RASCUNHO"),
+  programadaPara: z.string().default(""),
+});
+
+export const eccDocumentoSchema = z.object({
+  encontroId: z.string().uuid("Selecione uma edição do ECC."),
+  titulo: z.string().trim().min(3, "Informe o nome do documento."),
+  categoria: z.enum(["FICHA", "LISTA", "ROTEIRO", "TERMO", "MATERIAL", "OUTRO"]).default("OUTRO"),
+  url: z.string().trim().url("Informe um link válido.").or(z.literal("")).default(""),
+  observacoes: textoOpcional,
+  status: eccDocumentoStatusSchema.default("PENDENTE"),
+});
+
 export type EccEncontroFormData = z.infer<typeof eccEncontroSchema>;
 export type EccCasalFormData = z.infer<typeof eccCasalSchema>;
 export type EccEquipeFormData = z.infer<typeof eccEquipeSchema>;
@@ -126,3 +147,5 @@ export type EccParticipacaoFormData = z.infer<typeof eccParticipacaoSchema>;
 export type EccVinculoCasalFormData = z.infer<typeof eccVinculoCasalSchema>;
 export type EccNovoVoluntarioFormData = z.infer<typeof eccNovoVoluntarioSchema>;
 export type EccVisitaFormData = z.infer<typeof eccVisitaSchema>;
+export type EccComunicacaoFormData = z.infer<typeof eccComunicacaoSchema>;
+export type EccDocumentoFormData = z.infer<typeof eccDocumentoSchema>;

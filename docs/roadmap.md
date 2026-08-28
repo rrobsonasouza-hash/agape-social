@@ -205,10 +205,19 @@ Fundação   Auth +      Cadastros   Operação    Inteligência  Qualidade
 - [x] Endereço e geolocalização dos casais encontristas
 - [x] Mapa por edição com pinos e relatório de distância até a paróquia
 
+### Fase 3 — Gestão, comunicação e inteligência
+
+- [x] Ficha detalhada, visita, questionário e acompanhamento pastoral do casal
+- [x] Central de comunicação com público, canal, programação e histórico
+- [x] Controle de fichas, listas, roteiros, termos e materiais por edição
+- [x] Indicadores de confirmações, tarefas, comunicações, documentos e visitas
+- [x] Relatórios de casais e operação em CSV e resumo gerencial para impressão/PDF
+
 ### Próximas fases
 
-- [ ] Ficha detalhada, visita e acompanhamento pastoral do casal
-- [ ] Comunicação, documentos, relatórios e indicadores do ECC
+- [ ] Integração de disparos com e-mail e WhatsApp após configuração dos provedores
+- [ ] Upload protegido de documentos no Storage, além dos links externos
+- [ ] Credenciamento e presença nos dias do encontro
 
 ---
 

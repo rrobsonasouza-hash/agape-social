@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   CalendarDays, ClipboardCheck, Clock3, HeartHandshake, House, ListTodo,
-  MapPin, Plus, RefreshCw, Search, Users,
+  MapPin, Plus, RefreshCw, Search, Users, BarChart3,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { MapaEcc, type PontoCasalEcc } from "@/components/maps/MapaEcc";
 import { VisitasEccSection } from "@/modules/ecc/components/VisitasEccSection";
+import { GestaoEccSection } from "@/modules/ecc/components/GestaoEccSection";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { calcularDistanciaKm } from "@/lib/geo/distance";
 import { EnderecoService } from "@/modules/enderecos/services/endereco.service";
@@ -24,7 +25,7 @@ import type {
 const hoje = new Date().toISOString().slice(0, 10);
 const enderecoService = new EnderecoService();
 const vazio: EccPainel = {
-  encontros: [], casais: [], participacoes: [], equipe: [], programacao: [], tarefas: [], visitas: [], voluntarios: [],
+  encontros: [], casais: [], participacoes: [], equipe: [], programacao: [], tarefas: [], visitas: [], comunicacoes: [], documentos: [], voluntarios: [],
   paroquia: { nome: "Paróquia", latitude: null, longitude: null },
   podeGerenciarVisitas: false,
 };
@@ -73,7 +74,7 @@ export default function EccPage() {
   const [dados, setDados] = useState(vazio);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState("");
-  const [aba, setAba] = useState<"secretaria" | "visitas" | "mapa" | "cronograma" | "tarefas" | "equipes">("secretaria");
+  const [aba, setAba] = useState<"secretaria" | "visitas" | "mapa" | "cronograma" | "tarefas" | "equipes" | "gestao">("secretaria");
   const [formulario, setFormulario] = useState<"encontro" | "casal" | "equipe" | "programacao" | "tarefa" | "voluntario" | null>(null);
   const [encontroId, setEncontroId] = useState("");
   const [encontro, setEncontro] = useState(encontroInicial);
@@ -223,7 +224,7 @@ export default function EccPage() {
     </section>
 
     <nav className="flex gap-2 overflow-x-auto rounded-2xl border bg-white p-2 shadow-sm">{[
-      ["secretaria", "Secretaria", Users], ["visitas", "Visitas", House], ["mapa", "Mapa e distâncias", MapPin], ["cronograma", "Cronograma", Clock3], ["tarefas", "Tarefas", ClipboardCheck], ["equipes", "Equipes", HeartHandshake],
+      ["secretaria", "Secretaria", Users], ["visitas", "Visitas", House], ["mapa", "Mapa e distâncias", MapPin], ["cronograma", "Cronograma", Clock3], ["tarefas", "Tarefas", ClipboardCheck], ["equipes", "Equipes", HeartHandshake], ["gestao", "Gestão e relatórios", BarChart3],
     ].filter(([valor]) => valor !== "visitas" || dados.podeGerenciarVisitas).map(([valor, nome, Icon]) => <button key={String(valor)} onClick={() => { setAba(valor as typeof aba); setFormulario(null); setCasalEmEdicao(""); }} className={`inline-flex min-w-max items-center gap-2 rounded-xl px-4 py-3 text-sm font-black ${aba === valor ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}><Icon size={17} />{String(nome)}</button>)}</nav>
 
     {aba === "secretaria" && participacoes.length > 0 && <section className="rounded-2xl border bg-white p-4 shadow-sm"><p className="text-sm font-black text-slate-900">Papel do casal nesta edição</p><p className="mt-1 text-xs text-slate-500">O casal possui um único papel por edição: participa do encontro ou trabalha nele. O histórico dos demais encontros é preservado.</p><div className="mt-3 grid gap-2 md:grid-cols-2">{participacoes.map((item) => { const registro = dados.casais.find((casalItem) => casalItem.id === item.casalId); const servico = papeisServico.includes(item.classificacao); const vinculoIncompleto = servico && registro && (!registro.voluntarioUmId || !registro.voluntarioDoisId); return <div key={item.id} className={`rounded-xl p-3 ${servico ? "bg-amber-50" : "bg-blue-50/60"}`}><div className="flex flex-wrap items-center justify-between gap-2"><div><strong className="text-sm">{item.casalNome}</strong><p className={`mt-1 text-xs font-bold ${servico ? "text-amber-800" : "text-blue-700"}`}>{servico ? "Trabalha no encontro" : "Participa do encontro"}{vinculoIncompleto ? " · cadastro de voluntários pendente" : ""}</p></div><div className="flex gap-2"><select value={item.classificacao} onChange={(e) => void executar(`classificacao-${item.id}`, () => atualizarParticipacao(item.id, { situacao: item.situacao, classificacao: e.target.value as EccClassificacaoParticipacao, observacoes: item.observacoes }), "Papel do casal atualizado nesta edição.")} className="rounded-lg border bg-white px-2 py-2 text-xs font-bold"><optgroup label="Participará do encontro">{papeisParticipantes.map((valor) => <option key={valor} value={valor}>{classificacaoParticipacao[valor]}</option>)}</optgroup><optgroup label="Trabalhará no encontro">{papeisServico.map((valor) => <option key={valor} value={valor}>{classificacaoParticipacao[valor]}</option>)}</optgroup></select><button type="button" onClick={() => editarCasal(item.casalId)} className="rounded-lg border bg-white px-3 py-2 text-xs font-bold text-blue-700">Cadastro</button></div></div></div>; })}</div></section>}
@@ -280,6 +281,7 @@ export default function EccPage() {
     </section>}
 
     {!carregando && edicao && aba === "visitas" && <VisitasEccSection encontroId={encontroId} participacoes={participacoes} casais={dados.casais} voluntarios={dados.voluntarios} visitas={dados.visitas} onSaved={carregar} />}
+    {!carregando && edicao && aba === "gestao" && <GestaoEccSection encontroId={encontroId} dados={dados} onSaved={carregar} />}
     {carregando ? <div className="rounded-2xl bg-white p-12 text-center text-slate-500">Carregando operação do ECC...</div> : !edicao ? <div className="rounded-2xl border bg-white p-12 text-center text-slate-500">Cadastre uma edição para começar.</div> : <>
       {aba === "secretaria" && <section className="rounded-2xl border bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-end justify-between gap-4">

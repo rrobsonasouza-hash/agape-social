@@ -5,6 +5,8 @@ import {
   eccProgramacaoSchema, eccTarefaSchema,
   eccNovoVoluntarioSchema,
   eccVisitaSchema,
+  eccComunicacaoSchema,
+  eccDocumentoSchema,
 } from "../../src/modules/ecc/schemas/ecc.schema.ts";
 
 describe("ECC", () => {
@@ -59,5 +61,15 @@ describe("ECC", () => {
     const base = { encontroId: "11111111-1111-4111-8111-111111111111", casalId: "22222222-2222-4222-8222-222222222222", visitadorVoluntarioId: "voluntario-1", dataAgendada: "2026-09-10", dataRealizada: "2026-09-10", status: "RETORNO_NECESSARIO", questionario: { consentimentoInformacoes: true } };
     assert.throws(() => eccVisitaSchema.parse(base));
     assert.equal(eccVisitaSchema.parse({ ...base, retornoData: "2026-09-17" }).retornoData, "2026-09-17");
+  });
+  it("registra comunicacao segmentada da edicao", () => {
+    const comunicacao = eccComunicacaoSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", titulo: "Confirmação do encontro", mensagem: "Pedimos que confirmem a participação.", canal: "WHATSAPP", publico: "PARTICIPANTES" });
+    assert.equal(comunicacao.status, "RASCUNHO");
+    assert.equal(comunicacao.publico, "PARTICIPANTES");
+  });
+  it("valida link opcional do documento da edicao", () => {
+    const documento = eccDocumentoSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", titulo: "Roteiro geral", categoria: "ROTEIRO", url: "https://example.com/roteiro.pdf" });
+    assert.equal(documento.status, "PENDENTE");
+    assert.throws(() => eccDocumentoSchema.parse({ ...documento, url: "arquivo-invalido" }));
   });
 });

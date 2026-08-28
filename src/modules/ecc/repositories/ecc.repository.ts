@@ -9,8 +9,10 @@ import type {
   EccVinculoCasalFormData,
   EccNovoVoluntarioFormData,
   EccVisitaFormData,
+  EccComunicacaoFormData,
+  EccDocumentoFormData,
 } from "../schemas/ecc.schema";
-import type { EccPainel, EccProgramacaoStatus, EccTarefaStatus } from "../types/ecc.types";
+import type { EccComunicacaoStatus, EccDocumentoStatus, EccPainel, EccProgramacaoStatus, EccTarefaStatus } from "../types/ecc.types";
 
 async function requisicao<T>(init?: RequestInit): Promise<T> {
   const token = await obterTokenAcesso();
@@ -40,8 +42,12 @@ export class EccRepository {
   criarTarefa(dados: EccTarefaFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "tarefa", dados }) }); }
   cadastrarConjugeComoVoluntario(dados: EccNovoVoluntarioFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "voluntario", dados }) }); }
   criarVisita(dados: EccVisitaFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "visita", dados }) }); }
+  criarComunicacao(dados: EccComunicacaoFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "comunicacao", dados }) }); }
+  criarDocumento(dados: EccDocumentoFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "documento", dados }) }); }
   atualizarVisita(id: string, dados: EccVisitaFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "visita", id, dados }) }); }
   atualizarParticipacao(id: string, dados: EccParticipacaoFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "participacao", id, dados }) }); }
   atualizarTarefa(id: string, status: EccTarefaStatus) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "tarefa", id, dados: { status } }) }); }
   atualizarProgramacao(id: string, status: EccProgramacaoStatus) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "programacao", id, dados: { status } }) }); }
+  atualizarComunicacao(id: string, status: EccComunicacaoStatus) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "comunicacao", id, dados: { status } }) }); }
+  atualizarDocumento(id: string, status: EccDocumentoStatus) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "documento", id, dados: { status } }) }); }
 }

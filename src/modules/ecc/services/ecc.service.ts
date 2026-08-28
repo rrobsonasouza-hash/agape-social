@@ -9,6 +9,8 @@ import {
   eccVinculoCasalSchema,
   eccNovoVoluntarioSchema,
   eccVisitaSchema,
+  eccComunicacaoSchema,
+  eccDocumentoSchema,
   type EccCasalFormData,
   type EccEncontroFormData,
   type EccEquipeFormData,
@@ -18,8 +20,10 @@ import {
   type EccVinculoCasalFormData,
   type EccNovoVoluntarioFormData,
   type EccVisitaFormData,
+  type EccComunicacaoFormData,
+  type EccDocumentoFormData,
 } from "../schemas/ecc.schema";
-import type { EccProgramacaoStatus, EccTarefaStatus } from "../types/ecc.types";
+import type { EccComunicacaoStatus, EccDocumentoStatus, EccProgramacaoStatus, EccTarefaStatus } from "../types/ecc.types";
 
 export class EccService {
   constructor(private readonly repository = new EccRepository()) {}
@@ -33,8 +37,12 @@ export class EccService {
   criarTarefa(dados: EccTarefaFormData) { return this.repository.criarTarefa(eccTarefaSchema.parse(dados)); }
   cadastrarConjugeComoVoluntario(dados: EccNovoVoluntarioFormData) { return this.repository.cadastrarConjugeComoVoluntario(eccNovoVoluntarioSchema.parse(dados)); }
   criarVisita(dados: EccVisitaFormData) { return this.repository.criarVisita(eccVisitaSchema.parse(dados)); }
+  criarComunicacao(dados: EccComunicacaoFormData) { return this.repository.criarComunicacao(eccComunicacaoSchema.parse(dados)); }
+  criarDocumento(dados: EccDocumentoFormData) { return this.repository.criarDocumento(eccDocumentoSchema.parse(dados)); }
   atualizarVisita(id: string, dados: EccVisitaFormData) { return this.repository.atualizarVisita(id, eccVisitaSchema.parse(dados)); }
   atualizarParticipacao(id: string, dados: EccParticipacaoFormData) { return this.repository.atualizarParticipacao(id, eccParticipacaoSchema.parse(dados)); }
   atualizarTarefa(id: string, status: EccTarefaStatus) { return this.repository.atualizarTarefa(id, status); }
   atualizarProgramacao(id: string, status: EccProgramacaoStatus) { return this.repository.atualizarProgramacao(id, status); }
+  atualizarComunicacao(id: string, status: EccComunicacaoStatus) { return this.repository.atualizarComunicacao(id, status); }
+  atualizarDocumento(id: string, status: EccDocumentoStatus) { return this.repository.atualizarDocumento(id, status); }
 }

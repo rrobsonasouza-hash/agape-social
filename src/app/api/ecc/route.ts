@@ -16,6 +16,10 @@ import {
   eccVinculoCasalSchema,
   eccNovoVoluntarioSchema,
   eccVisitaSchema,
+  eccComunicacaoSchema,
+  eccComunicacaoStatusSchema,
+  eccDocumentoSchema,
+  eccDocumentoStatusSchema,
 } from "@/modules/ecc/schemas/ecc.schema";
 import { voluntarioAtuaNoEcc } from "@/modules/ecc/server/sincronizar-casal-voluntario";
 
@@ -64,7 +68,7 @@ function erro(error: unknown) {
 export async function GET(request: NextRequest) {
   try {
     const { supabase, paroquiaId, paroquia, usuario } = await contexto(request);
-    const [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, voluntarios] =
+    const [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, voluntarios] =
       await Promise.all([
         supabase.from("ecc_encontros").select("*").eq("paroquia_id", paroquiaId).order("data_inicio", { ascending: false }),
         supabase.from("ecc_casais").select("*").eq("paroquia_id", paroquiaId).order("conjuge_um_nome"),
@@ -73,9 +77,11 @@ export async function GET(request: NextRequest) {
         supabase.from("ecc_programacao").select("*").eq("paroquia_id", paroquiaId).order("data").order("hora_inicio"),
         supabase.from("ecc_tarefas").select("*").eq("paroquia_id", paroquiaId).order("prazo", { ascending: true, nullsFirst: false }),
         supabase.from("ecc_visitas").select("*").eq("paroquia_id", paroquiaId).order("data_agendada", { ascending: false }),
+        supabase.from("ecc_comunicacoes").select("*").eq("paroquia_id", paroquiaId).order("created_at", { ascending: false }),
+        supabase.from("ecc_documentos").select("*").eq("paroquia_id", paroquiaId).order("created_at", { ascending: false }),
         supabase.from("voluntarios").select("id,dados").eq("paroquia_id", paroquiaId).order("created_at", { ascending: false }),
       ]);
-    for (const resultado of [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, voluntarios])
+    for (const resultado of [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, voluntarios])
       if (resultado.error) throw resultado.error;
 
     const nomesVoluntarios = new Map(
@@ -156,6 +162,15 @@ export async function GET(request: NextRequest) {
           observacoesPastorais: String(item.questionario?.observacoesPastorais ?? ""),
           consentimentoInformacoes: item.questionario?.consentimentoInformacoes === true,
         }, observacoes: item.observacoes ?? "",
+      })),
+      comunicacoes: (comunicacoes.data ?? []).map((item) => ({
+        id: item.id, encontroId: item.encontro_id, titulo: item.titulo, mensagem: item.mensagem,
+        canal: item.canal, publico: item.publico, status: item.status,
+        programadaPara: item.programada_para ?? "", enviadaEm: item.enviada_em ?? "", criadoEm: item.created_at,
+      })),
+      documentos: (documentos.data ?? []).map((item) => ({
+        id: item.id, encontroId: item.encontro_id, titulo: item.titulo, categoria: item.categoria,
+        url: item.url, observacoes: item.observacoes, status: item.status, criadoEm: item.created_at,
       })),
       voluntarios: (voluntarios.data ?? [])
         .map((item) => {
@@ -294,6 +309,29 @@ export async function POST(request: NextRequest) {
       if (error) throw error;
       return NextResponse.json({ id: data.id }, { status: 201 });
     }
+    if (entrada.tipo === "comunicacao") {
+      const dados = eccComunicacaoSchema.parse(entrada.dados);
+      await validarEncontro(supabase, paroquiaId, dados.encontroId);
+      const enviadaEm = dados.status === "ENVIADA" ? new Date().toISOString() : null;
+      const { data, error } = await supabase.from("ecc_comunicacoes").insert({
+        paroquia_id: paroquiaId, encontro_id: dados.encontroId, titulo: dados.titulo,
+        mensagem: dados.mensagem, canal: dados.canal, publico: dados.publico, status: dados.status,
+        programada_para: dados.programadaPara || null, enviada_em: enviadaEm, criado_por: usuario.uid,
+      }).select("id").single();
+      if (error) throw error;
+      return NextResponse.json({ id: data.id }, { status: 201 });
+    }
+    if (entrada.tipo === "documento") {
+      const dados = eccDocumentoSchema.parse(entrada.dados);
+      await validarEncontro(supabase, paroquiaId, dados.encontroId);
+      const { data, error } = await supabase.from("ecc_documentos").insert({
+        paroquia_id: paroquiaId, encontro_id: dados.encontroId, titulo: dados.titulo,
+        categoria: dados.categoria, url: dados.url, observacoes: dados.observacoes,
+        status: dados.status, criado_por: usuario.uid,
+      }).select("id").single();
+      if (error) throw error;
+      return NextResponse.json({ id: data.id }, { status: 201 });
+    }
     if (entrada.tipo === "participacao") {
       const dados = eccVinculoCasalSchema.parse(entrada.dados);
       await validarEncontro(supabase, paroquiaId, dados.encontroId);
@@ -399,6 +437,14 @@ export async function PATCH(request: NextRequest) {
     } else if (entrada.tipo === "programacao") {
       const dados = eccProgramacaoStatusSchema.parse((entrada.dados as { status?: unknown })?.status);
       tabela = "ecc_programacao";
+      alteracoes = { status: dados };
+    } else if (entrada.tipo === "comunicacao") {
+      const dados = eccComunicacaoStatusSchema.parse((entrada.dados as { status?: unknown })?.status);
+      tabela = "ecc_comunicacoes";
+      alteracoes = { status: dados, enviada_em: dados === "ENVIADA" ? new Date().toISOString() : null };
+    } else if (entrada.tipo === "documento") {
+      const dados = eccDocumentoStatusSchema.parse((entrada.dados as { status?: unknown })?.status);
+      tabela = "ecc_documentos";
       alteracoes = { status: dados };
     } else {
       return NextResponse.json({ erro: "Tipo de atualização do ECC inválido." }, { status: 400 });

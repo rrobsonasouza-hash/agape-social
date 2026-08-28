@@ -6,6 +6,8 @@ export type EccClassificacaoParticipacao = "INDICADO" | "ENCONTRISTA" | "CONVIDA
 export type EccProgramacaoStatus = "PLANEJADA" | "CONFIRMADA" | "CONCLUIDA" | "CANCELADA";
 export type EccTarefaStatus = "PENDENTE" | "EM_ANDAMENTO" | "CONCLUIDA" | "CANCELADA";
 export type EccVisitaStatus = "PENDENTE" | "AGENDADA" | "REALIZADA" | "RETORNO_NECESSARIO" | "CANCELADA";
+export type EccComunicacaoStatus = "RASCUNHO" | "PROGRAMADA" | "ENVIADA" | "CANCELADA";
+export type EccDocumentoStatus = "PENDENTE" | "DISPONIVEL" | "ARQUIVADO";
 
 export type EccEncontro = {
   id: string; numero: number; nome: string; tema: string; lema: string; dataInicio: string; dataFim: string;
@@ -61,9 +63,22 @@ export type EccVisita = {
   observacoes: string;
 };
 
+export type EccComunicacao = {
+  id: string; encontroId: string; titulo: string; mensagem: string;
+  canal: "WHATSAPP" | "EMAIL" | "AVISO"; publico: "TODOS" | "PARTICIPANTES" | "EQUIPE" | "COORDENACAO";
+  status: EccComunicacaoStatus; programadaPara: string; enviadaEm: string; criadoEm: string;
+};
+
+export type EccDocumento = {
+  id: string; encontroId: string; titulo: string;
+  categoria: "FICHA" | "LISTA" | "ROTEIRO" | "TERMO" | "MATERIAL" | "OUTRO";
+  url: string; observacoes: string; status: EccDocumentoStatus; criadoEm: string;
+};
+
 export type EccPainel = {
   encontros: EccEncontro[]; casais: EccCasal[]; participacoes: EccParticipacao[]; equipe: EccEquipe[];
-  programacao: EccProgramacao[]; tarefas: EccTarefa[]; visitas: EccVisita[]; voluntarios: EccVoluntarioResumo[];
+  programacao: EccProgramacao[]; tarefas: EccTarefa[]; visitas: EccVisita[]; comunicacoes: EccComunicacao[];
+  documentos: EccDocumento[]; voluntarios: EccVoluntarioResumo[];
   paroquia: { nome: string; latitude: number | null; longitude: number | null };
   podeGerenciarVisitas: boolean;
 };
