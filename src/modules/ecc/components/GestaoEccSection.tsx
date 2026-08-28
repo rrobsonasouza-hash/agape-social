@@ -4,6 +4,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { BarChart3, CheckCircle2, ClipboardCopy, ExternalLink, FileDown, FileText, Mail, MessageCircle, Plus, Printer, Trash2, UploadCloud, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import { useEcc } from "../hooks/useEcc";
+import { EncerramentoEccSection } from "./EncerramentoEccSection";
 import type { EccComunicacaoFormData, EccDocumentoFormData } from "../schemas/ecc.schema";
 import type { EccPainel, EccComunicacaoStatus, EccDocumentoStatus } from "../types/ecc.types";
 
@@ -90,6 +91,8 @@ export function GestaoEccSection({ encontroId, dados, onSaved }: Props) {
       <article className="rounded-2xl border bg-white p-5 shadow-sm"><MessageCircle className="text-amber-600" /><p className="mt-3 text-xs font-black uppercase text-slate-500">Comunicações</p><strong className="text-3xl">{comunicacoes.length}</strong><p className="text-sm text-slate-500">{comunicacoes.filter((item) => item.status === "ENVIADA").length} enviadas</p></article>
       <article className="rounded-2xl border bg-white p-5 shadow-sm"><FileText className="text-violet-600" /><p className="mt-3 text-xs font-black uppercase text-slate-500">Documentos</p><strong className="text-3xl">{documentos.length}</strong><p className="text-sm text-slate-500">{documentos.filter((item) => item.status === "DISPONIVEL").length} disponíveis</p></article>
     </div>
+
+    <EncerramentoEccSection encontroId={encontroId} dados={dados} onSaved={onSaved} />
 
     <div className="grid gap-5 xl:grid-cols-2">
       <article className="rounded-2xl border bg-white p-5 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="flex items-center gap-2 text-xl font-black"><Mail size={20} />Central de comunicação</h2><p className="text-sm text-slate-500">Prepare mensagens e mantenha o histórico por público e canal.</p></div><button onClick={() => setFormulario(formulario === "comunicacao" ? null : "comunicacao")} className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white"><Plus size={16} className="mr-1 inline" />Nova mensagem</button></div>

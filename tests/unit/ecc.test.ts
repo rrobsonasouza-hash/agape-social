@@ -10,6 +10,7 @@ import {
   eccCredenciamentoSchema,
   eccPresencaDiaSchema,
   eccArrecadacaoSchema,
+  eccDespesaSchema,
 } from "../../src/modules/ecc/schemas/ecc.schema.ts";
 
 describe("ECC", () => {
@@ -96,5 +97,10 @@ describe("ECC", () => {
   it("aceita valor prometido e recebido", () => {
     const registro = eccArrecadacaoSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", categoria: "VALOR", item: "Bebidas", valorPrometido: 500, valorRecebido: 250 });
     assert.equal(registro.valorRecebido, 250);
+  });
+  it("registra despesa financeira da edicao", () => {
+    const despesa = eccDespesaSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", descricao: "Compra de alimentos", valor: 350, data: "2026-10-09", status: "PAGA" });
+    assert.equal(despesa.status, "PAGA");
+    assert.equal(despesa.valor, 350);
   });
 });

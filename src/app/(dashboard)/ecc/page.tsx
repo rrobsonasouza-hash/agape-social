@@ -28,7 +28,7 @@ import type {
 const hoje = new Date().toISOString().slice(0, 10);
 const enderecoService = new EnderecoService();
 const vazio: EccPainel = {
-  encontros: [], casais: [], participacoes: [], equipe: [], programacao: [], tarefas: [], visitas: [], comunicacoes: [], documentos: [], credenciamentos: [], presencasDiarias: [], arrecadacoes: [], necessidades: [], voluntarios: [], casaisDoadores: [],
+  encontros: [], casais: [], participacoes: [], equipe: [], programacao: [], tarefas: [], visitas: [], comunicacoes: [], documentos: [], credenciamentos: [], presencasDiarias: [], arrecadacoes: [], necessidades: [], despesas: [], voluntarios: [], casaisDoadores: [],
   paroquia: { nome: "Paróquia", latitude: null, longitude: null },
   podeGerenciarVisitas: false,
 };

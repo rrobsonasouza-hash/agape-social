@@ -195,6 +195,18 @@ export const eccNecessidadeSchema = z.object({
     contexto.addIssue({ code: "custom", path: ["quantidadeNecessaria"], message: "Informe a quantidade necessária." });
 });
 
+export const eccDespesaSchema = z.object({
+  encontroId: z.string().uuid("Selecione uma edição do ECC."),
+  descricao: z.string().trim().min(3, "Informe a despesa."),
+  fornecedor: z.string().trim().max(160).default(""),
+  valor: z.coerce.number().positive("Informe um valor maior que zero."),
+  data: z.string().date("Informe a data da despesa."),
+  status: z.enum(["PENDENTE", "PAGA", "CANCELADA"]).default("PENDENTE"),
+  observacoes: textoOpcional,
+});
+
+export const eccEncerramentoSchema = z.object({ encontroId: z.string().uuid("Selecione uma edição do ECC.") });
+
 export type EccEncontroFormData = z.infer<typeof eccEncontroSchema>;
 export type EccCasalFormData = z.infer<typeof eccCasalSchema>;
 export type EccEquipeFormData = z.infer<typeof eccEquipeSchema>;
@@ -210,3 +222,4 @@ export type EccCredenciamentoFormData = z.infer<typeof eccCredenciamentoSchema>;
 export type EccPresencaDiaFormData = z.infer<typeof eccPresencaDiaSchema>;
 export type EccArrecadacaoFormData = z.infer<typeof eccArrecadacaoSchema>;
 export type EccNecessidadeFormData = z.infer<typeof eccNecessidadeSchema>;
+export type EccDespesaFormData = z.infer<typeof eccDespesaSchema>;
