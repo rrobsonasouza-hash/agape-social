@@ -9,6 +9,7 @@ export type EccVisitaStatus = "PENDENTE" | "AGENDADA" | "REALIZADA" | "RETORNO_N
 export type EccComunicacaoStatus = "RASCUNHO" | "PROGRAMADA" | "ENVIADA" | "CANCELADA";
 export type EccDocumentoStatus = "PENDENTE" | "DISPONIVEL" | "ARQUIVADO";
 export type EccCredenciamentoStatus = "AGUARDANDO" | "CREDENCIADO" | "AUSENTE" | "CANCELADO";
+export type EccArrecadacaoStatus = "PENDENTE" | "PARCIAL" | "RECEBIDO" | "CANCELADO";
 
 export type EccEncontro = {
   id: string; numero: number; nome: string; tema: string; lema: string; dataInicio: string; dataFim: string;
@@ -83,10 +84,17 @@ export type EccCredenciamento = {
   materialEntregue: boolean; observacoes: string;
 };
 
+export type EccArrecadacao = {
+  id: string; encontroId: string; categoria: "ALIMENTO" | "BEBIDA" | "VALOR" | "OUTRO";
+  item: string; responsavel: string; telefone: string; unidade: string;
+  quantidadePrometida: number; quantidadeRecebida: number; valorPrometido: number; valorRecebido: number;
+  status: EccArrecadacaoStatus; observacoes: string; criadoEm: string;
+};
+
 export type EccPainel = {
   encontros: EccEncontro[]; casais: EccCasal[]; participacoes: EccParticipacao[]; equipe: EccEquipe[];
   programacao: EccProgramacao[]; tarefas: EccTarefa[]; visitas: EccVisita[]; comunicacoes: EccComunicacao[];
-  documentos: EccDocumento[]; credenciamentos: EccCredenciamento[]; voluntarios: EccVoluntarioResumo[];
+  documentos: EccDocumento[]; credenciamentos: EccCredenciamento[]; arrecadacoes: EccArrecadacao[]; voluntarios: EccVoluntarioResumo[];
   paroquia: { nome: string; latitude: number | null; longitude: number | null };
   podeGerenciarVisitas: boolean;
 };

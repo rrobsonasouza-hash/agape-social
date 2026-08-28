@@ -8,6 +8,7 @@ import {
   eccComunicacaoSchema,
   eccDocumentoSchema,
   eccCredenciamentoSchema,
+  eccArrecadacaoSchema,
 } from "../../src/modules/ecc/schemas/ecc.schema.ts";
 
 describe("ECC", () => {
@@ -77,5 +78,17 @@ describe("ECC", () => {
     const registro = eccCredenciamentoSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", casalId: "22222222-2222-4222-8222-222222222222", crachaEntregue: true, materialEntregue: true });
     assert.equal(registro.status, "CREDENCIADO");
     assert.equal(registro.crachaEntregue, true);
+  });
+  it("registra alimento com quantidade prometida", () => {
+    const registro = eccArrecadacaoSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", categoria: "ALIMENTO", item: "Arroz", quantidadePrometida: 30, unidade: "kg" });
+    assert.equal(registro.quantidadePrometida, 30);
+    assert.equal(registro.status, "PENDENTE");
+  });
+  it("exige valor prometido nas arrecadacoes em dinheiro", () => {
+    assert.throws(() => eccArrecadacaoSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", categoria: "VALOR", item: "Compras da cozinha" }));
+  });
+  it("aceita valor prometido e recebido", () => {
+    const registro = eccArrecadacaoSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", categoria: "VALOR", item: "Bebidas", valorPrometido: 500, valorRecebido: 250 });
+    assert.equal(registro.valorRecebido, 250);
   });
 });

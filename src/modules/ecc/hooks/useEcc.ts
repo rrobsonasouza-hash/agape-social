@@ -14,6 +14,7 @@ import type {
   EccComunicacaoFormData,
   EccDocumentoFormData,
   EccCredenciamentoFormData,
+  EccArrecadacaoFormData,
 } from "../schemas/ecc.schema";
 import type { EccComunicacaoStatus, EccDocumentoStatus, EccProgramacaoStatus, EccTarefaStatus } from "../types/ecc.types";
 
@@ -36,6 +37,8 @@ export function useEcc() {
     abrirDocumento: useCallback((id: string) => service.abrirDocumento(id), []),
     excluirDocumento: useCallback((id: string) => service.excluirDocumento(id), []),
     registrarCredenciamento: useCallback((dados: EccCredenciamentoFormData) => service.registrarCredenciamento(dados), []),
+    criarArrecadacao: useCallback((dados: EccArrecadacaoFormData) => service.criarArrecadacao(dados), []),
+    atualizarArrecadacao: useCallback((id: string, dados: EccArrecadacaoFormData) => service.atualizarArrecadacao(id, dados), []),
     atualizarVisita: useCallback((id: string, dados: EccVisitaFormData) => service.atualizarVisita(id, dados), []),
     atualizarParticipacao: useCallback((id: string, dados: EccParticipacaoFormData) => service.atualizarParticipacao(id, dados), []),
     atualizarTarefa: useCallback((id: string, status: EccTarefaStatus) => service.atualizarTarefa(id, status), []),
