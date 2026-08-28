@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import { BarChart3, CircleDollarSign, Download, PackageCheck, Pencil, Plus, Search, ShoppingCart, TriangleAlert, type LucideIcon } from "lucide-react";
+import { BarChart3, CircleDollarSign, ClipboardList, Download, PackageCheck, Pencil, Plus, Search, ShoppingCart, Target, TriangleAlert, type LucideIcon } from "lucide-react";
 import { useEcc } from "../hooks/useEcc";
-import type { EccArrecadacaoFormData } from "../schemas/ecc.schema";
-import type { EccArrecadacao, EccCasalDoador } from "../types/ecc.types";
+import type { EccArrecadacaoFormData, EccNecessidadeFormData } from "../schemas/ecc.schema";
+import type { EccArrecadacao, EccCasalDoador, EccNecessidade } from "../types/ecc.types";
 
 const campo = "mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500";
 const label = "text-sm font-bold text-slate-700";
@@ -14,12 +14,16 @@ function formularioInicial(encontroId: string): EccArrecadacaoFormData {
   return { encontroId, categoria: "ALIMENTO", item: "", responsavel: "", telefone: "", unidade: "unidade", quantidadePrometida: 0, quantidadeRecebida: 0, valorPrometido: 0, valorRecebido: 0, status: "PENDENTE", observacoes: "" };
 }
 
+function necessidadeInicial(encontroId: string): EccNecessidadeFormData {
+  return { encontroId, categoria: "ALIMENTO", item: "", unidade: "unidade", quantidadeNecessaria: 0, valorNecessario: 0, observacoes: "", ativa: true };
+}
+
 const nomesCategoria = { ALIMENTO: "Alimento", BEBIDA: "Bebida", VALOR: "Valor em dinheiro", OUTRO: "Outro item" } as const;
 const nomesStatus = { PENDENTE: "Pendente", PARCIAL: "Recebido em parte", RECEBIDO: "Recebido", CANCELADO: "Cancelado" } as const;
 const itensSugeridos = ["Arroz", "Feijão", "Óleo", "Açúcar", "Café", "Leite", "Macarrão", "Molho de tomate", "Farinha", "Sal", "Refrigerante", "Água", "Suco", "Carne", "Frango", "Legumes", "Frutas", "Pães", "Descartáveis", "Material de limpeza"];
 
-export function ArrecadacaoEccSection({ encontroId, arrecadacoes, casaisDoadores, onSaved }: { encontroId: string; arrecadacoes: EccArrecadacao[]; casaisDoadores: EccCasalDoador[]; onSaved: () => Promise<void> }) {
-  const { criarArrecadacao, atualizarArrecadacao } = useEcc();
+export function ArrecadacaoEccSection({ encontroId, arrecadacoes, necessidades, casaisDoadores, onSaved }: { encontroId: string; arrecadacoes: EccArrecadacao[]; necessidades: EccNecessidade[]; casaisDoadores: EccCasalDoador[]; onSaved: () => Promise<void> }) {
+  const { criarArrecadacao, atualizarArrecadacao, criarNecessidade, atualizarNecessidade } = useEcc();
   const [formulario, setFormulario] = useState<EccArrecadacaoFormData>(() => formularioInicial(encontroId));
   const [editando, setEditando] = useState<string>("");
   const [aberto, setAberto] = useState(false);
@@ -28,6 +32,10 @@ export function ArrecadacaoEccSection({ encontroId, arrecadacoes, casaisDoadores
   const [filtroStatus, setFiltroStatus] = useState("TODOS");
   const [filtroCategoria, setFiltroCategoria] = useState("TODAS");
   const [busca, setBusca] = useState("");
+  const [formNecessidade, setFormNecessidade] = useState<EccNecessidadeFormData>(() => necessidadeInicial(encontroId));
+  const [necessidadeAberta, setNecessidadeAberta] = useState(false);
+  const [necessidadeEditando, setNecessidadeEditando] = useState("");
+  const [salvandoNecessidade, setSalvandoNecessidade] = useState(false);
 
   const resumo = useMemo(() => ({
     materiais: arrecadacoes.filter((item) => item.categoria !== "VALOR" && item.status !== "CANCELADO").length,
@@ -60,6 +68,17 @@ export function ArrecadacaoEccSection({ encontroId, arrecadacoes, casaisDoadores
       .sort((a, b) => a.percentual - b.percentual || a.item.localeCompare(b.item, "pt-BR"));
     return { geral, itens };
   }, [arrecadacoes]);
+
+  const planejamento = useMemo(() => necessidades.filter((item) => item.ativa).map((necessidade) => {
+    const correspondentes = arrecadacoes.filter((registro) => registro.status !== "CANCELADO"
+      && registro.categoria === necessidade.categoria
+      && registro.item.trim().toLocaleLowerCase("pt-BR") === necessidade.item.trim().toLocaleLowerCase("pt-BR")
+      && (necessidade.categoria === "VALOR" || registro.unidade.trim().toLocaleLowerCase("pt-BR") === necessidade.unidade.trim().toLocaleLowerCase("pt-BR")));
+    const necessario = necessidade.categoria === "VALOR" ? necessidade.valorNecessario : necessidade.quantidadeNecessaria;
+    const prometido = correspondentes.reduce((total, item) => total + (necessidade.categoria === "VALOR" ? item.valorPrometido : item.quantidadePrometida), 0);
+    const recebido = correspondentes.reduce((total, item) => total + (necessidade.categoria === "VALOR" ? item.valorRecebido : item.quantidadeRecebida), 0);
+    return { ...necessidade, necessario, prometido, recebido, faltaComprometer: Math.max(0, necessario - prometido), faltaReceber: Math.max(0, necessario - recebido), percentual: necessario > 0 ? Math.min(100, Math.round(recebido / necessario * 100)) : 0 };
+  }).sort((a, b) => b.faltaReceber - a.faltaReceber || a.item.localeCompare(b.item, "pt-BR")), [arrecadacoes, necessidades]);
 
   const registrosFiltrados = useMemo(() => arrecadacoes.filter((item) => {
     const termo = busca.trim().toLocaleLowerCase("pt-BR");
@@ -96,7 +115,39 @@ export function ArrecadacaoEccSection({ encontroId, arrecadacoes, casaisDoadores
     finally { setSalvando(false); }
   }
 
+  function novaNecessidade() {
+    setFormNecessidade(necessidadeInicial(encontroId)); setNecessidadeEditando(""); setMensagem(""); setNecessidadeAberta(true);
+  }
+
+  function editarNecessidade(item: EccNecessidade) {
+    setFormNecessidade({ encontroId: item.encontroId, categoria: item.categoria, item: item.item, unidade: item.unidade, quantidadeNecessaria: item.quantidadeNecessaria, valorNecessario: item.valorNecessario, observacoes: item.observacoes, ativa: item.ativa });
+    setNecessidadeEditando(item.id); setMensagem(""); setNecessidadeAberta(true);
+    requestAnimationFrame(() => document.getElementById("form-necessidade-ecc")?.scrollIntoView({ behavior: "smooth", block: "center" }));
+  }
+
+  async function salvarNecessidade(evento: FormEvent) {
+    evento.preventDefault(); setSalvandoNecessidade(true); setMensagem("");
+    try {
+      if (necessidadeEditando) await atualizarNecessidade(necessidadeEditando, formNecessidade); else await criarNecessidade(formNecessidade);
+      await onSaved(); setNecessidadeAberta(false); setNecessidadeEditando(""); setFormNecessidade(necessidadeInicial(encontroId));
+    } catch (error) { setMensagem(error instanceof Error ? error.message : "Não foi possível salvar a necessidade."); }
+    finally { setSalvandoNecessidade(false); }
+  }
+
   return <section className="space-y-5">
+    <article className="rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-5 shadow-sm">
+      <div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-widest text-blue-700">Planejamento de Compras</p><h2 className="mt-1 flex items-center gap-2 text-xl font-black"><ClipboardList size={21} />O que o encontro precisa</h2><p className="mt-1 text-sm text-slate-600">Defina primeiro a meta de cada item. As doações dos casais serão comparadas automaticamente com esta lista.</p></div><button type="button" onClick={novaNecessidade} className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white"><Plus size={18} />Adicionar necessidade</button></div>
+      {necessidadeAberta && <form id="form-necessidade-ecc" onSubmit={salvarNecessidade} className="mt-5 grid gap-3 rounded-xl border border-blue-200 bg-white p-4 md:grid-cols-2 lg:grid-cols-4">
+        <label className={label}>Categoria<select className={campo} value={formNecessidade.categoria} onChange={(e) => setFormNecessidade({ ...formNecessidade, categoria: e.target.value as EccNecessidadeFormData["categoria"] })}>{Object.entries(nomesCategoria).map(([valor, nome]) => <option key={valor} value={valor}>{nome}</option>)}</select></label>
+        <label className={`${label} lg:col-span-2`}>Item<input required className={campo} value={formNecessidade.item} onChange={(e) => setFormNecessidade({ ...formNecessidade, item: e.target.value })} placeholder="Ex.: arroz, refrigerante ou verba da cozinha" /></label>
+        {formNecessidade.categoria === "VALOR" ? <label className={label}>Valor necessário (R$)<input required min="0.01" step="0.01" type="number" className={campo} value={formNecessidade.valorNecessario || ""} onChange={(e) => setFormNecessidade({ ...formNecessidade, valorNecessario: Number(e.target.value) })} /></label> : <div className="grid grid-cols-2 gap-2"><label className={label}>Quantidade<input required min="0.01" step="0.01" type="number" className={campo} value={formNecessidade.quantidadeNecessaria || ""} onChange={(e) => setFormNecessidade({ ...formNecessidade, quantidadeNecessaria: Number(e.target.value) })} /></label><label className={label}>Unidade<select className={campo} value={formNecessidade.unidade} onChange={(e) => setFormNecessidade({ ...formNecessidade, unidade: e.target.value })}>{["unidade", "kg", "pacote", "caixa", "litro", "fardo", "bandeja"].map((item) => <option key={item}>{item}</option>)}</select></label></div>}
+        <label className={`${label} md:col-span-2 lg:col-span-3`}>Observações<input className={campo} value={formNecessidade.observacoes} onChange={(e) => setFormNecessidade({ ...formNecessidade, observacoes: e.target.value })} /></label>
+        {necessidadeEditando && <label className={label}>Situação<select className={campo} value={formNecessidade.ativa ? "ATIVA" : "INATIVA"} onChange={(e) => setFormNecessidade({ ...formNecessidade, ativa: e.target.value === "ATIVA" })}><option value="ATIVA">Ativa</option><option value="INATIVA">Retirar do planejamento</option></select></label>}
+        {mensagem && <p className="rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700 md:col-span-2 lg:col-span-4">{mensagem}</p>}
+        <div className="flex gap-2 md:col-span-2 lg:col-span-4"><button disabled={salvandoNecessidade} className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:opacity-60">{salvandoNecessidade ? "Salvando..." : necessidadeEditando ? "Salvar necessidade" : "Incluir no planejamento"}</button><button type="button" onClick={() => setNecessidadeAberta(false)} className="rounded-xl border px-5 py-3 text-sm font-bold">Cancelar</button></div>
+      </form>}
+      <div className="mt-5 grid gap-3 lg:grid-cols-2">{planejamento.map((item) => { const valor = item.categoria === "VALOR"; const formatar = (numero: number) => valor ? dinheiro.format(numero) : `${numero} ${item.unidade}`; return <div key={item.id} className="rounded-xl border bg-white p-4"><div className="flex items-start justify-between gap-3"><div><span className="text-xs font-black uppercase text-blue-700">{nomesCategoria[item.categoria]}</span><h3 className="font-black">{item.item}</h3></div><button type="button" onClick={() => editarNecessidade(item)} className="rounded-lg border p-2 text-blue-700" title="Editar necessidade"><Pencil size={15} /></button></div><div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4"><div><span className="text-slate-500">Necessário</span><strong className="block">{formatar(item.necessario)}</strong></div><div><span className="text-slate-500">Prometido</span><strong className="block">{formatar(item.prometido)}</strong></div><div><span className="text-slate-500">Recebido</span><strong className="block text-emerald-700">{formatar(item.recebido)}</strong></div><div><span className="text-slate-500">Ainda falta</span><strong className={`block ${item.faltaReceber > 0 ? "text-red-700" : "text-emerald-700"}`}>{formatar(item.faltaReceber)}</strong></div></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100"><div className={`h-full ${item.percentual >= 100 ? "bg-emerald-500" : "bg-blue-600"}`} style={{ width: `${item.percentual}%` }} /></div>{item.faltaComprometer > 0 && <p className="mt-2 text-xs font-bold text-amber-700">Ainda é preciso encontrar doadores para {formatar(item.faltaComprometer)}.</p>}</div>; })}{!planejamento.length && <div className="rounded-xl border border-dashed p-8 text-center text-sm text-slate-500 lg:col-span-2"><Target className="mx-auto mb-2 text-blue-500" />Cadastre os itens necessários para visualizar o que ainda falta arrecadar.</div>}</div>
+    </article>
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
       {([
         ["Doações combinadas", resumo.materiais, ShoppingCart], ["Doações recebidas", resumo.concluidos, PackageCheck],
@@ -104,6 +155,8 @@ export function ArrecadacaoEccSection({ encontroId, arrecadacoes, casaisDoadores
         ["Valores recebidos", dinheiro.format(resumo.valorRecebido), CircleDollarSign],
       ] as Array<[string, string | number, LucideIcon]>).map(([titulo, valor, Icone]) => <article key={titulo} className="rounded-2xl border bg-white p-4 shadow-sm"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-blue-50 text-blue-700"><Icone size={20} /></span><div><p className="text-xs font-black uppercase tracking-wide text-slate-500">{titulo}</p><strong className="text-xl text-slate-900">{valor}</strong></div></div></article>)}
     </div>
+
+    <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"><strong>Integração financeira:</strong> doações em dinheiro entram na conta “Caixa do ECC” da Tesouraria somente quando o valor recebido for informado. Alterações atualizam o mesmo lançamento, sem duplicidade.</p>
 
     <div className="grid gap-4 lg:grid-cols-[.8fr_1.2fr]">
       <article className="rounded-2xl border bg-white p-5 shadow-sm">

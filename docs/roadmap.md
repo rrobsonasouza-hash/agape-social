@@ -214,6 +214,7 @@ Fundação   Auth +      Cadastros   Operação    Inteligência  Qualidade
 - [x] Relatórios de casais e operação em CSV e resumo gerencial para impressão/PDF
 - [x] Área de Compras com lista de doações por casal, alimentos, bebidas, materiais, valores e acompanhamento do prometido, recebido e pendências
 - [x] Painel de evolução das doações por compromisso e item, filtros gerenciais e exportação CSV para a coordenação
+- [x] Planejamento de necessidades com metas, valores prometidos, recebidos, faltantes e integração das doações em dinheiro à Tesouraria
 
 ### Próximas fases
 

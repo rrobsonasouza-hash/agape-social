@@ -27,7 +27,7 @@ import type {
 const hoje = new Date().toISOString().slice(0, 10);
 const enderecoService = new EnderecoService();
 const vazio: EccPainel = {
-  encontros: [], casais: [], participacoes: [], equipe: [], programacao: [], tarefas: [], visitas: [], comunicacoes: [], documentos: [], credenciamentos: [], arrecadacoes: [], voluntarios: [], casaisDoadores: [],
+  encontros: [], casais: [], participacoes: [], equipe: [], programacao: [], tarefas: [], visitas: [], comunicacoes: [], documentos: [], credenciamentos: [], arrecadacoes: [], necessidades: [], voluntarios: [], casaisDoadores: [],
   paroquia: { nome: "Paróquia", latitude: null, longitude: null },
   podeGerenciarVisitas: false,
 };
@@ -295,7 +295,7 @@ export default function EccPage() {
 
     {!carregando && edicao && aba === "visitas" && <VisitasEccSection encontroId={encontroId} participacoes={participacoes} casais={dados.casais} voluntarios={dados.voluntarios} visitas={dados.visitas} onSaved={carregar} />}
     {!carregando && edicao && aba === "credenciamento" && <CredenciamentoEccSection encontroId={encontroId} participacoes={participacoes} casais={dados.casais} credenciamentos={dados.credenciamentos} onSaved={carregar} />}
-    {!carregando && edicao && aba === "arrecadacao" && <ArrecadacaoEccSection encontroId={encontroId} arrecadacoes={dados.arrecadacoes.filter((item) => item.encontroId === encontroId)} casaisDoadores={dados.casaisDoadores} onSaved={carregar} />}
+    {!carregando && edicao && aba === "arrecadacao" && <ArrecadacaoEccSection encontroId={encontroId} arrecadacoes={dados.arrecadacoes.filter((item) => item.encontroId === encontroId)} necessidades={dados.necessidades.filter((item) => item.encontroId === encontroId)} casaisDoadores={dados.casaisDoadores} onSaved={carregar} />}
     {!carregando && edicao && aba === "gestao" && <GestaoEccSection encontroId={encontroId} dados={dados} onSaved={carregar} />}
     {carregando ? <div className="rounded-2xl bg-white p-12 text-center text-slate-500">Carregando operação do ECC...</div> : !edicao ? <div className="rounded-2xl border bg-white p-12 text-center text-slate-500">Cadastre uma edição para começar.</div> : <>
       {aba === "secretaria" && <section className="rounded-2xl border bg-white p-5 shadow-sm">

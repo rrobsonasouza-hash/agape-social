@@ -95,10 +95,16 @@ export type EccArrecadacao = {
   status: EccArrecadacaoStatus; observacoes: string; criadoEm: string;
 };
 
+export type EccNecessidade = {
+  id: string; encontroId: string; categoria: "ALIMENTO" | "BEBIDA" | "VALOR" | "OUTRO";
+  item: string; unidade: string; quantidadeNecessaria: number; valorNecessario: number;
+  observacoes: string; ativa: boolean; criadoEm: string;
+};
+
 export type EccPainel = {
   encontros: EccEncontro[]; casais: EccCasal[]; participacoes: EccParticipacao[]; equipe: EccEquipe[];
   programacao: EccProgramacao[]; tarefas: EccTarefa[]; visitas: EccVisita[]; comunicacoes: EccComunicacao[];
-  documentos: EccDocumento[]; credenciamentos: EccCredenciamento[]; arrecadacoes: EccArrecadacao[];
+  documentos: EccDocumento[]; credenciamentos: EccCredenciamento[]; arrecadacoes: EccArrecadacao[]; necessidades: EccNecessidade[];
   voluntarios: EccVoluntarioResumo[]; casaisDoadores: EccCasalDoador[];
   paroquia: { nome: string; latitude: number | null; longitude: number | null };
   podeGerenciarVisitas: boolean;

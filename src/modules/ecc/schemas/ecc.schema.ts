@@ -168,6 +168,22 @@ export const eccArrecadacaoSchema = z.object({
     contexto.addIssue({ code: "custom", path: ["quantidadePrometida"], message: "Informe a quantidade prometida." });
 });
 
+export const eccNecessidadeSchema = z.object({
+  encontroId: z.string().uuid("Selecione uma edição do ECC."),
+  categoria: z.enum(["ALIMENTO", "BEBIDA", "VALOR", "OUTRO"]).default("ALIMENTO"),
+  item: z.string().trim().min(2, "Informe o item necessário."),
+  unidade: z.string().trim().min(1).max(30).default("unidade"),
+  quantidadeNecessaria: z.coerce.number().min(0).default(0),
+  valorNecessario: z.coerce.number().min(0).default(0),
+  observacoes: textoOpcional,
+  ativa: z.boolean().default(true),
+}).superRefine((dados, contexto) => {
+  if (dados.categoria === "VALOR" && dados.valorNecessario <= 0)
+    contexto.addIssue({ code: "custom", path: ["valorNecessario"], message: "Informe o valor necessário." });
+  if (dados.categoria !== "VALOR" && dados.quantidadeNecessaria <= 0)
+    contexto.addIssue({ code: "custom", path: ["quantidadeNecessaria"], message: "Informe a quantidade necessária." });
+});
+
 export type EccEncontroFormData = z.infer<typeof eccEncontroSchema>;
 export type EccCasalFormData = z.infer<typeof eccCasalSchema>;
 export type EccEquipeFormData = z.infer<typeof eccEquipeSchema>;
@@ -181,3 +197,4 @@ export type EccComunicacaoFormData = z.infer<typeof eccComunicacaoSchema>;
 export type EccDocumentoFormData = z.infer<typeof eccDocumentoSchema>;
 export type EccCredenciamentoFormData = z.infer<typeof eccCredenciamentoSchema>;
 export type EccArrecadacaoFormData = z.infer<typeof eccArrecadacaoSchema>;
+export type EccNecessidadeFormData = z.infer<typeof eccNecessidadeSchema>;
