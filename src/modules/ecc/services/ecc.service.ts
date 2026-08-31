@@ -41,6 +41,7 @@ import type { EccComunicacaoStatus, EccDocumentoStatus, EccProgramacaoStatus, Ec
 export class EccService {
   constructor(private readonly repository = new EccRepository()) {}
   listar() { return this.repository.listar(); }
+  obterTokenCheckin(encontroId: string) { return this.repository.obterTokenCheckin(encontroId); }
   criarEncontro(dados: EccEncontroFormData) { return this.repository.criarEncontro(eccEncontroSchema.parse(dados)); }
   atualizarEncontro(id: string, dados: EccEncontroFormData) { return this.repository.atualizarEncontro(id, eccEncontroSchema.parse(dados)); }
   reabrirEncontro(id: string) { return this.repository.reabrirEncontro(id); }

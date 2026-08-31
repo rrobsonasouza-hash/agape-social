@@ -12,8 +12,20 @@ import {
   eccArrecadacaoSchema,
   eccDespesaSchema,
 } from "../../src/modules/ecc/schemas/ecc.schema.ts";
+import { assinarConfirmacao, assinarEncontro, validarConfirmacao, validarEncontroAssinado } from "../../src/modules/ecc/server/checkin-token.ts";
 
 describe("ECC", () => {
+  it("assina o QR e limita a confirmacao ao casal e contato corretos", () => {
+    process.env.ECC_CHECKIN_SECRET = "segredo-de-teste-com-tamanho-suficiente";
+    const encontroId = "11111111-1111-4111-8111-111111111111";
+    const casalId = "22222222-2222-4222-8222-222222222222";
+    const qr = assinarEncontro(encontroId);
+    assert.equal(validarEncontroAssinado(encontroId, qr), true);
+    assert.equal(validarEncontroAssinado("33333333-3333-4333-8333-333333333333", qr), false);
+    const confirmacao = assinarConfirmacao(encontroId, casalId, "11999999999", Date.now() + 60_000);
+    assert.equal(validarConfirmacao(encontroId, casalId, "11999999999", confirmacao), true);
+    assert.equal(validarConfirmacao(encontroId, casalId, "11888888888", confirmacao), false);
+  });
   it("aceita uma edicao com periodo valido", () => {
     const encontro = eccEncontroSchema.parse({ numero: 18, nome: "Encontro de Casais com Cristo", dataInicio: "2026-10-09", dataFim: "2026-10-11" });
     assert.equal(encontro.status, "PLANEJAMENTO");

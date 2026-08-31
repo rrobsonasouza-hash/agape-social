@@ -26,6 +26,7 @@ const service = new EccService();
 export function useEcc() {
   return {
     listar: useCallback(() => service.listar(), []),
+    obterTokenCheckin: useCallback((encontroId: string) => service.obterTokenCheckin(encontroId), []),
     criarEncontro: useCallback((dados: EccEncontroFormData) => service.criarEncontro(dados), []),
     atualizarEncontro: useCallback((id: string, dados: EccEncontroFormData) => service.atualizarEncontro(id, dados), []),
     reabrirEncontro: useCallback((id: string) => service.reabrirEncontro(id), []),
