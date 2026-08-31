@@ -26,6 +26,8 @@ export function useEcc() {
   return {
     listar: useCallback(() => service.listar(), []),
     criarEncontro: useCallback((dados: EccEncontroFormData) => service.criarEncontro(dados), []),
+    atualizarEncontro: useCallback((id: string, dados: EccEncontroFormData) => service.atualizarEncontro(id, dados), []),
+    reabrirEncontro: useCallback((id: string) => service.reabrirEncontro(id), []),
     criarCasal: useCallback((dados: EccCasalFormData) => service.criarCasal(dados), []),
     atualizarCasal: useCallback((id: string, dados: EccCasalFormData) => service.atualizarCasal(id, dados), []),
     vincularCasal: useCallback((dados: EccVinculoCasalFormData) => service.vincularCasal(dados), []),

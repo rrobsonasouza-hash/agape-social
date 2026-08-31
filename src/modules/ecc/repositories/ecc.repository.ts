@@ -51,6 +51,8 @@ async function requisicaoDocumento<T>(caminho: string, init?: RequestInit): Prom
 export class EccRepository {
   listar() { return requisicao<EccPainel>(); }
   criarEncontro(dados: EccEncontroFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "encontro", dados }) }); }
+  atualizarEncontro(id: string, dados: EccEncontroFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "encontro", id, dados }) }); }
+  reabrirEncontro(id: string) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "reabertura", id }) }); }
   criarCasal(dados: EccCasalFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "casal", dados }) }); }
   atualizarCasal(id: string, dados: EccCasalFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "casal", id, dados }) }); }
   vincularCasal(dados: EccVinculoCasalFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "participacao", dados }) }); }

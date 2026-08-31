@@ -82,6 +82,10 @@ describe("ECC", () => {
     assert.equal(registro.crachaEntregue, true);
     assert.equal(registro.circulo, "Amarelo");
   });
+
+  it("rejeita prazo de inscricao posterior ao inicio do encontro", () => {
+    assert.throws(() => eccEncontroSchema.parse({ numero: 19, nome: "Encontro de Casais com Cristo", dataInicio: "2026-10-09", dataFim: "2026-10-11", prazoInscricao: "2026-10-10" }));
+  });
   it("valida telefone do casal com DDD e tamanho brasileiro", () => {
     const casal = { conjugeUmNome: "Maria Silva", conjugeDoisNome: "Joao Silva" };
     assert.equal(eccCasalSchema.parse({ ...casal, telefone: "(11) 99999-9999" }).telefone, "(11) 99999-9999");

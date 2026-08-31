@@ -8,7 +8,8 @@ export const eccEncontroSchema = z.object({
   prazoInscricao: z.string().date().or(z.literal("")).default(""), local: textoOpcional,
   capacidadeCasais: z.coerce.number().int().min(0).default(0),
   status: z.enum(["PLANEJAMENTO", "INSCRICOES", "PREPARACAO", "REALIZADO", "ENCERRADO"]).default("PLANEJAMENTO"), observacoes: textoOpcional,
-}).refine((dados) => dados.dataFim >= dados.dataInicio, { message: "A data final deve ser igual ou posterior à inicial.", path: ["dataFim"] });
+}).refine((dados) => dados.dataFim >= dados.dataInicio, { message: "A data final deve ser igual ou posterior à inicial.", path: ["dataFim"] })
+  .refine((dados) => !dados.prazoInscricao || dados.prazoInscricao <= dados.dataInicio, { message: "O prazo de inscrição deve ser anterior ou igual ao início do encontro.", path: ["prazoInscricao"] });
 
 export const eccCasalSchema = z.object({
   conjugeUmNome: z.string().trim().min(3, "Informe o nome do primeiro cônjuge."), conjugeDoisNome: z.string().trim().min(3, "Informe o nome do segundo cônjuge."),

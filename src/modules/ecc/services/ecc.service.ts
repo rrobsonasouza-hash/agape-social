@@ -40,6 +40,8 @@ export class EccService {
   constructor(private readonly repository = new EccRepository()) {}
   listar() { return this.repository.listar(); }
   criarEncontro(dados: EccEncontroFormData) { return this.repository.criarEncontro(eccEncontroSchema.parse(dados)); }
+  atualizarEncontro(id: string, dados: EccEncontroFormData) { return this.repository.atualizarEncontro(id, eccEncontroSchema.parse(dados)); }
+  reabrirEncontro(id: string) { return this.repository.reabrirEncontro(id); }
   criarCasal(dados: EccCasalFormData) { return this.repository.criarCasal(eccCasalSchema.parse(dados)); }
   atualizarCasal(id: string, dados: EccCasalFormData) { return this.repository.atualizarCasal(id, eccCasalSchema.parse(dados)); }
   vincularCasal(dados: EccVinculoCasalFormData) { return this.repository.vincularCasal(eccVinculoCasalSchema.parse(dados)); }

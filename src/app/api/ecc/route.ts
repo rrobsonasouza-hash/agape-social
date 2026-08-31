@@ -538,12 +538,49 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { supabase, paroquiaId } = await contexto(request, true);
+    const { supabase, paroquiaId, usuario } = await contexto(request, true);
     const entrada = (await request.json()) as { tipo?: string; id?: string; dados?: unknown };
     if (!entrada.id) return NextResponse.json({ erro: "Informe o registro." }, { status: 400 });
     let tabela = "";
     let alteracoes: Record<string, unknown> = {};
-    if (entrada.tipo === "casal") {
+    if (entrada.tipo === "encontro") {
+      const dados = eccEncontroSchema.parse(entrada.dados);
+      const atual = await supabase.from("ecc_encontros").select("id,status")
+        .eq("id", entrada.id).eq("paroquia_id", paroquiaId).maybeSingle();
+      if (atual.error || !atual.data) return NextResponse.json({ erro: "Edição não encontrada." }, { status: 404 });
+      if (atual.data.status === "ENCERRADO") throw new Error("Reabra a edição antes de alterar sua configuração.");
+      if (dados.status === "ENCERRADO") throw new Error("Use o encerramento oficial para consolidar o histórico da edição.");
+      const [presencasAntes, presencasDepois, atividadesAntes, atividadesDepois, confirmados] = await Promise.all([
+        supabase.from("ecc_presencas_diarias").select("id", { count: "exact", head: true }).eq("encontro_id", entrada.id).eq("paroquia_id", paroquiaId).lt("data", dados.dataInicio),
+        supabase.from("ecc_presencas_diarias").select("id", { count: "exact", head: true }).eq("encontro_id", entrada.id).eq("paroquia_id", paroquiaId).gt("data", dados.dataFim),
+        supabase.from("ecc_programacao").select("id", { count: "exact", head: true }).eq("encontro_id", entrada.id).eq("paroquia_id", paroquiaId).lt("data", dados.dataInicio),
+        supabase.from("ecc_programacao").select("id", { count: "exact", head: true }).eq("encontro_id", entrada.id).eq("paroquia_id", paroquiaId).gt("data", dados.dataFim),
+        supabase.from("ecc_encontro_casais").select("id", { count: "exact", head: true }).eq("encontro_id", entrada.id).eq("paroquia_id", paroquiaId).in("situacao", ["CONFIRMADO", "PARTICIPOU"]).in("classificacao", ["INDICADO", "ENCONTRISTA", "CONVIDADO", "VISITANTE"]),
+      ]);
+      for (const consulta of [presencasAntes, presencasDepois, atividadesAntes, atividadesDepois, confirmados])
+        if (consulta.error) throw consulta.error;
+      if ((presencasAntes.count ?? 0) + (presencasDepois.count ?? 0) > 0)
+        throw new Error("As novas datas deixariam presenças registradas fora do período do encontro.");
+      if ((atividadesAntes.count ?? 0) + (atividadesDepois.count ?? 0) > 0)
+        throw new Error("As novas datas deixariam atividades do cronograma fora do período do encontro.");
+      if (dados.capacidadeCasais > 0 && (confirmados.count ?? 0) > dados.capacidadeCasais)
+        throw new Error(`O limite não pode ser menor que os ${confirmados.count ?? 0} casais já confirmados.`);
+      tabela = "ecc_encontros";
+      alteracoes = {
+        numero: dados.numero, nome: dados.nome, tema: dados.tema, lema: dados.lema,
+        data_inicio: dados.dataInicio, data_fim: dados.dataFim, prazo_inscricao: dados.prazoInscricao || null,
+        local: dados.local, capacidade_casais: dados.capacidadeCasais, status: dados.status,
+        observacoes: dados.observacoes,
+      };
+    } else if (entrada.tipo === "reabertura") {
+      if (!["admin_plataforma", "admin_paroquia", "coordenador"].includes(usuario.role)) throw new Error("FORBIDDEN");
+      const atual = await supabase.from("ecc_encontros").select("id,status")
+        .eq("id", entrada.id).eq("paroquia_id", paroquiaId).maybeSingle();
+      if (atual.error || !atual.data) return NextResponse.json({ erro: "Edição não encontrada." }, { status: 404 });
+      if (atual.data.status !== "ENCERRADO") throw new Error("Somente uma edição encerrada pode ser reaberta.");
+      tabela = "ecc_encontros";
+      alteracoes = { status: "REALIZADO" };
+    } else if (entrada.tipo === "casal") {
       const dados = eccCasalSchema.parse(entrada.dados);
       tabela = "ecc_casais";
       alteracoes = {
