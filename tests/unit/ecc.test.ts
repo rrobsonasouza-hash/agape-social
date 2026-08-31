@@ -82,6 +82,11 @@ describe("ECC", () => {
     assert.equal(registro.crachaEntregue, true);
     assert.equal(registro.circulo, "Amarelo");
   });
+  it("valida telefone do casal com DDD e tamanho brasileiro", () => {
+    const casal = { conjugeUmNome: "Maria Silva", conjugeDoisNome: "Joao Silva" };
+    assert.equal(eccCasalSchema.parse({ ...casal, telefone: "(11) 99999-9999" }).telefone, "(11) 99999-9999");
+    assert.throws(() => eccCasalSchema.parse({ ...casal, telefone: "119547788888888888" }));
+  });
   it("registra a presença do casal em um dia do encontro", () => {
     const presenca = eccPresencaDiaSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", casalId: "22222222-2222-4222-8222-222222222222", data: "2026-10-10", presente: true });
     assert.equal(presenca.presente, true);

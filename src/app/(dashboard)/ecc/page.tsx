@@ -15,6 +15,7 @@ import { ArrecadacaoEccSection } from "@/modules/ecc/components/ArrecadacaoEccSe
 import { ConvitesEccSection } from "@/modules/ecc/components/ConvitesEccSection";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { calcularDistanciaKm } from "@/lib/geo/distance";
+import { maskTelefone } from "@/lib/formatters/masks";
 import { EnderecoService } from "@/modules/enderecos/services/endereco.service";
 import { useEcc } from "@/modules/ecc/hooks/useEcc";
 import type {
@@ -101,6 +102,7 @@ export default function EccPage() {
   const [busca, setBusca] = useState("");
   const [consultandoCep, setConsultandoCep] = useState(false);
   const [casalEmEdicao, setCasalEmEdicao] = useState("");
+  const [casalFocoCredenciamento, setCasalFocoCredenciamento] = useState("");
   const formularioRef = useRef<HTMLDivElement>(null);
 
   const carregar = useCallback(async () => {
@@ -216,7 +218,7 @@ export default function EccPage() {
     const registro = dados.casais.find((item) => item.id === id);
     if (!registro) return;
     setCasalEmEdicao(id);
-    setCasal({ ...registro, encontroId: "", classificacaoEncontro: "INDICADO" });
+    setCasal({ ...registro, telefone: maskTelefone(registro.telefone), encontroId: "", classificacaoEncontro: "INDICADO" });
     setFormulario("casal");
   }
 
@@ -275,7 +277,7 @@ export default function EccPage() {
         </div>
         <label className={label}>Primeiro cônjuge<input required className={campo} value={casal.conjugeUmNome} onChange={(e) => setCasal({ ...casal, conjugeUmNome: e.target.value })} /></label>
         <label className={label}>Segundo cônjuge<input required className={campo} value={casal.conjugeDoisNome} onChange={(e) => setCasal({ ...casal, conjugeDoisNome: e.target.value })} /></label>
-        <label className={label}>Telefone<input className={campo} value={casal.telefone} onChange={(e) => setCasal({ ...casal, telefone: e.target.value })} /></label>
+        <label className={label}>Telefone<input className={campo} inputMode="tel" placeholder="(00) 00000-0000" maxLength={15} value={casal.telefone} onChange={(e) => setCasal({ ...casal, telefone: maskTelefone(e.target.value) })} /></label>
         <label className={label}>Vínculo existente do primeiro cônjuge<select className={campo} value={casal.voluntarioUmId} onChange={(e) => setCasal({ ...casal, voluntarioUmId: e.target.value })}><option value="">Não é voluntário</option>{dados.voluntarios.map((v) => <option key={v.id} value={v.id}>{v.nome}</option>)}</select></label>
         <label className={label}>Vínculo existente do segundo cônjuge<select className={campo} value={casal.voluntarioDoisId} onChange={(e) => setCasal({ ...casal, voluntarioDoisId: e.target.value })}><option value="">Não é voluntário</option>{dados.voluntarios.map((v) => <option key={v.id} value={v.id}>{v.nome}</option>)}</select></label>
         <label className={label}>Edição<select className={campo} value={casal.encontroId} onChange={(e) => setCasal({ ...casal, encontroId: e.target.value })}><option value="">Somente banco de casais</option>{dados.encontros.map((i) => <option key={i.id} value={i.id}>{i.numero}º ECC</option>)}</select></label>
@@ -294,7 +296,7 @@ export default function EccPage() {
     </section>}
 
     {!carregando && edicao && aba === "visitas" && <VisitasEccSection encontroId={encontroId} participacoes={participacoes} casais={dados.casais} voluntarios={dados.voluntarios} visitas={dados.visitas} onSaved={carregar} />}
-    {!carregando && edicao && aba === "credenciamento" && <CredenciamentoEccSection encontroId={encontroId} dataInicio={edicao.dataInicio} dataFim={edicao.dataFim} participacoes={participacoes} casais={dados.casais} credenciamentos={dados.credenciamentos} presencasDiarias={dados.presencasDiarias} onSaved={carregar} />}
+    {!carregando && edicao && aba === "credenciamento" && <CredenciamentoEccSection encontroId={encontroId} dataInicio={edicao.dataInicio} dataFim={edicao.dataFim} participacoes={participacoes} casais={dados.casais} credenciamentos={dados.credenciamentos} presencasDiarias={dados.presencasDiarias} casalFocoId={casalFocoCredenciamento} onSaved={carregar} />}
     {!carregando && edicao && aba === "arrecadacao" && <ArrecadacaoEccSection encontroId={encontroId} arrecadacoes={dados.arrecadacoes.filter((item) => item.encontroId === encontroId)} necessidades={dados.necessidades.filter((item) => item.encontroId === encontroId)} casaisDoadores={dados.casaisDoadores} onSaved={carregar} />}
     {!carregando && edicao && aba === "gestao" && <GestaoEccSection encontroId={encontroId} dados={dados} onSaved={carregar} />}
     {carregando ? <div className="rounded-2xl bg-white p-12 text-center text-slate-500">Carregando operação do ECC...</div> : !edicao ? <div className="rounded-2xl border bg-white p-12 text-center text-slate-500">Cadastre uma edição para começar.</div> : <>
@@ -311,11 +313,14 @@ export default function EccPage() {
         <ConvitesEccSection
           participacoes={participacoes}
           casais={dados.casais}
+          credenciamentos={dados.credenciamentos.filter((item) => item.encontroId === encontroId)}
           capacidade={edicao.capacidadeCasais}
           encontroNome={`${edicao.numero}º ECC`}
           busca={busca}
           salvando={salvando}
           onConvite={(item) => void executar(`convite-${item.id}`, () => registrarConvite(item.id), "Envio do convite registrado.")}
+          onEditar={(casalId) => editarCasal(casalId)}
+          onCredenciamento={(casalId) => { setCasalFocoCredenciamento(casalId); setFormulario(null); setAba("credenciamento"); window.requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" })); }}
           onSituacao={(item, situacao) => void executar(`participacao-${item.id}`, () => atualizarParticipacao(item.id, { situacao, observacoes: item.observacoes }), situacao === "CONFIRMADO" ? "Confirmação registrada; se as vagas estiverem completas, o casal irá para a lista de espera." : "Situação do casal atualizada.")}
         />
       </section>}

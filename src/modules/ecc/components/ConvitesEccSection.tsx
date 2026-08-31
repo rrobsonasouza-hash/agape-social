@@ -1,7 +1,8 @@
 "use client";
 
-import { BadgeCheck, Clock3, MessageCircle, Send, Users } from "lucide-react";
-import type { EccCasal, EccParticipacao, EccParticipacaoSituacao } from "../types/ecc.types";
+import { BadgeCheck, Clock3, MessageCircle, Palette, Pencil, Send, Users } from "lucide-react";
+import { maskTelefone } from "@/lib/formatters/masks";
+import type { EccCasal, EccCredenciamento, EccParticipacao, EccParticipacaoSituacao } from "../types/ecc.types";
 
 const status: Record<EccParticipacaoSituacao, string> = {
   CONVIDADO: "Convite enviado", INSCRITO: "Aceitou / inscrito", CONFIRMADO: "Participação confirmada",
@@ -21,15 +22,18 @@ function whatsapp(telefone: string, casal: string, encontro: string) {
   return `https://wa.me/${destino}?text=${mensagem}`;
 }
 
-export function ConvitesEccSection({ participacoes, casais, capacidade, encontroNome, busca = "", salvando, onSituacao, onConvite }: {
+export function ConvitesEccSection({ participacoes, casais, credenciamentos, capacidade, encontroNome, busca = "", salvando, onSituacao, onConvite, onEditar, onCredenciamento }: {
   participacoes: EccParticipacao[];
   casais: EccCasal[];
+  credenciamentos: EccCredenciamento[];
   capacidade: number;
   encontroNome: string;
   busca?: string;
   salvando: string;
   onSituacao: (item: EccParticipacao, situacao: EccParticipacaoSituacao) => void;
   onConvite: (item: EccParticipacao) => void;
+  onEditar: (casalId: string) => void;
+  onCredenciamento: (casalId: string) => void;
 }) {
   const participantes = participacoes.filter((item) => papeisParticipantes.includes(item.classificacao));
   const confirmados = participantes.filter((item) => ["CONFIRMADO", "PARTICIPOU"].includes(item.situacao)).length;
@@ -48,13 +52,14 @@ export function ConvitesEccSection({ participacoes, casais, capacidade, encontro
     <div className="grid gap-3">
       {participacoes.filter((item) => item.casalNome.toLocaleLowerCase("pt-BR").includes(busca.toLocaleLowerCase("pt-BR"))).map((item) => {
         const casal = casais.find((registro) => registro.id === item.casalId);
+        const credenciamento = credenciamentos.find((registro) => registro.casalId === item.casalId);
         const linkWhatsapp = whatsapp(casal?.telefone ?? "", item.casalNome, encontroNome);
         const servico = !papeisParticipantes.includes(item.classificacao);
         return <article key={item.id} className={`rounded-xl border p-4 ${servico ? "bg-amber-50/60" : "bg-slate-50"}`}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <strong>{item.casalNome}</strong>
-              <p className="mt-1 text-xs text-slate-500">Incluído em {new Date(item.inscritoEm).toLocaleDateString("pt-BR")} · {servico ? "trabalha no encontro e não ocupa vaga" : "casal participante"}</p>
+              <p className="mt-1 text-xs text-slate-500">Incluído em {new Date(item.inscritoEm).toLocaleDateString("pt-BR")} · {servico ? "trabalha no encontro e não ocupa vaga" : "casal participante"}{casal?.telefone && ` · ${maskTelefone(casal.telefone)}`}</p>
             </div>
             <select disabled={salvando === `participacao-${item.id}`} className="rounded-xl border bg-white px-3 py-2 text-sm font-bold" value={item.situacao} onChange={(event) => onSituacao(item, event.target.value as EccParticipacaoSituacao)}>
               {Object.entries(status).map(([valor, nome]) => <option key={valor} value={valor}>{nome}</option>)}
@@ -66,6 +71,8 @@ export function ConvitesEccSection({ participacoes, casais, capacidade, encontro
             {!item.conviteEnviadoEm ? <button type="button" disabled={salvando === `convite-${item.id}`} onClick={() => onConvite(item)} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 font-bold text-white disabled:opacity-50"><Send size={15} />Marcar convite enviado</button> : <span className="rounded-lg bg-blue-100 px-3 py-2 font-semibold text-blue-800">Convite: {dataHora(item.conviteEnviadoEm)}</span>}
             {item.respostaEm && <span className="rounded-lg bg-white px-3 py-2 text-slate-600">Resposta: {dataHora(item.respostaEm)}</span>}
             {item.confirmadoEm && <span className="rounded-lg bg-emerald-100 px-3 py-2 font-semibold text-emerald-800">Confirmado: {dataHora(item.confirmadoEm)}</span>}
+            <button type="button" onClick={() => onEditar(item.casalId)} className="inline-flex items-center gap-2 rounded-lg border bg-white px-3 py-2 font-bold text-blue-700"><Pencil size={14} />Editar cadastro</button>
+            {!servico && <button type="button" onClick={() => onCredenciamento(item.casalId)} className="inline-flex items-center gap-2 rounded-lg border border-violet-200 bg-white px-3 py-2 font-bold text-violet-700"><Palette size={15} />{credenciamento?.circulo ? `Círculo ${credenciamento.circulo} · editar` : "Definir círculo"}</button>}
           </div>
         </article>;
       })}

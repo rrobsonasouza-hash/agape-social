@@ -12,7 +12,7 @@ export const eccEncontroSchema = z.object({
 
 export const eccCasalSchema = z.object({
   conjugeUmNome: z.string().trim().min(3, "Informe o nome do primeiro cônjuge."), conjugeDoisNome: z.string().trim().min(3, "Informe o nome do segundo cônjuge."),
-  telefone: z.string().trim().max(30).default(""), email: z.string().trim().email("E-mail inválido.").or(z.literal("")).default(""),
+  telefone: z.string().trim().max(15, "Telefone inválido.").refine((valor) => !valor || [10, 11].includes(valor.replace(/\D/g, "").length), "Informe um telefone válido com DDD.").default(""), email: z.string().trim().email("E-mail inválido.").or(z.literal("")).default(""),
   dataCasamento: z.string().date().or(z.literal("")).default(""), encontroId: z.string().uuid().or(z.literal("")).default(""), voluntarioUmId: z.string().default(""), voluntarioDoisId: z.string().default(""),
   cep: z.string().trim().refine((valor) => !valor || valor.replace(/\D/g, "").length === 8, "CEP invÃ¡lido.").default(""),
   logradouro: z.string().trim().max(180).default(""), numero: z.string().trim().max(30).default(""),
