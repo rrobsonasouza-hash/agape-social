@@ -26,8 +26,10 @@ export type EccCasal = {
 
 export type EccEquipe = {
   id: string; encontroId: string; voluntarioId: string; voluntarioNome: string; equipe: string; funcao: string;
-  coordenador: boolean; status: EccEquipeStatus; observacoes: string;
+  coordenador: boolean; status: EccEquipeStatus; dataEscala: string; horaInicio: string; horaFim: string; observacoes: string;
 };
+
+export type EccEquipePresenca = { id: string; encontroId: string; equipeId: string; data: string; presente: boolean; registradoEm: string };
 
 export type EccParticipacao = {
   id: string; encontroId: string; casalId: string; casalNome: string; situacao: EccParticipacaoSituacao;
@@ -113,7 +115,7 @@ export type EccDespesa = {
 };
 
 export type EccPainel = {
-  encontros: EccEncontro[]; casais: EccCasal[]; participacoes: EccParticipacao[]; equipe: EccEquipe[];
+  encontros: EccEncontro[]; casais: EccCasal[]; participacoes: EccParticipacao[]; equipe: EccEquipe[]; equipePresencas: EccEquipePresenca[];
   programacao: EccProgramacao[]; tarefas: EccTarefa[]; visitas: EccVisita[]; comunicacoes: EccComunicacao[];
   documentos: EccDocumento[]; credenciamentos: EccCredenciamento[]; presencasDiarias: EccPresencaDia[]; arrecadacoes: EccArrecadacao[]; necessidades: EccNecessidade[]; despesas: EccDespesa[];
   voluntarios: EccVoluntarioResumo[]; casaisDoadores: EccCasalDoador[];

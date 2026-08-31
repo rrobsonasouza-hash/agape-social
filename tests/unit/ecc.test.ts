@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  eccCasalSchema, eccEncontroSchema, eccEquipeSchema, eccParticipacaoSchema,
+  eccCasalSchema, eccEncontroSchema, eccEquipeSchema, eccEquipePresencaSchema, eccParticipacaoSchema,
   eccProgramacaoSchema, eccTarefaSchema,
   eccNovoVoluntarioSchema,
   eccVisitaSchema,
@@ -81,6 +81,13 @@ describe("ECC", () => {
     assert.equal(registro.status, "CREDENCIADO");
     assert.equal(registro.crachaEntregue, true);
     assert.equal(registro.circulo, "Amarelo");
+  });
+
+  it("valida horario da escala e presenca da equipe", () => {
+    const base = { encontroId: "11111111-1111-4111-8111-111111111111", voluntarioId: "voluntario-1", equipe: "Cozinha", funcao: "Apoio" };
+    assert.throws(() => eccEquipeSchema.parse({ ...base, dataEscala: "2026-10-10", horaInicio: "18:00", horaFim: "08:00" }));
+    const presenca = eccEquipePresencaSchema.parse({ encontroId: base.encontroId, equipeId: "22222222-2222-4222-8222-222222222222", data: "2026-10-10", presente: true });
+    assert.equal(presenca.presente, true);
   });
 
   it("rejeita prazo de inscricao posterior ao inicio do encontro", () => {

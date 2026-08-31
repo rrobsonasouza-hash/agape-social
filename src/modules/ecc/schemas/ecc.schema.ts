@@ -29,7 +29,15 @@ export const eccCasalSchema = z.object({
 export const eccEquipeSchema = z.object({
   encontroId: z.string().uuid("Selecione uma edição do ECC."), voluntarioId: z.string().min(1, "Selecione um voluntário."),
   equipe: z.string().trim().min(2, "Informe a equipe."), funcao: z.string().trim().min(2, "Informe a função."), coordenador: z.boolean().default(false),
-  status: z.enum(["CONVIDADO", "CONFIRMADO", "INDISPONIVEL", "PARTICIPOU"]).default("CONVIDADO"), observacoes: textoOpcional,
+  status: z.enum(["CONVIDADO", "CONFIRMADO", "INDISPONIVEL", "PARTICIPOU"]).default("CONVIDADO"),
+  dataEscala: z.string().date().or(z.literal("")).default(""),
+  horaInicio: z.string().regex(/^\d{2}:\d{2}$/).or(z.literal("")).default(""),
+  horaFim: z.string().regex(/^\d{2}:\d{2}$/).or(z.literal("")).default(""), observacoes: textoOpcional,
+}).refine((dados) => !dados.horaFim || !dados.horaInicio || dados.horaFim >= dados.horaInicio, { message: "O fim da escala deve ser posterior ao início.", path: ["horaFim"] });
+
+export const eccEquipePresencaSchema = z.object({
+  encontroId: z.string().uuid("Selecione uma edição do ECC."), equipeId: z.string().uuid("Selecione um integrante da equipe."),
+  data: z.string().date("Informe o dia do encontro."), presente: z.boolean(),
 });
 
 export const eccProgramacaoStatusSchema = z.enum(["PLANEJADA", "CONFIRMADA", "CONCLUIDA", "CANCELADA"]);
@@ -211,6 +219,7 @@ export const eccEncerramentoSchema = z.object({ encontroId: z.string().uuid("Sel
 export type EccEncontroFormData = z.infer<typeof eccEncontroSchema>;
 export type EccCasalFormData = z.infer<typeof eccCasalSchema>;
 export type EccEquipeFormData = z.infer<typeof eccEquipeSchema>;
+export type EccEquipePresencaFormData = z.infer<typeof eccEquipePresencaSchema>;
 export type EccProgramacaoFormData = z.infer<typeof eccProgramacaoSchema>;
 export type EccTarefaFormData = z.infer<typeof eccTarefaSchema>;
 export type EccParticipacaoFormData = z.infer<typeof eccParticipacaoSchema>;

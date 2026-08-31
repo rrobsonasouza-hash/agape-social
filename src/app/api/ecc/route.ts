@@ -8,6 +8,7 @@ import {
   eccCasalSchema,
   eccEncontroSchema,
   eccEquipeSchema,
+  eccEquipePresencaSchema,
   eccParticipacaoSchema,
   eccProgramacaoSchema,
   eccProgramacaoStatusSchema,
@@ -94,6 +95,8 @@ export async function GET(request: NextRequest) {
       ]);
     for (const resultado of [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, credenciamentos, presencasDiarias, arrecadacoes, necessidades, despesas, voluntarios])
       if (resultado.error) throw resultado.error;
+    const equipePresencas = await supabase.from("ecc_equipe_presencas").select("*").eq("paroquia_id", paroquiaId).order("data", { ascending: false });
+    if (equipePresencas.error && !["42P01", "PGRST205"].includes(equipePresencas.error.code ?? "")) throw equipePresencas.error;
 
     const nomesVoluntarios = new Map(
       (voluntarios.data ?? []).map((item) => [
@@ -152,7 +155,12 @@ export async function GET(request: NextRequest) {
         id: item.id, encontroId: item.encontro_id, voluntarioId: item.voluntario_id,
         voluntarioNome: nomesVoluntarios.get(item.voluntario_id) ?? "Voluntário",
         equipe: item.equipe, funcao: item.funcao, coordenador: item.coordenador,
-        status: item.status, observacoes: item.observacoes,
+        status: item.status, dataEscala: item.data_escala ?? "", horaInicio: item.hora_inicio ? String(item.hora_inicio).slice(0, 5) : "",
+        horaFim: item.hora_fim ? String(item.hora_fim).slice(0, 5) : "", observacoes: item.observacoes,
+      })),
+      equipePresencas: (equipePresencas.data ?? []).map((item) => ({
+        id: item.id, encontroId: item.encontro_id, equipeId: item.equipe_id, data: item.data,
+        presente: item.presente === true, registradoEm: item.registrado_em ?? "",
       })),
       programacao: (programacao.data ?? []).map((item) => ({
         id: item.id, encontroId: item.encontro_id, titulo: item.titulo, descricao: item.descricao,
@@ -265,12 +273,13 @@ async function validarEncontro(
 ) {
   const encontro = await supabase
     .from("ecc_encontros")
-    .select("id")
+    .select("id,data_inicio,data_fim")
     .eq("id", encontroId)
     .eq("paroquia_id", paroquiaId)
     .maybeSingle();
   if (encontro.error || !encontro.data)
     throw encontro.error ?? new Error("Encontro não encontrado nesta paróquia.");
+  return encontro.data;
 }
 
 function statusArrecadacao(dados: ReturnType<typeof eccArrecadacaoSchema.parse>) {
@@ -493,16 +502,31 @@ export async function POST(request: NextRequest) {
     }
     if (entrada.tipo === "equipe") {
       const dados = eccEquipeSchema.parse(entrada.dados);
-      await validarEncontro(supabase, paroquiaId, dados.encontroId);
+      const encontro = await validarEncontro(supabase, paroquiaId, dados.encontroId);
+      if (dados.dataEscala && (dados.dataEscala < encontro.data_inicio || dados.dataEscala > encontro.data_fim)) throw new Error("O dia da escala precisa estar dentro do período do encontro.");
       const voluntario = await supabase.from("voluntarios").select("id").eq("id", dados.voluntarioId).eq("paroquia_id", paroquiaId).maybeSingle();
       if (voluntario.error || !voluntario.data) throw voluntario.error ?? new Error("Voluntário não encontrado nesta paróquia.");
       const { data, error } = await supabase.from("ecc_equipes").insert({
         paroquia_id: paroquiaId, encontro_id: dados.encontroId, voluntario_id: dados.voluntarioId,
         equipe: dados.equipe, funcao: dados.funcao, coordenador: dados.coordenador,
-        status: dados.status, observacoes: dados.observacoes,
+        status: dados.status, data_escala: dados.dataEscala || null, hora_inicio: dados.horaInicio || null,
+        hora_fim: dados.horaFim || null, observacoes: dados.observacoes,
       }).select("id").single();
       if (error) throw error;
       return NextResponse.json({ id: data.id }, { status: 201 });
+    }
+    if (entrada.tipo === "equipe_presenca") {
+      const dados = eccEquipePresencaSchema.parse(entrada.dados);
+      const encontro = await validarEncontro(supabase, paroquiaId, dados.encontroId);
+      if (dados.data < encontro.data_inicio || dados.data > encontro.data_fim) throw new Error("A presença da equipe deve ser registrada em um dia do encontro.");
+      const integrante = await supabase.from("ecc_equipes").select("id").eq("id", dados.equipeId).eq("encontro_id", dados.encontroId).eq("paroquia_id", paroquiaId).maybeSingle();
+      if (integrante.error || !integrante.data) throw integrante.error ?? new Error("Integrante não encontrado nesta equipe.");
+      const { data, error } = await supabase.from("ecc_equipe_presencas").upsert({
+        paroquia_id: paroquiaId, encontro_id: dados.encontroId, equipe_id: dados.equipeId, data: dados.data,
+        presente: dados.presente, registrado_em: new Date().toISOString(), registrado_por: usuario.uid,
+      }, { onConflict: "equipe_id,data" }).select("id").single();
+      if (error) throw error;
+      return NextResponse.json({ id: data.id });
     }
     if (entrada.tipo === "programacao") {
       const dados = eccProgramacaoSchema.parse(entrada.dados);
@@ -580,6 +604,14 @@ export async function PATCH(request: NextRequest) {
       if (atual.data.status !== "ENCERRADO") throw new Error("Somente uma edição encerrada pode ser reaberta.");
       tabela = "ecc_encontros";
       alteracoes = { status: "REALIZADO" };
+    } else if (entrada.tipo === "equipe") {
+      const dados = eccEquipeSchema.parse(entrada.dados);
+      const encontro = await validarEncontro(supabase, paroquiaId, dados.encontroId);
+      if (dados.dataEscala && (dados.dataEscala < encontro.data_inicio || dados.dataEscala > encontro.data_fim)) throw new Error("O dia da escala precisa estar dentro do período do encontro.");
+      tabela = "ecc_equipes";
+      alteracoes = { encontro_id: dados.encontroId, voluntario_id: dados.voluntarioId, equipe: dados.equipe, funcao: dados.funcao,
+        coordenador: dados.coordenador, status: dados.status, data_escala: dados.dataEscala || null,
+        hora_inicio: dados.horaInicio || null, hora_fim: dados.horaFim || null, observacoes: dados.observacoes };
     } else if (entrada.tipo === "casal") {
       const dados = eccCasalSchema.parse(entrada.dados);
       tabela = "ecc_casais";

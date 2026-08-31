@@ -3,6 +3,7 @@ import {
   eccCasalSchema,
   eccEncontroSchema,
   eccEquipeSchema,
+  eccEquipePresencaSchema,
   eccParticipacaoSchema,
   eccProgramacaoSchema,
   eccTarefaSchema,
@@ -20,6 +21,7 @@ import {
   type EccCasalFormData,
   type EccEncontroFormData,
   type EccEquipeFormData,
+  type EccEquipePresencaFormData,
   type EccParticipacaoFormData,
   type EccProgramacaoFormData,
   type EccTarefaFormData,
@@ -46,6 +48,8 @@ export class EccService {
   atualizarCasal(id: string, dados: EccCasalFormData) { return this.repository.atualizarCasal(id, eccCasalSchema.parse(dados)); }
   vincularCasal(dados: EccVinculoCasalFormData) { return this.repository.vincularCasal(eccVinculoCasalSchema.parse(dados)); }
   adicionarEquipe(dados: EccEquipeFormData) { return this.repository.adicionarEquipe(eccEquipeSchema.parse(dados)); }
+  atualizarEquipe(id: string, dados: EccEquipeFormData) { return this.repository.atualizarEquipe(id, eccEquipeSchema.parse(dados)); }
+  registrarPresencaEquipe(dados: EccEquipePresencaFormData) { return this.repository.registrarPresencaEquipe(eccEquipePresencaSchema.parse(dados)); }
   criarProgramacao(dados: EccProgramacaoFormData) { return this.repository.criarProgramacao(eccProgramacaoSchema.parse(dados)); }
   criarTarefa(dados: EccTarefaFormData) { return this.repository.criarTarefa(eccTarefaSchema.parse(dados)); }
   cadastrarConjugeComoVoluntario(dados: EccNovoVoluntarioFormData) { return this.repository.cadastrarConjugeComoVoluntario(eccNovoVoluntarioSchema.parse(dados)); }

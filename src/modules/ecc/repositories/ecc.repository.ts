@@ -3,6 +3,7 @@ import type {
   EccCasalFormData,
   EccEncontroFormData,
   EccEquipeFormData,
+  EccEquipePresencaFormData,
   EccParticipacaoFormData,
   EccProgramacaoFormData,
   EccTarefaFormData,
@@ -57,6 +58,8 @@ export class EccRepository {
   atualizarCasal(id: string, dados: EccCasalFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "casal", id, dados }) }); }
   vincularCasal(dados: EccVinculoCasalFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "participacao", dados }) }); }
   adicionarEquipe(dados: EccEquipeFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "equipe", dados }) }); }
+  atualizarEquipe(id: string, dados: EccEquipeFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "equipe", id, dados }) }); }
+  registrarPresencaEquipe(dados: EccEquipePresencaFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "equipe_presenca", dados }) }); }
   criarProgramacao(dados: EccProgramacaoFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "programacao", dados }) }); }
   criarTarefa(dados: EccTarefaFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "tarefa", dados }) }); }
   cadastrarConjugeComoVoluntario(dados: EccNovoVoluntarioFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "voluntario", dados }) }); }
