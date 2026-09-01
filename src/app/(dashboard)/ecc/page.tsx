@@ -327,7 +327,7 @@ export default function EccPage() {
     {!carregando && edicao && aba === "qr" && <QrCheckinEccSection encontroId={encontroId} encontroNome={`${edicao.numero}º ECC · ${edicao.nome}`} />}
     {!carregando && edicao && aba === "circulos" && <CirculosEccSection encontroId={encontroId} encontroNome={`${edicao.numero}º ECC · ${edicao.nome}`} participacoes={participacoes} credenciamentos={dados.credenciamentos} onSaved={carregar} />}
     {!carregando && edicao && aba === "arrecadacao" && <ArrecadacaoEccSection encontroId={encontroId} arrecadacoes={dados.arrecadacoes.filter((item) => item.encontroId === encontroId)} necessidades={dados.necessidades.filter((item) => item.encontroId === encontroId)} casaisDoadores={dados.casaisDoadores} onSaved={carregar} />}
-    {!carregando && edicao && aba === "gestao" && <GestaoEccSection encontroId={encontroId} dados={dados} onSaved={carregar} />}
+    {!carregando && edicao && aba === "gestao" && <GestaoEccSection encontroId={encontroId} dados={dados} onSaved={carregar} onNavigate={(destino) => { setAba(destino); window.scrollTo({ top: 0, behavior: "smooth" }); }} />}
     {!carregando && edicao && aba === "pos_encontro" && dados.podeGerenciarPosEncontro && <PosEncontroEccSection encontroId={encontroId} participacoes={participacoes} casais={dados.casais} registros={dados.posEncontro} onSaved={carregar} onCadastrarVoluntario={abrirCadastroVoluntario} />}
     {carregando ? <div className="rounded-2xl bg-white p-12 text-center text-slate-500">Carregando operação do ECC...</div> : !edicao ? <div className="rounded-2xl border bg-white p-12 text-center text-slate-500">Cadastre uma edição para começar.</div> : <>
       {aba === "secretaria" && <section className="rounded-2xl border bg-white p-5 shadow-sm">

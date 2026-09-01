@@ -5,6 +5,8 @@ import { BarChart3, CheckCircle2, ClipboardCopy, ExternalLink, FileDown, FileTex
 import toast from "react-hot-toast";
 import { useEcc } from "../hooks/useEcc";
 import { EncerramentoEccSection } from "./EncerramentoEccSection";
+import { ProntidaoEccSection } from "./ProntidaoEccSection";
+import type { AbaPendenciaEcc } from "../lib/prontidao";
 import type { EccComunicacaoFormData, EccDocumentoFormData } from "../schemas/ecc.schema";
 import type { EccPainel, EccComunicacaoStatus, EccDocumentoStatus } from "../types/ecc.types";
 
@@ -12,6 +14,7 @@ type Props = {
   encontroId: string;
   dados: EccPainel;
   onSaved: () => Promise<void>;
+  onNavigate: (aba: AbaPendenciaEcc) => void;
 };
 
 const campo = "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100";
@@ -29,7 +32,7 @@ function baixarCsv(nome: string, linhas: unknown[][]) {
   const link = document.createElement("a"); link.href = url; link.download = nome; link.click(); URL.revokeObjectURL(url);
 }
 
-export function GestaoEccSection({ encontroId, dados, onSaved }: Props) {
+export function GestaoEccSection({ encontroId, dados, onSaved, onNavigate }: Props) {
   const { criarComunicacao, criarDocumento, enviarDocumento, abrirDocumento, excluirDocumento, atualizarComunicacao, atualizarDocumento } = useEcc();
   const [formulario, setFormulario] = useState<"comunicacao" | "documento" | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -97,6 +100,7 @@ export function GestaoEccSection({ encontroId, dados, onSaved }: Props) {
   }
 
   return <section className="space-y-5">
+    <ProntidaoEccSection encontroId={encontroId} dados={dados} onNavigate={onNavigate} />
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <article className="rounded-2xl border bg-white p-5 shadow-sm"><Users className="text-blue-600" /><p className="mt-3 text-xs font-black uppercase text-slate-500">Confirmações</p><strong className="text-3xl">{confirmados}/{participacoes.length}</strong><p className="text-sm text-slate-500">casais confirmados</p></article>
       <article className="rounded-2xl border bg-white p-5 shadow-sm"><CheckCircle2 className="text-emerald-600" /><p className="mt-3 text-xs font-black uppercase text-slate-500">Plano de ação</p><strong className="text-3xl">{progressoTarefas}%</strong><p className="text-sm text-slate-500">{tarefasConcluidas} de {tarefas.length} tarefas</p></article>
