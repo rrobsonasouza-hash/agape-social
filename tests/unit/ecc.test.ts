@@ -12,6 +12,7 @@ import {
   eccArrecadacaoSchema,
   eccDespesaSchema,
   eccPosEncontroSchema,
+  eccAvaliacaoPublicaSchema,
 } from "../../src/modules/ecc/schemas/ecc.schema.ts";
 import { assinarConfirmacao, assinarEncontro, validarConfirmacao, validarEncontroAssinado } from "../../src/modules/ecc/server/checkin-token.ts";
 
@@ -142,5 +143,12 @@ describe("ECC", () => {
     assert.equal(retorno.avaliacao, 5);
     assert.deepEqual(retorno.areasInteresse, ["Acolhida", "Secretaria"]);
     assert.throws(() => eccPosEncontroSchema.parse({ ...retorno, acompanhamentoNecessario: true, acompanhamentoObservacoes: "" }));
+  });
+  it("permite ao casal avaliar o encontro sem acessar dados pastorais", () => {
+    const avaliacao = eccAvaliacaoPublicaSchema.parse({ avaliacao: 5, testemunho: "Foi uma experiência especial.", interesseTrabalhar: true, areasInteresse: ["Acolhida"] });
+    assert.equal(avaliacao.avaliacao, 5);
+    assert.equal("acompanhamentoObservacoes" in avaliacao, false);
+    assert.throws(() => eccAvaliacaoPublicaSchema.parse({ avaliacao: 6 }));
+    assert.throws(() => eccAvaliacaoPublicaSchema.parse({ avaliacao: 4, interesseTrabalhar: true, areasInteresse: [] }));
   });
 });

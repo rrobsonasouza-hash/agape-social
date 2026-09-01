@@ -233,6 +233,16 @@ export const eccPosEncontroSchema = z.object({
     contexto.addIssue({ code: "custom", path: ["areasInteresse"], message: "Selecione ao menos uma área de interesse." });
 });
 
+export const eccAvaliacaoPublicaSchema = z.object({
+  avaliacao: z.coerce.number().int().min(1, "Escolha uma avaliação de 1 a 5 estrelas.").max(5),
+  testemunho: z.string().trim().max(4000).default(""),
+  interesseTrabalhar: z.boolean().default(false),
+  areasInteresse: z.array(z.string().trim().min(2).max(100)).max(12).default([]),
+}).superRefine((dados, contexto) => {
+  if (dados.interesseTrabalhar && dados.areasInteresse.length === 0)
+    contexto.addIssue({ code: "custom", path: ["areasInteresse"], message: "Selecione ao menos uma área em que gostariam de servir." });
+});
+
 export type EccEncontroFormData = z.infer<typeof eccEncontroSchema>;
 export type EccCasalFormData = z.infer<typeof eccCasalSchema>;
 export type EccEquipeFormData = z.infer<typeof eccEquipeSchema>;
@@ -251,3 +261,4 @@ export type EccArrecadacaoFormData = z.infer<typeof eccArrecadacaoSchema>;
 export type EccNecessidadeFormData = z.infer<typeof eccNecessidadeSchema>;
 export type EccDespesaFormData = z.infer<typeof eccDespesaSchema>;
 export type EccPosEncontroFormData = z.infer<typeof eccPosEncontroSchema>;
+export type EccAvaliacaoPublicaFormData = z.infer<typeof eccAvaliacaoPublicaSchema>;

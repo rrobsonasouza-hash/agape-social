@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { HeartHandshake, MessageSquareHeart, Star, UserPlus, Users } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
+import { Copy, Download, ExternalLink, HeartHandshake, MessageSquareHeart, QrCode, Star, UserPlus, Users } from "lucide-react";
+import QRCode from "qrcode";
 import toast from "react-hot-toast";
 import { useEcc } from "../hooks/useEcc";
 import type { EccPosEncontroFormData } from "../schemas/ecc.schema";
@@ -35,10 +37,11 @@ function formInicial(encontroId: string, casalId: string, registro?: EccPosEncon
 }
 
 export function PosEncontroEccSection({ encontroId, participacoes, casais, registros, onSaved, onCadastrarVoluntario }: Props) {
-  const { salvarPosEncontro } = useEcc();
+  const { salvarPosEncontro, obterTokenCheckin } = useEcc();
   const [casalAberto, setCasalAberto] = useState("");
   const [form, setForm] = useState<EccPosEncontroFormData | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [linkPublico, setLinkPublico] = useState(""); const [qrPublico, setQrPublico] = useState("");
   const participantes = useMemo(() => participacoes.filter((item) =>
     ["INDICADO", "ENCONTRISTA", "CONVIDADO", "VISITANTE"].includes(item.classificacao) && item.situacao !== "DESISTENTE"), [participacoes]);
   const porCasal = useMemo(() => new Map(registros.filter((item) => item.encontroId === encontroId).map((item) => [item.casalId, item])), [encontroId, registros]);
@@ -47,6 +50,20 @@ export function PosEncontroEccSection({ encontroId, participacoes, casais, regis
   const interessados = [...porCasal.values()].filter((item) => item.interesseTrabalhar).length;
   const avaliacoes = [...porCasal.values()].flatMap((item) => item.avaliacao === null ? [] : [item.avaliacao]);
   const media = avaliacoes.length ? avaliacoes.reduce((total, valor) => total + valor, 0) / avaliacoes.length : 0;
+
+  useEffect(() => {
+    let ativo = true;
+    void obterTokenCheckin(encontroId).then(({ token }) => {
+      if (!ativo) return;
+      const url = `${window.location.origin}/ecc/avaliacao?encontro=${encodeURIComponent(encontroId)}&token=${encodeURIComponent(token)}`;
+      setLinkPublico(url);
+      return QRCode.toDataURL(url, { width: 640, margin: 3, errorCorrectionLevel: "H", color: { dark: "#4c1d95", light: "#ffffff" } });
+    }).then((imagem) => { if (ativo && imagem) setQrPublico(imagem); }).catch((error) => toast.error(error instanceof Error ? error.message : "Não foi possível gerar o QR da avaliação."));
+    return () => { ativo = false; };
+  }, [encontroId, obterTokenCheckin]);
+
+  async function copiarLink() { await navigator.clipboard.writeText(linkPublico); toast.success("Link da avaliação copiado."); }
+  function baixarQr() { const ancora = document.createElement("a"); ancora.href = qrPublico; ancora.download = "avaliacao-pos-encontro-ecc.png"; ancora.click(); }
 
   function abrir(casalId: string) {
     setCasalAberto(casalId);
@@ -81,6 +98,11 @@ export function PosEncontroEccSection({ encontroId, participacoes, casais, regis
       <p className="text-xs font-black uppercase tracking-[.18em] text-blue-100">Continuidade pastoral</p>
       <h2 className="mt-2 text-2xl font-black">Pós-encontro</h2>
       <p className="mt-2 max-w-3xl text-sm text-blue-100">Registre o retorno dos encontristas, organize acompanhamentos e encaminhe ao Voluntariado quem deseja trabalhar nos próximos encontros.</p>
+    </section>
+
+    <section className="grid gap-4 rounded-2xl border border-violet-200 bg-white p-5 shadow-sm md:grid-cols-[1fr_180px]">
+      <div><div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-violet-100 text-violet-700"><QrCode size={23} /></span><div><p className="text-xs font-black uppercase tracking-wider text-violet-700">Resposta sem login</p><h3 className="text-xl font-black">QR Code de avaliação dos casais</h3></div></div><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">Compartilhe este QR ao final do encontro. O casal informa telefone ou e-mail, confere os nomes e envia sua própria avaliação. Dados de acompanhamento pastoral continuam exclusivos da coordenação.</p><div className="mt-4 flex flex-wrap gap-2"><button type="button" disabled={!linkPublico} onClick={() => void copiarLink()} className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50"><Copy size={16} />Copiar link</button><a href={linkPublico || "#"} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-black text-slate-700"><ExternalLink size={16} />Abrir formulário</a><button type="button" disabled={!qrPublico} onClick={baixarQr} className="inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-black text-violet-700 disabled:opacity-50"><Download size={16} />Baixar QR</button></div></div>
+      <div className="grid place-items-center">{qrPublico ? <Image src={qrPublico} alt="QR Code da avaliação pós-encontro" width={640} height={640} unoptimized className="w-full max-w-40 rounded-xl" /> : <span className="text-sm text-slate-500">Gerando QR...</span>}</div>
     </section>
 
     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
