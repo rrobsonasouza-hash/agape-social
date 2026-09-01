@@ -27,6 +27,7 @@ import {
   eccNecessidadeSchema,
   eccDespesaSchema,
   eccEncerramentoSchema,
+  eccPosEncontroSchema,
 } from "@/modules/ecc/schemas/ecc.schema";
 import { voluntarioAtuaNoEcc } from "@/modules/ecc/server/sincronizar-casal-voluntario";
 
@@ -97,6 +98,8 @@ export async function GET(request: NextRequest) {
       if (resultado.error) throw resultado.error;
     const equipePresencas = await supabase.from("ecc_equipe_presencas").select("*").eq("paroquia_id", paroquiaId).order("data", { ascending: false });
     if (equipePresencas.error && !["42P01", "PGRST205"].includes(equipePresencas.error.code ?? "")) throw equipePresencas.error;
+    const posEncontro = await supabase.from("ecc_pos_encontro").select("*").eq("paroquia_id", paroquiaId).order("updated_at", { ascending: false });
+    if (posEncontro.error && !["42P01", "PGRST205"].includes(posEncontro.error.code ?? "")) throw posEncontro.error;
 
     const nomesVoluntarios = new Map(
       (voluntarios.data ?? []).map((item) => [
@@ -234,6 +237,15 @@ export async function GET(request: NextRequest) {
       despesas: (despesas.data ?? []).map((item) => ({
         id: item.id, encontroId: item.encontro_id, descricao: item.descricao, fornecedor: item.fornecedor ?? "",
         valor: Number(item.valor), data: item.data, status: item.status, observacoes: item.observacoes ?? "", criadoEm: item.created_at,
+      })),
+      posEncontro: (posEncontro.data ?? []).map((item) => ({
+        id: item.id, encontroId: item.encontro_id, casalId: item.casal_id,
+        casalNome: nomesCasais.get(item.casal_id) ?? "Casal não encontrado",
+        avaliacao: item.avaliacao === null ? null : Number(item.avaliacao), testemunho: item.testemunho ?? "",
+        acompanhamentoNecessario: item.acompanhamento_necessario === true,
+        acompanhamentoObservacoes: item.acompanhamento_observacoes ?? "",
+        interesseTrabalhar: item.interesse_trabalhar === true, areasInteresse: item.areas_interesse ?? [],
+        status: item.status, contatadoEm: item.contatado_em ?? "", atualizadoEm: item.updated_at,
       })),
       voluntarios: (voluntarios.data ?? [])
         .map((item) => {
@@ -481,6 +493,27 @@ export async function POST(request: NextRequest) {
       }).select("id").single();
       if (error) throw error;
       return NextResponse.json({ id: data.id }, { status: 201 });
+    }
+    if (entrada.tipo === "pos_encontro") {
+      const dados = eccPosEncontroSchema.parse(entrada.dados);
+      await validarEncontro(supabase, paroquiaId, dados.encontroId);
+      const participacao = await supabase.from("ecc_encontro_casais").select("id,classificacao")
+        .eq("encontro_id", dados.encontroId).eq("casal_id", dados.casalId).eq("paroquia_id", paroquiaId).maybeSingle();
+      if (participacao.error || !participacao.data) throw participacao.error ?? new Error("O casal não participa desta edição do ECC.");
+      if (["EQUIPE", "COORDENADOR"].includes(participacao.data.classificacao))
+        throw new Error("O pós-encontro é destinado aos casais participantes desta edição.");
+      const { data, error } = await supabase.from("ecc_pos_encontro").upsert({
+        paroquia_id: paroquiaId, encontro_id: dados.encontroId, casal_id: dados.casalId,
+        avaliacao: dados.avaliacao, testemunho: dados.testemunho,
+        acompanhamento_necessario: dados.acompanhamentoNecessario,
+        acompanhamento_observacoes: dados.acompanhamentoObservacoes,
+        interesse_trabalhar: dados.interesseTrabalhar, areas_interesse: dados.areasInteresse,
+        status: dados.status,
+        contatado_em: ["ENCAMINHADO_VOLUNTARIADO", "CONCLUIDO"].includes(dados.status) ? new Date().toISOString() : null,
+        criado_por: usuario.uid, updated_at: new Date().toISOString(),
+      }, { onConflict: "encontro_id,casal_id" }).select("id").single();
+      if (error) throw error;
+      return NextResponse.json({ id: data.id });
     }
     if (entrada.tipo === "encerramento") {
       const dados = eccEncerramentoSchema.parse(entrada.dados);

@@ -216,6 +216,23 @@ export const eccDespesaSchema = z.object({
 
 export const eccEncerramentoSchema = z.object({ encontroId: z.string().uuid("Selecione uma edição do ECC.") });
 
+export const eccPosEncontroSchema = z.object({
+  encontroId: z.string().uuid("Selecione uma edição do ECC."),
+  casalId: z.string().uuid("Selecione um casal participante."),
+  avaliacao: z.coerce.number().int().min(1).max(5).nullable().default(null),
+  testemunho: z.string().trim().max(4000).default(""),
+  acompanhamentoNecessario: z.boolean().default(false),
+  acompanhamentoObservacoes: z.string().trim().max(2000).default(""),
+  interesseTrabalhar: z.boolean().default(false),
+  areasInteresse: z.array(z.string().trim().min(2).max(100)).max(12).default([]),
+  status: z.enum(["PENDENTE", "RESPONDIDO", "EM_ACOMPANHAMENTO", "ENCAMINHADO_VOLUNTARIADO", "CONCLUIDO"]).default("PENDENTE"),
+}).superRefine((dados, contexto) => {
+  if (dados.acompanhamentoNecessario && !dados.acompanhamentoObservacoes)
+    contexto.addIssue({ code: "custom", path: ["acompanhamentoObservacoes"], message: "Informe o cuidado ou acompanhamento necessário." });
+  if (dados.interesseTrabalhar && dados.areasInteresse.length === 0)
+    contexto.addIssue({ code: "custom", path: ["areasInteresse"], message: "Selecione ao menos uma área de interesse." });
+});
+
 export type EccEncontroFormData = z.infer<typeof eccEncontroSchema>;
 export type EccCasalFormData = z.infer<typeof eccCasalSchema>;
 export type EccEquipeFormData = z.infer<typeof eccEquipeSchema>;
@@ -233,3 +250,4 @@ export type EccPresencaDiaFormData = z.infer<typeof eccPresencaDiaSchema>;
 export type EccArrecadacaoFormData = z.infer<typeof eccArrecadacaoSchema>;
 export type EccNecessidadeFormData = z.infer<typeof eccNecessidadeSchema>;
 export type EccDespesaFormData = z.infer<typeof eccDespesaSchema>;
+export type EccPosEncontroFormData = z.infer<typeof eccPosEncontroSchema>;

@@ -11,6 +11,7 @@ import {
   eccPresencaDiaSchema,
   eccArrecadacaoSchema,
   eccDespesaSchema,
+  eccPosEncontroSchema,
 } from "../../src/modules/ecc/schemas/ecc.schema.ts";
 import { assinarConfirmacao, assinarEncontro, validarConfirmacao, validarEncontroAssinado } from "../../src/modules/ecc/server/checkin-token.ts";
 
@@ -130,5 +131,16 @@ describe("ECC", () => {
     const despesa = eccDespesaSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", descricao: "Compra de alimentos", valor: 350, data: "2026-10-09", status: "PAGA" });
     assert.equal(despesa.status, "PAGA");
     assert.equal(despesa.valor, 350);
+  });
+  it("registra o retorno e o interesse do casal no pos-encontro", () => {
+    const retorno = eccPosEncontroSchema.parse({
+      encontroId: "11111111-1111-4111-8111-111111111111",
+      casalId: "22222222-2222-4222-8222-222222222222",
+      avaliacao: 5, testemunho: "O encontro fortaleceu nossa caminhada.",
+      interesseTrabalhar: true, areasInteresse: ["Acolhida", "Secretaria"],
+    });
+    assert.equal(retorno.avaliacao, 5);
+    assert.deepEqual(retorno.areasInteresse, ["Acolhida", "Secretaria"]);
+    assert.throws(() => eccPosEncontroSchema.parse({ ...retorno, acompanhamentoNecessario: true, acompanhamentoObservacoes: "" }));
   });
 });

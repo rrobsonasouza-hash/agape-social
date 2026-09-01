@@ -16,6 +16,7 @@ import { ConvitesEccSection } from "@/modules/ecc/components/ConvitesEccSection"
 import { CirculosEccSection } from "@/modules/ecc/components/CirculosEccSection";
 import { EquipesEccSection } from "@/modules/ecc/components/EquipesEccSection";
 import { QrCheckinEccSection } from "@/modules/ecc/components/QrCheckinEccSection";
+import { PosEncontroEccSection } from "@/modules/ecc/components/PosEncontroEccSection";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { calcularDistanciaKm } from "@/lib/geo/distance";
 import { maskTelefone } from "@/lib/formatters/masks";
@@ -32,7 +33,7 @@ import type {
 const hoje = new Date().toISOString().slice(0, 10);
 const enderecoService = new EnderecoService();
 const vazio: EccPainel = {
-  encontros: [], casais: [], participacoes: [], equipe: [], equipePresencas: [], programacao: [], tarefas: [], visitas: [], comunicacoes: [], documentos: [], credenciamentos: [], presencasDiarias: [], arrecadacoes: [], necessidades: [], despesas: [], voluntarios: [], casaisDoadores: [],
+  encontros: [], casais: [], participacoes: [], equipe: [], equipePresencas: [], programacao: [], tarefas: [], visitas: [], comunicacoes: [], documentos: [], credenciamentos: [], presencasDiarias: [], arrecadacoes: [], necessidades: [], despesas: [], posEncontro: [], voluntarios: [], casaisDoadores: [],
   paroquia: { nome: "Paróquia", latitude: null, longitude: null },
   podeGerenciarVisitas: false,
 };
@@ -91,7 +92,7 @@ export default function EccPage() {
   const [dados, setDados] = useState(vazio);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState("");
-  const [aba, setAba] = useState<"secretaria" | "visitas" | "mapa" | "cronograma" | "tarefas" | "equipes" | "credenciamento" | "qr" | "circulos" | "arrecadacao" | "gestao">("secretaria");
+  const [aba, setAba] = useState<"secretaria" | "visitas" | "mapa" | "cronograma" | "tarefas" | "equipes" | "credenciamento" | "qr" | "circulos" | "arrecadacao" | "gestao" | "pos_encontro">("secretaria");
   const [formulario, setFormulario] = useState<"encontro" | "casal" | "equipe" | "programacao" | "tarefa" | "voluntario" | null>(null);
   const [encontroId, setEncontroId] = useState("");
   const [encontro, setEncontro] = useState(encontroInicial);
@@ -263,8 +264,8 @@ export default function EccPage() {
       <Metrica icon={ListTodo} titulo="Pendências" valor={tarefasPendentes.length} apoio="Tarefas a concluir" />
     </section>
 
-    <nav className="grid max-w-full grid-cols-2 gap-2 rounded-2xl border bg-white p-2 shadow-sm sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-11">{[
-      ["secretaria", "Secretaria", Users], ["visitas", "Visitas", House], ["mapa", "Mapa e distâncias", MapPin], ["cronograma", "Cronograma", Clock3], ["tarefas", "Tarefas", ClipboardCheck], ["equipes", "Equipes", HeartHandshake], ["credenciamento", "Credenciamento", BadgeCheck], ["qr", "QR Check-in", QrCode], ["circulos", "Círculos e cuidados", Palette], ["arrecadacao", "Compras e doações", ShoppingCart], ["gestao", "Gestão e relatórios", BarChart3],
+    <nav className="grid max-w-full grid-cols-2 gap-2 rounded-2xl border bg-white p-2 shadow-sm sm:grid-cols-3 lg:grid-cols-5 2xl:grid-cols-12">{[
+      ["secretaria", "Secretaria", Users], ["visitas", "Visitas", House], ["mapa", "Mapa e distâncias", MapPin], ["cronograma", "Cronograma", Clock3], ["tarefas", "Tarefas", ClipboardCheck], ["equipes", "Equipes", HeartHandshake], ["credenciamento", "Credenciamento", BadgeCheck], ["qr", "QR Check-in", QrCode], ["circulos", "Círculos e cuidados", Palette], ["arrecadacao", "Compras e doações", ShoppingCart], ["gestao", "Gestão e relatórios", BarChart3], ["pos_encontro", "Pós-encontro", HeartHandshake],
     ].filter(([valor]) => valor !== "visitas" || dados.podeGerenciarVisitas).map(([valor, nome, Icon]) => <button key={String(valor)} onClick={() => { setAba(valor as typeof aba); setFormulario(null); setCasalEmEdicao(""); }} className={`inline-flex min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-3 text-center text-sm font-black leading-tight ${aba === valor ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-50"}`}><Icon className="shrink-0" size={17} /><span className="min-w-0">{String(nome)}</span></button>)}</nav>
 
     {aba === "secretaria" && participacoes.length > 0 && <section className="rounded-2xl border bg-white p-4 shadow-sm"><p className="text-sm font-black text-slate-900">Papel do casal nesta edição</p><p className="mt-1 text-xs text-slate-500">O casal possui um único papel por edição: participa do encontro ou trabalha nele. O histórico dos demais encontros é preservado.</p><div className="mt-3 grid gap-2 md:grid-cols-2">{participacoes.map((item) => { const registro = dados.casais.find((casalItem) => casalItem.id === item.casalId); const servico = papeisServico.includes(item.classificacao); const vinculoIncompleto = servico && registro && (!registro.voluntarioUmId || !registro.voluntarioDoisId); return <div key={item.id} className={`rounded-xl p-3 ${servico ? "bg-amber-50" : "bg-blue-50/60"}`}><div className="flex flex-wrap items-center justify-between gap-2"><div><strong className="text-sm">{item.casalNome}</strong><p className={`mt-1 text-xs font-bold ${servico ? "text-amber-800" : "text-blue-700"}`}>{servico ? "Trabalha no encontro" : "Participa do encontro"}{vinculoIncompleto ? " · cadastro de voluntários pendente" : ""}</p></div><div className="flex gap-2"><select value={item.classificacao} onChange={(e) => void executar(`classificacao-${item.id}`, () => atualizarParticipacao(item.id, { situacao: item.situacao, classificacao: e.target.value as EccClassificacaoParticipacao, observacoes: item.observacoes }), "Papel do casal atualizado nesta edição.")} className="rounded-lg border bg-white px-2 py-2 text-xs font-bold"><optgroup label="Participará do encontro">{papeisParticipantes.map((valor) => <option key={valor} value={valor}>{classificacaoParticipacao[valor]}</option>)}</optgroup><optgroup label="Trabalhará no encontro">{papeisServico.map((valor) => <option key={valor} value={valor}>{classificacaoParticipacao[valor]}</option>)}</optgroup></select><button type="button" onClick={() => editarCasal(item.casalId)} className="rounded-lg border bg-white px-3 py-2 text-xs font-bold text-blue-700">Cadastro</button></div></div></div>; })}</div></section>}
@@ -326,6 +327,7 @@ export default function EccPage() {
     {!carregando && edicao && aba === "circulos" && <CirculosEccSection encontroId={encontroId} encontroNome={`${edicao.numero}º ECC · ${edicao.nome}`} participacoes={participacoes} credenciamentos={dados.credenciamentos} onSaved={carregar} />}
     {!carregando && edicao && aba === "arrecadacao" && <ArrecadacaoEccSection encontroId={encontroId} arrecadacoes={dados.arrecadacoes.filter((item) => item.encontroId === encontroId)} necessidades={dados.necessidades.filter((item) => item.encontroId === encontroId)} casaisDoadores={dados.casaisDoadores} onSaved={carregar} />}
     {!carregando && edicao && aba === "gestao" && <GestaoEccSection encontroId={encontroId} dados={dados} onSaved={carregar} />}
+    {!carregando && edicao && aba === "pos_encontro" && <PosEncontroEccSection encontroId={encontroId} participacoes={participacoes} casais={dados.casais} registros={dados.posEncontro} onSaved={carregar} onCadastrarVoluntario={abrirCadastroVoluntario} />}
     {carregando ? <div className="rounded-2xl bg-white p-12 text-center text-slate-500">Carregando operação do ECC...</div> : !edicao ? <div className="rounded-2xl border bg-white p-12 text-center text-slate-500">Cadastre uma edição para começar.</div> : <>
       {aba === "secretaria" && <section className="rounded-2xl border bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-end justify-between gap-4">

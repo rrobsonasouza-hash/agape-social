@@ -11,6 +11,7 @@ export type EccDocumentoStatus = "PENDENTE" | "DISPONIVEL" | "ARQUIVADO";
 export type EccCredenciamentoStatus = "AGUARDANDO" | "CREDENCIADO" | "AUSENTE" | "CANCELADO";
 export type EccArrecadacaoStatus = "PENDENTE" | "PARCIAL" | "RECEBIDO" | "CANCELADO";
 export type EccDespesaStatus = "PENDENTE" | "PAGA" | "CANCELADA";
+export type EccPosEncontroStatus = "PENDENTE" | "RESPONDIDO" | "EM_ACOMPANHAMENTO" | "ENCAMINHADO_VOLUNTARIADO" | "CONCLUIDO";
 
 export type EccEncontro = {
   id: string; numero: number; nome: string; tema: string; lema: string; dataInicio: string; dataFim: string;
@@ -114,10 +115,17 @@ export type EccDespesa = {
   status: EccDespesaStatus; observacoes: string; criadoEm: string;
 };
 
+export type EccPosEncontro = {
+  id: string; encontroId: string; casalId: string; casalNome: string; avaliacao: number | null;
+  testemunho: string; acompanhamentoNecessario: boolean; acompanhamentoObservacoes: string;
+  interesseTrabalhar: boolean; areasInteresse: string[]; status: EccPosEncontroStatus;
+  contatadoEm: string; atualizadoEm: string;
+};
+
 export type EccPainel = {
   encontros: EccEncontro[]; casais: EccCasal[]; participacoes: EccParticipacao[]; equipe: EccEquipe[]; equipePresencas: EccEquipePresenca[];
   programacao: EccProgramacao[]; tarefas: EccTarefa[]; visitas: EccVisita[]; comunicacoes: EccComunicacao[];
-  documentos: EccDocumento[]; credenciamentos: EccCredenciamento[]; presencasDiarias: EccPresencaDia[]; arrecadacoes: EccArrecadacao[]; necessidades: EccNecessidade[]; despesas: EccDespesa[];
+  documentos: EccDocumento[]; credenciamentos: EccCredenciamento[]; presencasDiarias: EccPresencaDia[]; arrecadacoes: EccArrecadacao[]; necessidades: EccNecessidade[]; despesas: EccDespesa[]; posEncontro: EccPosEncontro[];
   voluntarios: EccVoluntarioResumo[]; casaisDoadores: EccCasalDoador[];
   paroquia: { nome: string; latitude: number | null; longitude: number | null };
   podeGerenciarVisitas: boolean;

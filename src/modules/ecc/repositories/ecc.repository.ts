@@ -17,6 +17,7 @@ import type {
   EccArrecadacaoFormData,
   EccNecessidadeFormData,
   EccDespesaFormData,
+  EccPosEncontroFormData,
 } from "../schemas/ecc.schema";
 import type { EccComunicacaoStatus, EccDocumentoStatus, EccPainel, EccProgramacaoStatus, EccTarefaStatus } from "../types/ecc.types";
 
@@ -87,6 +88,7 @@ export class EccRepository {
   atualizarNecessidade(id: string, dados: EccNecessidadeFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "necessidade", id, dados }) }); }
   criarDespesa(dados: EccDespesaFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "despesa", dados }) }); }
   atualizarDespesa(id: string, dados: EccDespesaFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "despesa", id, dados }) }); }
+  salvarPosEncontro(dados: EccPosEncontroFormData) { return requisicao<{ id: string }>({ method: "POST", body: JSON.stringify({ tipo: "pos_encontro", dados }) }); }
   encerrarEdicao(encontroId: string) { return requisicao<{ id: string; participantesConcluidos: number }>({ method: "POST", body: JSON.stringify({ tipo: "encerramento", dados: { encontroId } }) }); }
   atualizarVisita(id: string, dados: EccVisitaFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "visita", id, dados }) }); }
   atualizarParticipacao(id: string, dados: EccParticipacaoFormData) { return requisicao<{ id: string }>({ method: "PATCH", body: JSON.stringify({ tipo: "participacao", id, dados }) }); }
