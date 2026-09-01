@@ -238,7 +238,7 @@ export async function GET(request: NextRequest) {
         id: item.id, encontroId: item.encontro_id, descricao: item.descricao, fornecedor: item.fornecedor ?? "",
         valor: Number(item.valor), data: item.data, status: item.status, observacoes: item.observacoes ?? "", criadoEm: item.created_at,
       })),
-      posEncontro: (posEncontro.data ?? []).map((item) => ({
+      posEncontro: (PERFIS_ESCRITA.includes(usuario.role) ? posEncontro.data ?? [] : []).map((item) => ({
         id: item.id, encontroId: item.encontro_id, casalId: item.casal_id,
         casalNome: nomesCasais.get(item.casal_id) ?? "Casal não encontrado",
         avaliacao: item.avaliacao === null ? null : Number(item.avaliacao), testemunho: item.testemunho ?? "",
@@ -272,6 +272,7 @@ export async function GET(request: NextRequest) {
         longitude: paroquia.longitude === null ? null : Number(paroquia.longitude),
       },
       podeGerenciarVisitas: PERFIS_ESCRITA.includes(usuario.role),
+      podeGerenciarPosEncontro: PERFIS_ESCRITA.includes(usuario.role),
     });
   } catch (error) {
     return erro(error);

@@ -129,4 +129,5 @@ export type EccPainel = {
   voluntarios: EccVoluntarioResumo[]; casaisDoadores: EccCasalDoador[];
   paroquia: { nome: string; latitude: number | null; longitude: number | null };
   podeGerenciarVisitas: boolean;
+  podeGerenciarPosEncontro: boolean;
 };

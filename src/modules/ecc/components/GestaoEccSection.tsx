@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
-import { BarChart3, CheckCircle2, ClipboardCopy, ExternalLink, FileDown, FileText, Mail, MessageCircle, Plus, Printer, Trash2, UploadCloud, Users } from "lucide-react";
+import { BarChart3, CheckCircle2, ClipboardCopy, ExternalLink, FileDown, FileText, HeartHandshake, Mail, MessageCircle, Plus, Printer, Star, Trash2, UploadCloud, UserPlus, Users } from "lucide-react";
 import toast from "react-hot-toast";
 import { useEcc } from "../hooks/useEcc";
 import { EncerramentoEccSection } from "./EncerramentoEccSection";
@@ -46,9 +46,16 @@ export function GestaoEccSection({ encontroId, dados, onSaved }: Props) {
   const comunicacoes = useMemo(() => dados.comunicacoes.filter((item) => item.encontroId === encontroId), [dados.comunicacoes, encontroId]);
   const documentos = useMemo(() => dados.documentos.filter((item) => item.encontroId === encontroId), [dados.documentos, encontroId]);
   const credenciamentos = useMemo(() => dados.credenciamentos.filter((item) => item.encontroId === encontroId), [dados.credenciamentos, encontroId]);
+  const posEncontro = useMemo(() => dados.posEncontro.filter((item) => item.encontroId === encontroId), [dados.posEncontro, encontroId]);
+  const casaisParticipantes = participacoes.filter((item) => ["INDICADO", "ENCONTRISTA", "CONVIDADO", "VISITANTE"].includes(item.classificacao) && item.situacao !== "DESISTENTE");
   const confirmados = participacoes.filter((item) => ["CONFIRMADO", "PARTICIPOU"].includes(item.situacao)).length;
   const tarefasConcluidas = tarefas.filter((item) => item.status === "CONCLUIDA").length;
   const progressoTarefas = tarefas.length ? Math.round((tarefasConcluidas / tarefas.length) * 100) : 0;
+  const notas = posEncontro.flatMap((item) => item.avaliacao === null ? [] : [item.avaliacao]);
+  const mediaAvaliacao = notas.length ? notas.reduce((total, nota) => total + nota, 0) / notas.length : 0;
+  const taxaResposta = casaisParticipantes.length ? Math.round((posEncontro.length / casaisParticipantes.length) * 100) : 0;
+  const distribuicaoNotas = [5, 4, 3, 2, 1].map((nota) => ({ nota, quantidade: notas.filter((valor) => valor === nota).length }));
+  const areasInteresse = [...posEncontro.flatMap((item) => item.areasInteresse).reduce((mapa, area) => mapa.set(area, (mapa.get(area) ?? 0) + 1), new Map<string, number>()).entries()].sort((a, b) => b[1] - a[1]);
 
   async function salvarComunicacao(event: FormEvent) {
     event.preventDefault(); setSalvando(true);
@@ -83,6 +90,11 @@ export function GestaoEccSection({ encontroId, dados, onSaved }: Props) {
     tarefas.forEach((item) => linhas.push(["Tarefa", item.titulo, item.responsavelNome || item.equipe, item.prazo, item.status]));
     baixarCsv(`ecc-${edicao?.numero ?? "edicao"}-operacao.csv`, linhas);
   }
+  function exportarPosEncontro() {
+    const linhas: unknown[][] = [["Casal", "Avaliação", "Testemunho", "Interesse em servir", "Áreas", "Acompanhamento pastoral", "Observações do acompanhamento", "Situação"]];
+    for (const item of posEncontro) linhas.push([item.casalNome, item.avaliacao ?? "", item.testemunho, item.interesseTrabalhar ? "Sim" : "Não", item.areasInteresse.join(", "), item.acompanhamentoNecessario ? "Sim" : "Não", item.acompanhamentoObservacoes, item.status]);
+    baixarCsv(`ecc-${edicao?.numero ?? "edicao"}-pos-encontro.csv`, linhas);
+  }
 
   return <section className="space-y-5">
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -91,6 +103,12 @@ export function GestaoEccSection({ encontroId, dados, onSaved }: Props) {
       <article className="rounded-2xl border bg-white p-5 shadow-sm"><MessageCircle className="text-amber-600" /><p className="mt-3 text-xs font-black uppercase text-slate-500">Comunicações</p><strong className="text-3xl">{comunicacoes.length}</strong><p className="text-sm text-slate-500">{comunicacoes.filter((item) => item.status === "ENVIADA").length} enviadas</p></article>
       <article className="rounded-2xl border bg-white p-5 shadow-sm"><FileText className="text-violet-600" /><p className="mt-3 text-xs font-black uppercase text-slate-500">Documentos</p><strong className="text-3xl">{documentos.length}</strong><p className="text-sm text-slate-500">{documentos.filter((item) => item.status === "DISPONIVEL").length} disponíveis</p></article>
     </div>
+
+    {dados.podeGerenciarPosEncontro && <article className="rounded-2xl border bg-white p-5 shadow-sm"><div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="flex items-center gap-2 text-xl font-black"><HeartHandshake size={21} />Decisões do pós-encontro</h2><p className="text-sm text-slate-500">Transforme as respostas dos casais em acompanhamento e planejamento para a próxima edição.</p></div><button type="button" onClick={exportarPosEncontro} disabled={!posEncontro.length} className="inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-black text-violet-700 disabled:opacity-50"><FileDown size={16} />Exportar respostas</button></div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><div className="rounded-xl bg-violet-50 p-4"><MessageCircle className="text-violet-700" size={20} /><p className="mt-2 text-xs font-black uppercase text-slate-500">Adesão</p><strong className="text-2xl">{taxaResposta}%</strong><p className="text-xs text-slate-500">{posEncontro.length} de {casaisParticipantes.length} casais</p></div><div className="rounded-xl bg-amber-50 p-4"><Star className="text-amber-500" size={20} /><p className="mt-2 text-xs font-black uppercase text-slate-500">Avaliação média</p><strong className="text-2xl">{mediaAvaliacao ? mediaAvaliacao.toFixed(1) : "—"}</strong><p className="text-xs text-slate-500">de 5 estrelas</p></div><div className="rounded-xl bg-rose-50 p-4"><HeartHandshake className="text-rose-600" size={20} /><p className="mt-2 text-xs font-black uppercase text-slate-500">Cuidado pastoral</p><strong className="text-2xl">{posEncontro.filter((item) => item.acompanhamentoNecessario && item.status !== "CONCLUIDO").length}</strong><p className="text-xs text-slate-500">acompanhamentos abertos</p></div><div className="rounded-xl bg-emerald-50 p-4"><UserPlus className="text-emerald-700" size={20} /><p className="mt-2 text-xs font-black uppercase text-slate-500">Próximos voluntários</p><strong className="text-2xl">{posEncontro.filter((item) => item.interesseTrabalhar).length}</strong><p className="text-xs text-slate-500">casais interessados</p></div></div>
+      <div className="mt-5 grid gap-5 lg:grid-cols-2"><div><h3 className="text-sm font-black text-slate-800">Distribuição das avaliações</h3><div className="mt-3 space-y-2">{distribuicaoNotas.map((item) => { const percentual = notas.length ? Math.round((item.quantidade / notas.length) * 100) : 0; return <div key={item.nota} className="grid grid-cols-[72px_1fr_48px] items-center gap-2 text-xs"><span className="font-bold text-slate-600">{item.nota} estrela{item.nota > 1 ? "s" : ""}</span><span className="h-2 overflow-hidden rounded-full bg-slate-100"><span className="block h-full rounded-full bg-amber-400" style={{ width: `${percentual}%` }} /></span><strong className="text-right">{item.quantidade}</strong></div>; })}</div></div><div><h3 className="text-sm font-black text-slate-800">Áreas com maior interesse</h3><div className="mt-3 flex flex-wrap gap-2">{areasInteresse.map(([area, quantidade]) => <span key={area} className="rounded-full bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800">{area} · {quantidade}</span>)}{!areasInteresse.length && <p className="text-sm text-slate-500">Nenhuma área indicada até o momento.</p>}</div></div></div>
+      {posEncontro.some((item) => item.avaliacao !== null && item.avaliacao <= 2) && <p className="mt-5 rounded-xl bg-amber-50 p-3 text-sm text-amber-900"><strong>Atenção da coordenação:</strong> existem avaliações de 1 ou 2 estrelas. Consulte a exportação e os testemunhos para entender os pontos de melhoria.</p>}
+    </article>}
 
     <EncerramentoEccSection encontroId={encontroId} dados={dados} onSaved={onSaved} />
 
