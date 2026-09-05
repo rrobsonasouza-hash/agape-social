@@ -37,6 +37,15 @@ export class ErroDuplicidadeFamilia extends Error {
   }
 }
 
+export function ehErroChaveUnicaFamilia(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+  const banco = error as { code?: unknown; message?: unknown };
+  return banco.code === "23505" &&
+    typeof banco.message === "string" &&
+    (banco.message.includes("familias_cpf_unico_por_paroquia") ||
+      banco.message.includes("familias_rg_unico_por_paroquia"));
+}
+
 export function normalizarCpf(valor: unknown) {
   return typeof valor === "string" ? valor.replace(/\D/g, "") : "";
 }

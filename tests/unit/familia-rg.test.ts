@@ -5,6 +5,7 @@ import { familiaSchema } from "../../src/modules/familias/schemas/familia.schema
 import {
   encontrarDuplicidadeFamilia,
   ErroDuplicidadeFamilia,
+  ehErroChaveUnicaFamilia,
 } from "../../src/modules/familias/duplicidade.ts";
 
 describe("documentos da família", () => {
@@ -67,5 +68,10 @@ describe("duplicidade de família", () => {
     );
     assert.ok(duplicidade);
     assert.match(new ErroDuplicidadeFamilia(duplicidade).message, /está inativo/i);
+  });
+
+  it("reconhece a proteção definitiva do banco para CPF e RG", () => {
+    assert.equal(ehErroChaveUnicaFamilia({ code: "23505", message: "duplicate key familias_rg_unico_por_paroquia" }), true);
+    assert.equal(ehErroChaveUnicaFamilia({ code: "23505", message: "outra_constraint" }), false);
   });
 });

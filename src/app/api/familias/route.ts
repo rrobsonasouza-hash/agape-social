@@ -8,6 +8,7 @@ import { familiaCadastroSchema } from "@/modules/familias/schemas/familia.schema
 import {
   encontrarDuplicidadeFamilia,
   ErroDuplicidadeFamilia,
+  ehErroChaveUnicaFamilia,
 } from "@/modules/familias/duplicidade";
 import { ZodError } from "zod";
 
@@ -22,6 +23,7 @@ async function contexto(request: NextRequest, escrita = false) {
 }
 
 function respostaErro(error: unknown) {
+  if (ehErroChaveUnicaFamilia(error)) return NextResponse.json({ erro: "Já existe uma família cadastrada com este CPF ou RG. Localize e atualize o cadastro existente." }, { status: 409 });
   if (error instanceof ZodError) return NextResponse.json({ erro: error.issues[0]?.message ?? "Dados inválidos.", detalhes: error.flatten().fieldErrors }, { status: 400 });
   if (error instanceof ErroDuplicidadeFamilia)
     return NextResponse.json({ erro: error.message, cadastroExistenteId: error.duplicidade.id }, { status: 409 });

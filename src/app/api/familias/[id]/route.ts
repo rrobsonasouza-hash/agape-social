@@ -7,6 +7,7 @@ import { familiaSchema } from "@/modules/familias/schemas/familia.schema";
 import {
   encontrarDuplicidadeFamilia,
   ErroDuplicidadeFamilia,
+  ehErroChaveUnicaFamilia,
 } from "@/modules/familias/duplicidade";
 import { ZodError } from "zod";
 
@@ -21,6 +22,7 @@ async function contexto(request: NextRequest, escrita = false) {
 }
 
 function respostaErro(error: unknown) {
+  if (ehErroChaveUnicaFamilia(error)) return NextResponse.json({ erro: "Já existe uma família cadastrada com este CPF ou RG. Localize e atualize o cadastro existente." }, { status: 409 });
   if (error instanceof ZodError) return NextResponse.json({ erro: error.issues[0]?.message ?? "Dados inválidos.", detalhes: error.flatten().fieldErrors }, { status: 400 });
   if (error instanceof ErroDuplicidadeFamilia)
     return NextResponse.json({ erro: error.message, cadastroExistenteId: error.duplicidade.id }, { status: 409 });
@@ -72,6 +74,14 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
     if (atual.error) throw atual.error;
     if (!atual.data) return NextResponse.json({ erro: "Família não encontrada." }, { status: 404 });
     const dados = familiaSchema.parse({ ...(atual.data.dados as Record<string, unknown>), ...alteracoes });
+    const existentes = await supabase.from("familias").select("id,dados").eq("paroquia_id", paroquiaId);
+    if (existentes.error) throw existentes.error;
+    const duplicidade = encontrarDuplicidadeFamilia(
+      dados,
+      (existentes.data ?? []).map((item) => ({ id: String(item.id), dados: item.dados as Record<string, unknown> })),
+      id,
+    );
+    if (duplicidade) throw new ErroDuplicidadeFamilia(duplicidade);
     const { error } = await supabase.from("familias").update({ dados, updated_at: new Date().toISOString() }).eq("id", id).eq("paroquia_id", paroquiaId);
     if (error) throw error;
     return NextResponse.json({ id });
