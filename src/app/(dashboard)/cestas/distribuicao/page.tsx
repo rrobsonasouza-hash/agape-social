@@ -9,6 +9,7 @@ import {
   Plus,
   Printer,
   Search,
+  Trash2,
   Undo2,
   UserX,
 } from "lucide-react";
@@ -64,6 +65,7 @@ export default function DistribuicaoCestasPage() {
   const [datasDistribuicao, setDatasDistribuicao] = useState<ResumoDataDistribuicao[]>([]);
   const [atualizando, setAtualizando] = useState<string | null>(null);
   const [finalizandoEmMassa, setFinalizandoEmMassa] = useState(false);
+  const [agendamentoParaExcluir, setAgendamentoParaExcluir] = useState<DistribuicaoDocumento | null>(null);
   const [logoParoquia, setLogoParoquia] = useState<string | null>(null);
 
   const carregarLista = useCallback(async () => {
@@ -245,6 +247,22 @@ export default function DistribuicaoCestasPage() {
       toast.error(error instanceof Error ? error.message : "Não foi possível registrar as ausências.");
     } finally {
       setFinalizandoEmMassa(false);
+    }
+  }
+
+  async function excluirAgendamentoIndividual() {
+    if (!agendamentoParaExcluir) return;
+    try {
+      setAtualizando(agendamentoParaExcluir.id);
+      const resultado = await excluirAgendadas([agendamentoParaExcluir.id]);
+      if (resultado.removidas !== 1) throw new Error("O agendamento não estava mais pendente.");
+      setAgendamentoParaExcluir(null);
+      await carregarLista();
+      toast.success("Agendamento removido da lista.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível remover o agendamento.");
+    } finally {
+      setAtualizando(null);
     }
   }
 
@@ -659,7 +677,7 @@ export default function DistribuicaoCestasPage() {
               </div>
             </div>
             {item.status === "AGENDADA" ? (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <button
                   disabled={atualizando === item.id}
                   onClick={() => finalizar(item, "RETIRADA")}
@@ -680,6 +698,13 @@ export default function DistribuicaoCestasPage() {
                   className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-semibold text-white"
                 >
                   <Home size={18} /> Em casa
+                </button>
+                <button
+                  disabled={atualizando === item.id}
+                  onClick={() => setAgendamentoParaExcluir(item)}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-3 text-sm font-semibold text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 size={18} /> Remover
                 </button>
               </div>
             ) : (
@@ -707,6 +732,19 @@ export default function DistribuicaoCestasPage() {
           </div>
         )}
       </div>
+
+      {agendamentoParaExcluir && (
+        <div role="dialog" aria-modal="true" aria-labelledby="titulo-remover-agendamento" className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 id="titulo-remover-agendamento" className="text-xl font-bold">Remover agendamento?</h2>
+            <p className="mt-3 text-sm text-slate-600">Será removida somente a linha agendada de {agendamentoParaExcluir.familiaNome} em {new Date(`${agendamentoParaExcluir.data}T00:00:00`).toLocaleDateString("pt-BR")}. Entregas concluídas e o estoque não serão alterados.</p>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" disabled={atualizando === agendamentoParaExcluir.id} onClick={() => setAgendamentoParaExcluir(null)} className="rounded-lg bg-slate-200 px-4 py-3 font-semibold text-slate-900">Cancelar</button>
+              <button type="button" disabled={atualizando === agendamentoParaExcluir.id} onClick={() => void excluirAgendamentoIndividual()} className="rounded-lg bg-red-700 px-4 py-3 font-semibold text-white disabled:opacity-60">{atualizando === agendamentoParaExcluir.id ? "Removendo..." : "Confirmar remoção"}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
