@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 
 import { contextoOperacional, respostaErroOperacional } from "@/lib/supabase/operational-api";
+import { resolverNomeAtualDaFamilia } from "@/modules/distribuicoes/nome-familia";
 import { distribuicaoSchema } from "@/modules/distribuicoes/schemas/distribuicao.schema";
 
 const PERFIS_LEITURA = ["admin_plataforma", "admin_paroquia", "coordenador", "operador", "voluntario"];
@@ -45,8 +46,7 @@ export async function GET(request: NextRequest) {
     ]));
     const registros: Array<Record<string, unknown> & { id: string }> = linhas.map((item) => {
       const dados = item.dados as Record<string, unknown>;
-      const familiaId = typeof dados.familiaId === "string" ? dados.familiaId : "";
-      const familiaNome = dados.status === "AGENDADA" ? nomesAtuais.get(familiaId) || dados.familiaNome : dados.familiaNome;
+      const familiaNome = resolverNomeAtualDaFamilia(dados, nomesAtuais);
       return { id: String(item.id), ...dados, familiaNome };
     });
     registros.sort((a, b) => String(a.familiaNome).localeCompare(String(b.familiaNome)));

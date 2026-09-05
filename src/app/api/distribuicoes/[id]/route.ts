@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, context: Contexto) {
     if (!consulta.data) return NextResponse.json(null);
     const dados = consulta.data.dados as Record<string, unknown>;
     let familiaNome = dados.familiaNome;
-    if (dados.status === "AGENDADA" && typeof dados.familiaId === "string") {
+    if (typeof dados.familiaId === "string" && dados.familiaId) {
       const familia = await supabase
         .from("familias")
         .select("dados")
