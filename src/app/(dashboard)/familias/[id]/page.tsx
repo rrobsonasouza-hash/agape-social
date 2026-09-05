@@ -61,6 +61,7 @@ export default function DetalhesFamiliaPage() {
   const [familia, setFamilia] = useState<FamiliaDocumento | null>(null);
   const [duplicado, setDuplicado] = useState<FamiliaDocumento | null>(null);
   const [mesclando, setMesclando] = useState(false);
+  const [confirmandoMesclagem, setConfirmandoMesclagem] = useState(false);
 
   const [carregando, setCarregando] = useState(true);
 
@@ -171,11 +172,11 @@ export default function DetalhesFamiliaPage() {
 
   async function consolidarDuplicado() {
     if (!familia || !duplicado) return;
-    if (!window.confirm(`Consolidar os dados de “${duplicado.nomeResponsavel}” neste cadastro e excluir definitivamente o registro duplicado?`)) return;
     try {
       setMesclando(true);
       await mesclarDuplicado(familia.id, duplicado.id);
       setDuplicado(null);
+      setConfirmandoMesclagem(false);
       toast.success("Cadastros consolidados e histórico preservado.");
       router.refresh();
     } catch (error) {
@@ -415,9 +416,22 @@ export default function DetalhesFamiliaPage() {
         <div className="rounded-xl border border-orange-300 bg-orange-50 p-4 text-orange-950">
           <p className="font-semibold">Cadastro duplicado encontrado</p>
           <p className="mt-1 text-sm">O CPF ou RG também está associado a {duplicado.nomeResponsavel}. O histórico pode ser reunido neste cadastro.</p>
-          <Button type="button" disabled={mesclando} onClick={consolidarDuplicado} className="mt-3 flex items-center gap-2 bg-orange-700 hover:bg-orange-800">
+          <Button type="button" disabled={mesclando} onClick={() => setConfirmandoMesclagem(true)} className="mt-3 flex items-center gap-2 bg-orange-700 hover:bg-orange-800">
             <GitMerge size={18} />{mesclando ? "Consolidando..." : "Consolidar e remover duplicado"}
           </Button>
+        </div>
+      )}
+
+      {confirmandoMesclagem && duplicado && (
+        <div role="dialog" aria-modal="true" aria-labelledby="titulo-consolidacao" className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 id="titulo-consolidacao" className="text-xl font-bold">Confirmar consolidação</h2>
+            <p className="mt-3 text-sm text-slate-600">Todo o histórico de {duplicado.nomeResponsavel} será transferido para este cadastro. O registro duplicado será excluído definitivamente.</p>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <Button type="button" disabled={mesclando} onClick={() => setConfirmandoMesclagem(false)} className="bg-slate-200 text-slate-900 hover:bg-slate-300">Cancelar</Button>
+              <Button type="button" disabled={mesclando} onClick={consolidarDuplicado} className="bg-red-700 hover:bg-red-800">{mesclando ? "Consolidando..." : "Confirmar e excluir duplicado"}</Button>
+            </div>
+          </div>
         </div>
       )}
 
