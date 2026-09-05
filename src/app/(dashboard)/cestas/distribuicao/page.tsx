@@ -83,7 +83,6 @@ export default function DistribuicaoCestasPage() {
       .then(([f, c]) => {
         setFamilias(
           f
-            .filter((item) => item.status === "ATIVA")
             .sort((a, b) =>
               a.nomeResponsavel.localeCompare(b.nomeResponsavel, "pt-BR", {
                 sensitivity: "base",
@@ -162,6 +161,10 @@ export default function DistribuicaoCestasPage() {
     const familia = familias.find((item) => item.id === familiaId);
     if (!familia || !campanhaId)
       return toast.error("Selecione a campanha e a família.");
+    if (familia.status === "INATIVA")
+      return toast.error("Esta família está inativa. Reative o cadastro antes de incluí-la na distribuição.");
+    if (familia.beneficioBloqueado)
+      return toast.error("Esta família está com o benefício bloqueado. Revise o cadastro antes da inclusão.");
     try {
       await agendar({
         data,
@@ -475,14 +478,27 @@ export default function DistribuicaoCestasPage() {
               className="rounded-lg border px-4 py-3"
             >
               <option value="">Selecione a família</option>
-              {familias
-                .filter((f) => !f.beneficioBloqueado)
-                .map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.nomeResponsavel}
+              {familias.map((f) => {
+                const motivo =
+                  f.status === "INATIVA"
+                    ? " — inativa"
+                    : f.beneficioBloqueado
+                      ? " — benefício bloqueado"
+                      : "";
+                return (
+                  <option
+                    key={f.id}
+                    value={f.id}
+                    disabled={f.status === "INATIVA" || f.beneficioBloqueado}
+                  >
+                    {f.nomeResponsavel}{motivo}
                   </option>
-                ))}
+                );
+              })}
             </select>
+            <span className="text-xs font-normal text-slate-500">
+              Cadastros inativos ou bloqueados aparecem identificados, mas precisam ser regularizados antes da inclusão.
+            </span>
           </label>
         </div>
         <div className="mt-4 flex flex-wrap gap-3">

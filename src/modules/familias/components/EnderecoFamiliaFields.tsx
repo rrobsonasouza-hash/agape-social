@@ -101,7 +101,6 @@ export function EnderecoFamiliaFields({
           mask="cep"
           {...register("cep")}
           error={errors.cep?.message}
-          onBlur={preencherEndereco}
         />
         <button
           type="button"
@@ -110,7 +109,7 @@ export function EnderecoFamiliaFields({
           className="mt-2 inline-flex items-center gap-2 text-sm font-medium text-blue-700 transition hover:text-blue-900 disabled:cursor-wait disabled:opacity-60"
         >
           <Search size={16} aria-hidden="true" />
-          {consultandoCep ? "Consultando CEP..." : "Buscar endereço"}
+          {consultandoCep ? "Consultando CEP..." : "Buscar CEP"}
         </button>
       </div>
 

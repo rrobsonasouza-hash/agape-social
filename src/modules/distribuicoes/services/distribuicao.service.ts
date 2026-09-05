@@ -22,6 +22,10 @@ export class DistribuicaoService {
     const validado = distribuicaoSchema.parse(data);
     const familia = await this.familias.buscarPorId(validado.familiaId);
     if (!familia) throw new Error("Família não encontrada.");
+    if (familia.status === "INATIVA")
+      throw new Error(
+        "Esta família está inativa. Reative o cadastro antes de incluí-la na distribuição.",
+      );
     if (familia.beneficioBloqueado)
       throw new Error(
         "Esta família está bloqueada por três faltas consecutivas.",

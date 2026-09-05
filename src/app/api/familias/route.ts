@@ -5,6 +5,10 @@ import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
 import { exigirPermissaoServidor } from "@/lib/auth/server-permissions";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
 import { familiaCadastroSchema } from "@/modules/familias/schemas/familia.schema";
+import {
+  encontrarDuplicidadeFamilia,
+  ErroDuplicidadeFamilia,
+} from "@/modules/familias/duplicidade";
 import { ZodError } from "zod";
 
 const PERFIS_ESCRITA = ["admin_plataforma", "admin_paroquia", "coordenador", "operador"];
@@ -19,6 +23,8 @@ async function contexto(request: NextRequest, escrita = false) {
 
 function respostaErro(error: unknown) {
   if (error instanceof ZodError) return NextResponse.json({ erro: error.issues[0]?.message ?? "Dados inválidos.", detalhes: error.flatten().fieldErrors }, { status: 400 });
+  if (error instanceof ErroDuplicidadeFamilia)
+    return NextResponse.json({ erro: error.message, cadastroExistenteId: error.duplicidade.id }, { status: 409 });
   const mensagem = error instanceof Error ? error.message : "Erro interno.";
   if (mensagem === "UNAUTHENTICATED") return NextResponse.json({ erro: "Sessão expirada." }, { status: 401 });
   if (mensagem === "FORBIDDEN") return NextResponse.json({ erro: "Sem permissão para esta operação." }, { status: 403 });
@@ -52,6 +58,19 @@ export async function POST(request: NextRequest) {
   try {
     const { supabase, paroquiaId } = await contexto(request, true);
     const entrada = familiaCadastroSchema.parse(await request.json());
+    const existentes = await supabase
+      .from("familias")
+      .select("id,dados")
+      .eq("paroquia_id", paroquiaId);
+    if (existentes.error) throw existentes.error;
+    const duplicidade = encontrarDuplicidadeFamilia(
+      entrada,
+      (existentes.data ?? []).map((item) => ({
+        id: String(item.id),
+        dados: item.dados as Record<string, unknown>,
+      })),
+    );
+    if (duplicidade) throw new ErroDuplicidadeFamilia(duplicidade);
     const dados = { ...entrada, consentimentoLgpd: true, consentimentoLgpdEm: new Date().toISOString(), versaoConsentimentoLgpd: "1.0-2026-07-21" };
     const id = randomUUID();
     const { error } = await supabase.from("familias").insert({ id, paroquia_id: paroquiaId, dados });

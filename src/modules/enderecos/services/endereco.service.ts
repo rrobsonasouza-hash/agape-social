@@ -18,7 +18,9 @@ export class EnderecoService {
     const dados = enderecoViaCepResponseSchema.parse(resposta);
 
     if (dados.erro) {
-      throw new Error("CEP não encontrado.");
+      throw new Error(
+        "CEP não encontrado. Confira os 8 dígitos ou preencha o endereço manualmente.",
+      );
     }
 
     const endereco: EnderecoViaCep = {

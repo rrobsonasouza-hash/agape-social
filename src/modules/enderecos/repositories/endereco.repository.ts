@@ -5,7 +5,14 @@ export class EnderecoRepository {
     );
 
     if (!resposta.ok) {
-      throw new Error("Não foi possível consultar o CEP.");
+      if (resposta.status === 400 || resposta.status === 404) {
+        throw new Error(
+          "CEP não encontrado. Confira os 8 dígitos ou preencha o endereço manualmente.",
+        );
+      }
+      throw new Error(
+        "Não foi possível consultar o CEP agora. Tente novamente ou preencha o endereço manualmente.",
+      );
     }
 
     return resposta.json();
