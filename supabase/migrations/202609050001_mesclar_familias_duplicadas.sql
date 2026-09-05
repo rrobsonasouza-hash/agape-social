@@ -23,9 +23,9 @@ begin
   if p_manter_id = p_remover_id then raise exception 'Selecione dois cadastros diferentes.'; end if;
 
   select dados into v_principal from public.familias
-   where id = p_manter_id and paroquia_id = p_paroquia_id for update;
+   where id = p_manter_id::text and paroquia_id = p_paroquia_id for update;
   select dados into v_duplicado from public.familias
-   where id = p_remover_id and paroquia_id = p_paroquia_id for update;
+   where id = p_remover_id::text and paroquia_id = p_paroquia_id for update;
   if v_principal is null or v_duplicado is null then raise exception 'Um dos cadastros não foi encontrado.'; end if;
 
   if not (
@@ -42,7 +42,7 @@ begin
   end if;
   v_nome := v_combinado->>'nomeResponsavel';
 
-  update public.familias set dados = v_combinado, updated_at = now() where id = p_manter_id and paroquia_id = p_paroquia_id;
+  update public.familias set dados = v_combinado, updated_at = now() where id = p_manter_id::text and paroquia_id = p_paroquia_id;
   update public.distribuicoes_cestas set dados = jsonb_set(jsonb_set(dados, '{familiaId}', to_jsonb(p_manter_id::text)), '{familiaNome}', to_jsonb(v_nome)), updated_at = now() where paroquia_id = p_paroquia_id and dados->>'familiaId' = p_remover_id::text;
   get diagnostics v_distribuicoes = row_count;
   update public.movimentacoes_cestas set dados = jsonb_set(jsonb_set(dados, '{familiaId}', to_jsonb(p_manter_id::text)), '{familiaNome}', to_jsonb(v_nome)), updated_at = now() where paroquia_id = p_paroquia_id and dados->>'familiaId' = p_remover_id::text;
@@ -51,7 +51,7 @@ begin
   get diagnostics v_visitas = row_count;
   update public.documentos set entidade_id = p_manter_id::text, updated_at = now() where paroquia_id = p_paroquia_id and entidade_tipo = 'FAMILIA' and entidade_id = p_remover_id::text;
   get diagnostics v_documentos = row_count;
-  delete from public.familias where id = p_remover_id and paroquia_id = p_paroquia_id;
+  delete from public.familias where id = p_remover_id::text and paroquia_id = p_paroquia_id;
 
   return jsonb_build_object('id', p_manter_id, 'transferidos', jsonb_build_object('distribuicoes', v_distribuicoes, 'movimentacoes', v_movimentacoes, 'visitas', v_visitas, 'documentos', v_documentos));
 end;
