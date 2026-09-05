@@ -37,11 +37,16 @@ export function useFamilias() {
     []
   );
 
+  const mesclarDuplicado = useCallback(async (manterId: string, removerId: string) => {
+    return service.mesclarDuplicado(manterId, removerId);
+  }, []);
+
   return {
     listar,
     criar,
     buscarPorId,
     atualizar,
     alterarStatus,
+    mesclarDuplicado,
   };
 }

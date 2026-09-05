@@ -17,6 +17,7 @@ import {
   Power,
   RotateCcw,
   Trash2,
+  GitMerge,
   User,
   Users,
   Wallet,
@@ -44,12 +45,13 @@ import { useVisitas } from "@/modules/visitas/hooks/useVisitas";
 import { VisitaDocumento } from "@/modules/visitas/types/visita-documento";
 import { useCestas } from "@/modules/cestas/hooks/useCestas";
 import { MovimentacaoCestas } from "@/modules/cestas/types/cestas.types";
+import { normalizarCpf, normalizarRg } from "@/modules/familias/duplicidade";
 
 export default function DetalhesFamiliaPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
 
-  const { buscarPorId, alterarStatus } = useFamilias();
+  const { buscarPorId, alterarStatus, listar, mesclarDuplicado } = useFamilias();
   const { listarPorEntidade, obterUrlVisualizacao, remover } = useDocumentos();
   const { paroquia } = useParoquia();
   const { listar: listarAreasPastorais } = useAreasPastorais();
@@ -57,6 +59,8 @@ export default function DetalhesFamiliaPage() {
   const { listarMovimentacoes } = useCestas();
 
   const [familia, setFamilia] = useState<FamiliaDocumento | null>(null);
+  const [duplicado, setDuplicado] = useState<FamiliaDocumento | null>(null);
+  const [mesclando, setMesclando] = useState(false);
 
   const [carregando, setCarregando] = useState(true);
 
@@ -82,6 +86,14 @@ export default function DetalhesFamiliaPage() {
         }
 
         setFamilia(dados);
+        try {
+          const cpf = normalizarCpf(dados.cpf);
+          const rg = normalizarRg(dados.rg);
+          const familias = await listar();
+          setDuplicado(familias.find((item) => item.id !== dados.id && ((cpf && normalizarCpf(item.cpf) === cpf) || (rg && normalizarRg(item.rg) === rg))) ?? null);
+        } catch (error) {
+          console.error("Erro ao verificar duplicidade:", error);
+        }
 
         try {
           setVisitas(await listarVisitasPorFamilia(params.id));
@@ -150,11 +162,28 @@ export default function DetalhesFamiliaPage() {
     buscarPorId,
     listarAreasPastorais,
     listarMovimentacoes,
+    listar,
     listarPorEntidade,
     listarVisitasPorFamilia,
     params.id,
     router,
   ]);
+
+  async function consolidarDuplicado() {
+    if (!familia || !duplicado) return;
+    if (!window.confirm(`Consolidar os dados de “${duplicado.nomeResponsavel}” neste cadastro e excluir definitivamente o registro duplicado?`)) return;
+    try {
+      setMesclando(true);
+      await mesclarDuplicado(familia.id, duplicado.id);
+      setDuplicado(null);
+      toast.success("Cadastros consolidados e histórico preservado.");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível consolidar os cadastros.");
+    } finally {
+      setMesclando(false);
+    }
+  }
 
   async function abrirDocumento(documento: Documento) {
     try {
@@ -379,6 +408,16 @@ export default function DetalhesFamiliaPage() {
             O histórico foi preservado, mas ela não será considerada nos
             indicadores de famílias ativas.
           </p>
+        </div>
+      )}
+
+      {duplicado && (
+        <div className="rounded-xl border border-orange-300 bg-orange-50 p-4 text-orange-950">
+          <p className="font-semibold">Cadastro duplicado encontrado</p>
+          <p className="mt-1 text-sm">O CPF ou RG também está associado a {duplicado.nomeResponsavel}. O histórico pode ser reunido neste cadastro.</p>
+          <Button type="button" disabled={mesclando} onClick={consolidarDuplicado} className="mt-3 flex items-center gap-2 bg-orange-700 hover:bg-orange-800">
+            <GitMerge size={18} />{mesclando ? "Consolidando..." : "Consolidar e remover duplicado"}
+          </Button>
         </div>
       )}
 

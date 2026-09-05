@@ -46,4 +46,11 @@ export class FamiliaRepository {
   atualizarControleBeneficio(id: string, dados: { beneficioBloqueado: boolean; faltasConsecutivas: number; motivoBloqueio: string }) {
     return requisicao<{ id: string }>(`/api/familias/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(dados) });
   }
+
+  mesclarDuplicado(manterId: string, removerId: string) {
+    return requisicao<{ id: string; transferidos: Record<string, number> }>("/api/familias/mesclar", {
+      method: "POST",
+      body: JSON.stringify({ manterId, removerId, confirmacao: "MESCLAR_DUPLICADO" }),
+    });
+  }
 }

@@ -59,4 +59,9 @@ export class FamiliaService {
 
     return this.repository.alterarStatus(id, status);
   }
+
+  async mesclarDuplicado(manterId: string, removerId: string) {
+    if (!manterId || !removerId || manterId === removerId) throw new Error("Informe dois cadastros diferentes.");
+    return this.repository.mesclarDuplicado(manterId, removerId);
+  }
 }
