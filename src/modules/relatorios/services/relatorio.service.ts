@@ -1,5 +1,6 @@
 import { RelatorioRepository } from "../repositories/relatorio.repository";
 import { RelatorioMensal } from "../types/relatorio-mensal";
+import { calcularTaxaComparecimento } from "../calculos";
 
 export class RelatorioService {
   private repository = new RelatorioRepository();
@@ -64,7 +65,9 @@ export class RelatorioService {
     const ausenciasNoMes = distribuicoes.filter(
       (item) => item.status === "AUSENTE",
     ).length;
-    const lancamentosConcluidos = recebimentos.length + ausenciasNoMes;
+    const pendenciasNoMesAteCorte = distribuicoes.filter(
+      (item) => item.status === "AGENDADA" && item.data <= dataCorte,
+    ).length;
 
     const campanhas = dados.campanhas
       .map((campanha) => {
@@ -114,9 +117,11 @@ export class RelatorioService {
         0,
       ),
       taxaComparecimento:
-        lancamentosConcluidos > 0
-          ? (recebimentos.length / lancamentosConcluidos) * 100
-          : 0,
+        calcularTaxaComparecimento(
+          recebimentos.length,
+          ausenciasNoMes,
+          pendenciasNoMesAteCorte,
+        ),
       familiasEmAlerta: historicosComFalta.filter(
         ([, item]) => item.consecutivas === 1,
       ).length,
