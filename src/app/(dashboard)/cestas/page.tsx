@@ -338,7 +338,7 @@ export default function CestasPage() {
                         {item.nome}
                       </span>
                       <span className="block text-xs text-slate-500">
-                        Meta: {item.metaCestas} cestas · Limite:{" "}
+                        Meta: {item.metaCestas} cestas · Distribuição:{" "}
                         {new Date(
                           `${item.dataLimite}T12:00:00`,
                         ).toLocaleDateString("pt-BR")}{" "}
@@ -395,7 +395,7 @@ export default function CestasPage() {
                 }
               />
               <TextField
-                label="Data limite"
+                label="Data da distribuição"
                 type="date"
                 value={novaCampanha.dataLimite}
                 onChange={(e) =>
