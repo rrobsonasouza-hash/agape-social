@@ -142,9 +142,11 @@ export default function CestasPage() {
   async function salvarCampanha() {
     try {
       if (editingCampaignId) {
-        await api.atualizarCampanha(editingCampaignId, novaCampanha);
+        const resultado = await api.atualizarCampanha(editingCampaignId, novaCampanha);
         setCampanhaId(editingCampaignId);
-        toast.success("Campanha atualizada.");
+        toast.success(resultado.listasRemarcadas > 0
+          ? `Campanha atualizada e ${resultado.listasRemarcadas} entrega(s) pendente(s) remarcada(s).`
+          : "Campanha atualizada.");
       } else {
         const criada = await api.criarCampanha(novaCampanha);
         setCampanhaId(criada.id);

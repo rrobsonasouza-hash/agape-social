@@ -451,6 +451,11 @@ export default function DistribuicaoCestasPage() {
                   <span className={`mt-1 block text-xs ${selecionada ? "text-blue-100" : "text-slate-500"}`}>
                     {item.total} família(s) · {item.recebidas} recebida(s) · {item.ausentes} ausente(s)
                   </span>
+                  {item.campanhas.length > 0 && (
+                    <span className={`mt-1 block truncate text-xs font-semibold ${selecionada ? "text-blue-50" : "text-blue-700"}`}>
+                      {item.campanhas.join(" · ")}
+                    </span>
+                  )}
                   {item.agendadas > 0 && (
                     <span className={`mt-2 inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${selecionada ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800"}`}>
                       {item.agendadas} aguardando

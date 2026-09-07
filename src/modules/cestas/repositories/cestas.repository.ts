@@ -41,7 +41,7 @@ export class CestasRepository {
   }
 
   atualizarCampanha(id: string, data: Partial<CampanhaCestasData>) {
-    return requisicao<{ id: string }>(`/api/cestas/campanhas/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) });
+    return requisicao<{ id: string; listasRemarcadas: number }>(`/api/cestas/campanhas/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(data) });
   }
 
   listarCampanhas(): Promise<CampanhaCestas[]> {

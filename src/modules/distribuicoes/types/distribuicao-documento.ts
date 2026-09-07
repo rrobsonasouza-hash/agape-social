@@ -7,4 +7,5 @@ export type ResumoDataDistribuicao = {
   agendadas: number;
   recebidas: number;
   ausentes: number;
+  campanhas: string[];
 };

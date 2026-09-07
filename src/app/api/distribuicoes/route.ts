@@ -19,13 +19,21 @@ export async function GET(request: NextRequest) {
     if (error) throw error;
     const linhas = data ?? [];
     if (parametros.get("resumo") === "datas") {
-      const resumos = new Map<string, { data: string; total: number; agendadas: number; recebidas: number; ausentes: number }>();
+      const campanhaIds = [...new Set(linhas.map((item) => String((item.dados as Record<string, unknown>).campanhaId ?? "")).filter(Boolean))];
+      const campanhas = campanhaIds.length
+        ? await supabase.from("campanhas_cestas").select("id,dados").eq("paroquia_id", paroquiaId).in("id", campanhaIds)
+        : { data: [], error: null };
+      if (campanhas.error) throw campanhas.error;
+      const nomesCampanhas = new Map((campanhas.data ?? []).map((item) => [String(item.id), String((item.dados as Record<string, unknown>).nome ?? "Campanha")]));
+      const resumos = new Map<string, { data: string; total: number; agendadas: number; recebidas: number; ausentes: number; campanhas: string[] }>();
       for (const item of linhas) {
         const dados = item.dados as Record<string, unknown>;
         const dataDistribuicao = typeof dados.data === "string" ? dados.data : "";
         if (!dataDistribuicao) continue;
-        const resumo = resumos.get(dataDistribuicao) ?? { data: dataDistribuicao, total: 0, agendadas: 0, recebidas: 0, ausentes: 0 };
+        const resumo = resumos.get(dataDistribuicao) ?? { data: dataDistribuicao, total: 0, agendadas: 0, recebidas: 0, ausentes: 0, campanhas: [] };
         resumo.total += 1;
+        const nomeCampanha = nomesCampanhas.get(String(dados.campanhaId ?? ""));
+        if (nomeCampanha && !resumo.campanhas.includes(nomeCampanha)) resumo.campanhas.push(nomeCampanha);
         if (dados.status === "AGENDADA") resumo.agendadas += 1;
         else if (dados.status === "AUSENTE") resumo.ausentes += 1;
         else if (dados.status === "RETIRADA" || dados.status === "ENTREGUE_DOMICILIO") resumo.recebidas += 1;
