@@ -60,6 +60,13 @@ export class FamiliaService {
     return this.repository.alterarStatus(id, status);
   }
 
+  async avaliarBeneficio(id: string, decisao: "RESTABELECER" | "MANTER_BLOQUEIO", parecer: string) {
+    if (!id) throw new Error("Identificador da família não informado.");
+    if (parecer.trim().length < 10)
+      throw new Error("Informe um parecer com pelo menos 10 caracteres.");
+    return this.repository.avaliarBeneficio(id, decisao, parecer.trim());
+  }
+
   async mesclarDuplicado(manterId: string, removerId: string) {
     if (!manterId || !removerId || manterId === removerId) throw new Error("Informe dois cadastros diferentes.");
     return this.repository.mesclarDuplicado(manterId, removerId);

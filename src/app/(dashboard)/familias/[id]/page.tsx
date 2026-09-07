@@ -46,12 +46,14 @@ import { VisitaDocumento } from "@/modules/visitas/types/visita-documento";
 import { useCestas } from "@/modules/cestas/hooks/useCestas";
 import { MovimentacaoCestas } from "@/modules/cestas/types/cestas.types";
 import { normalizarCpf, normalizarRg } from "@/modules/familias/duplicidade";
+import { useAuth } from "@/modules/auth/hooks/useAuth";
 
 export default function DetalhesFamiliaPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
 
-  const { buscarPorId, alterarStatus, listar, mesclarDuplicado } = useFamilias();
+  const { buscarPorId, alterarStatus, listar, mesclarDuplicado, avaliarBeneficio } = useFamilias();
+  const { usuario } = useAuth();
   const { listarPorEntidade, obterUrlVisualizacao, remover } = useDocumentos();
   const { paroquia } = useParoquia();
   const { listar: listarAreasPastorais } = useAreasPastorais();
@@ -66,6 +68,9 @@ export default function DetalhesFamiliaPage() {
   const [carregando, setCarregando] = useState(true);
 
   const [alterandoStatus, setAlterandoStatus] = useState(false);
+  const [avaliandoBeneficio, setAvaliandoBeneficio] = useState(false);
+  const [parecerBeneficio, setParecerBeneficio] = useState("");
+  const [restabelecendoBeneficio, setRestabelecendoBeneficio] = useState(false);
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [removendoDocumento, setRemovendoDocumento] = useState<
     string | undefined
@@ -258,6 +263,29 @@ export default function DetalhesFamiliaPage() {
     }
   }
 
+  async function confirmarAvaliacao(decisao: "RESTABELECER" | "MANTER_BLOQUEIO") {
+    if (!familia) return;
+    try {
+      setRestabelecendoBeneficio(true);
+      await avaliarBeneficio(familia.id, decisao, parecerBeneficio);
+      if (decisao === "RESTABELECER") {
+        setFamilia({
+          ...familia,
+          beneficioBloqueado: false,
+          faltasConsecutivas: 0,
+          motivoBloqueio: "",
+        });
+      }
+      setParecerBeneficio("");
+      setAvaliandoBeneficio(false);
+      toast.success(decisao === "RESTABELECER" ? "Benefício restabelecido e decisão registrada." : "Avaliação registrada; o bloqueio foi mantido.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível restabelecer o benefício.");
+    } finally {
+      setRestabelecendoBeneficio(false);
+    }
+  }
+
   if (carregando) {
     return (
       <div className="flex min-h-[400px] items-center justify-center">
@@ -271,6 +299,7 @@ export default function DetalhesFamiliaPage() {
   }
 
   const familiaAtiva = familia.status === "ATIVA";
+  const podeRestabelecer = Boolean(usuario && ["admin_plataforma", "admin_paroquia", "coordenador"].includes(usuario.role));
 
   const enderecoCompleto = [
     familia.logradouro,
@@ -442,6 +471,46 @@ export default function DetalhesFamiliaPage() {
             {familia.motivoBloqueio ||
               "A família atingiu o limite de ausências consecutivas."}
           </p>
+          <p className="mt-2 text-sm">
+            O benefício permanecerá bloqueado até a avaliação e o restabelecimento formal pela coordenação.
+          </p>
+          {podeRestabelecer && (
+            <Button type="button" onClick={() => setAvaliandoBeneficio(true)} className="mt-3 flex items-center gap-2 bg-red-700 hover:bg-red-800">
+              <RotateCcw size={18} /> Registrar avaliação
+            </Button>
+          )}
+        </div>
+      )}
+
+      {avaliandoBeneficio && familia.beneficioBloqueado && (
+        <div role="dialog" aria-modal="true" aria-labelledby="titulo-restabelecimento" className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4">
+          <section className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 id="titulo-restabelecimento" className="text-xl font-bold text-slate-950">Avaliação do benefício</h2>
+            <p className="mt-2 text-sm text-slate-600">
+              Registre o resultado do contato, visita ou avaliação de {familia.nomeResponsavel}. Esta decisão ficará na auditoria.
+            </p>
+            <label className="mt-5 block text-sm font-semibold text-slate-800">
+              Parecer da avaliação
+              <textarea
+                value={parecerBeneficio}
+                onChange={(event) => setParecerBeneficio(event.target.value)}
+                rows={5}
+                maxLength={1000}
+                placeholder="Ex.: Família visitada em 07/09/2026; situação reavaliada e retorno ao benefício aprovado."
+                className="mt-2 w-full rounded-xl border border-slate-300 p-3 font-normal outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              />
+            </label>
+            <p className="mt-1 text-xs text-slate-500">Mínimo de 10 caracteres. As faltas históricas serão preservadas.</p>
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <Button type="button" disabled={restabelecendoBeneficio} onClick={() => { setAvaliandoBeneficio(false); setParecerBeneficio(""); }} className="bg-slate-200 text-slate-900 hover:bg-slate-300">Cancelar</Button>
+              <Button type="button" disabled={restabelecendoBeneficio || parecerBeneficio.trim().length < 10} onClick={() => void confirmarAvaliacao("MANTER_BLOQUEIO")} className="bg-amber-600 hover:bg-amber-700">
+                Manter bloqueio
+              </Button>
+              <Button type="button" disabled={restabelecendoBeneficio || parecerBeneficio.trim().length < 10} onClick={() => void confirmarAvaliacao("RESTABELECER")} className="bg-emerald-700 hover:bg-emerald-800">
+                {restabelecendoBeneficio ? "Salvando..." : "Restabelecer benefício"}
+              </Button>
+            </div>
+          </section>
         </div>
       )}
 

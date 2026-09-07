@@ -48,9 +48,18 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
   try {
     const { supabase, paroquiaId } = await contexto(request, true);
     const { id } = await context.params;
-    const dados = familiaSchema.parse(await request.json());
+    const entrada = await request.json();
     const existentes = await supabase.from("familias").select("id,dados").eq("paroquia_id", paroquiaId);
     if (existentes.error) throw existentes.error;
+    const registroAtual = (existentes.data ?? []).find((item) => String(item.id) === id);
+    if (!registroAtual) return NextResponse.json({ erro: "Família não encontrada." }, { status: 404 });
+    const controleAtual = familiaSchema.parse(registroAtual.dados);
+    const dados = familiaSchema.parse({
+      ...entrada,
+      beneficioBloqueado: controleAtual.beneficioBloqueado,
+      faltasConsecutivas: controleAtual.faltasConsecutivas,
+      motivoBloqueio: controleAtual.motivoBloqueio,
+    });
     const duplicidade = encontrarDuplicidadeFamilia(
       dados,
       (existentes.data ?? []).map((item) => ({ id: String(item.id), dados: item.dados as Record<string, unknown> })),
@@ -69,10 +78,15 @@ export async function PATCH(request: NextRequest, context: { params: Promise<{ i
   try {
     const { supabase, paroquiaId } = await contexto(request, true);
     const { id } = await context.params;
-    const alteracoes = await request.json();
+    const alteracoes = (await request.json()) as Record<string, unknown>;
     const atual = await supabase.from("familias").select("dados").eq("id", id).eq("paroquia_id", paroquiaId).maybeSingle();
     if (atual.error) throw atual.error;
     if (!atual.data) return NextResponse.json({ erro: "Família não encontrada." }, { status: 404 });
+    // Campos de benefício são internos e não podem ser manipulados pela edição
+    // genérica. O restabelecimento possui uma rota própria, parecer e auditoria.
+    delete alteracoes.beneficioBloqueado;
+    delete alteracoes.faltasConsecutivas;
+    delete alteracoes.motivoBloqueio;
     const dados = familiaSchema.parse({ ...(atual.data.dados as Record<string, unknown>), ...alteracoes });
     const existentes = await supabase.from("familias").select("id,dados").eq("paroquia_id", paroquiaId);
     if (existentes.error) throw existentes.error;

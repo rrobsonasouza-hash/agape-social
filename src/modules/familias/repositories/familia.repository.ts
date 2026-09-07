@@ -43,8 +43,11 @@ export class FamiliaRepository {
     return requisicao<{ id: string }>(`/api/familias/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify({ status }) });
   }
 
-  atualizarControleBeneficio(id: string, dados: { beneficioBloqueado: boolean; faltasConsecutivas: number; motivoBloqueio: string }) {
-    return requisicao<{ id: string }>(`/api/familias/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(dados) });
+  avaliarBeneficio(id: string, decisao: "RESTABELECER" | "MANTER_BLOQUEIO", parecer: string) {
+    return requisicao<{ id: string; decisao: "RESTABELECER" | "MANTER_BLOQUEIO"; avaliadoEm: string }>(`/api/familias/${encodeURIComponent(id)}/beneficio`, {
+      method: "POST",
+      body: JSON.stringify({ decisao, parecer }),
+    });
   }
 
   mesclarDuplicado(manterId: string, removerId: string) {

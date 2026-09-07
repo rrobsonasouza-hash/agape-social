@@ -163,9 +163,12 @@ export async function PATCH(request: NextRequest, context: Contexto) {
         dados: movimento,
       });
       if (insercao.error) throw insercao.error;
-      dadosFamilia.beneficioBloqueado = false;
-      dadosFamilia.faltasConsecutivas = 0;
-      dadosFamilia.motivoBloqueio = "";
+      // Uma entrega interrompe uma sequência ainda não bloqueada. Depois do
+      // bloqueio, porém, somente a avaliação formal pode restabelecer o benefício.
+      if (!dadosFamilia.beneficioBloqueado) {
+        dadosFamilia.faltasConsecutivas = 0;
+        dadosFamilia.motivoBloqueio = "";
+      }
     } else if (novoStatus === "AUSENTE") {
       const faltas = (dadosFamilia.faltasConsecutivas ?? 0) + 1;
       dadosFamilia.faltasConsecutivas = faltas;

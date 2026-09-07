@@ -41,12 +41,17 @@ export function useFamilias() {
     return service.mesclarDuplicado(manterId, removerId);
   }, []);
 
+  const avaliarBeneficio = useCallback(async (id: string, decisao: "RESTABELECER" | "MANTER_BLOQUEIO", parecer: string) => {
+    return service.avaliarBeneficio(id, decisao, parecer);
+  }, []);
+
   return {
     listar,
     criar,
     buscarPorId,
     atualizar,
     alterarStatus,
+    avaliarBeneficio,
     mesclarDuplicado,
   };
 }
