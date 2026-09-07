@@ -11,6 +11,7 @@ async function requisicao<T>(url: string, init?: RequestInit): Promise<T> {
   const token = await obterTokenAcesso();
   const resposta = await fetch(url, {
     ...init,
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,

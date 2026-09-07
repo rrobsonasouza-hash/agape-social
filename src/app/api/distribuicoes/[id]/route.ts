@@ -68,13 +68,12 @@ export async function PATCH(request: NextRequest, context: Contexto) {
       "/cestas",
     );
     const corpo = (await request.json()) as Record<string, unknown>;
-    if (Object.keys(corpo).length !== 1 || !("status" in corpo)) {
+    if (Object.keys(corpo).length !== 1 || (!("status" in corpo) && !("data" in corpo))) {
       return NextResponse.json(
-        { erro: "Somente o status da distribuição pode ser alterado." },
+        { erro: "Informe somente o status ou a nova data da distribuição." },
         { status: 400 },
       );
     }
-    const novoStatus = statusDistribuicaoSchema.parse(corpo.status);
     const { id } = await context.params;
     const consulta = await supabase
       .from("distribuicoes_cestas")
@@ -91,6 +90,24 @@ export async function PATCH(request: NextRequest, context: Contexto) {
     }
 
     const atual = distribuicaoSchema.parse(consulta.data.dados);
+    if ("data" in corpo) {
+      if (atual.status !== "AGENDADA") {
+        return NextResponse.json(
+          { erro: "Somente distribuições ainda agendadas podem ser remarcadas." },
+          { status: 409 },
+        );
+      }
+      const novaData = distribuicaoSchema.shape.data.parse(corpo.data);
+      const atualizacao = await supabase
+        .from("distribuicoes_cestas")
+        .update({ dados: { ...atual, data: novaData }, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("paroquia_id", paroquiaId);
+      if (atualizacao.error) throw atualizacao.error;
+      return NextResponse.json({ id, data: novaData });
+    }
+
+    const novoStatus = statusDistribuicaoSchema.parse(corpo.status);
     if (atual.status === novoStatus) return NextResponse.json({ id });
     const concluindo =
       atual.status === "AGENDADA" &&

@@ -196,6 +196,7 @@ export default function DistribuicaoCestasPage() {
     try {
       await remarcarTodas(ids, novaData);
       await carregarLista();
+      setData(novaData);
       toast.success(`${ids.length} família(s) remarcada(s) para a nova data.`);
     } catch (error) {
       toast.error(
