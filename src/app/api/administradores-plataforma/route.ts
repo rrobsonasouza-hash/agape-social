@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { exigirUsuarioAtivo } from "@/lib/auth/admin-request";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { mapearUltimosAcessos } from "@/lib/auth/admin-users";
 
 async function exigirAdminPlataforma(request: NextRequest) { const usuario = await exigirUsuarioAtivo(request); if (usuario.role !== "admin_plataforma") throw new Error("FORBIDDEN"); return usuario; }
 function respostaErro(error: unknown) { const mensagem = error instanceof Error ? error.message : "Erro interno."; const conflito = /already|registered|duplicate/i.test(mensagem); const status = mensagem === "UNAUTHENTICATED" ? 401 : mensagem === "FORBIDDEN" ? 403 : conflito ? 409 : 400; return NextResponse.json({ erro: conflito ? "Já existe uma credencial com este e-mail." : mensagem }, { status }); }
@@ -10,7 +11,9 @@ export async function GET(request: NextRequest) {
   try {
     await exigirAdminPlataforma(request); const supabase = supabaseAdmin();
     const { data, error } = await supabase.from("perfis").select("id,nome,email,telefone,status").eq("perfil", "admin_plataforma").order("nome");
-    if (error) throw error; return NextResponse.json(data ?? []);
+    if (error) throw error;
+    const acessos = await mapearUltimosAcessos(supabase, (data ?? []).map((item) => item.id));
+    return NextResponse.json((data ?? []).map((item) => ({ ...item, ultimoAcesso: acessos.get(item.id) ?? null })));
   } catch (error) { return respostaErro(error); }
 }
 

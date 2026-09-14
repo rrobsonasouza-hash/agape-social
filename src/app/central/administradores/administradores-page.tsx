@@ -11,6 +11,7 @@ import {
   obterTokenAcesso,
 } from "@/lib/auth/client-session";
 import { maskTelefone } from "@/lib/formatters/masks";
+import { formatarUltimoAcesso } from "@/lib/formatters/ultimo-acesso";
 import { useAuth } from "@/modules/auth/hooks/useAuth";
 
 type Administrador = {
@@ -19,6 +20,7 @@ type Administrador = {
   email: string;
   telefone?: string;
   status: "ATIVO" | "INATIVO";
+  ultimoAcesso?: string | null;
 };
 type Formulario = { nome: string; email: string; telefone: string };
 
@@ -259,6 +261,12 @@ export default function AdministradoresPage() {
                   <p className="text-sm text-slate-500">{item.email}</p>
                   <p className="mt-1 text-xs text-slate-500">
                     {item.telefone || "Telefone não informado"}
+                  </p>
+                  <p className="mt-1 text-xs font-medium text-slate-600">
+                    Último acesso:{" "}
+                    <span className="font-normal">
+                      {formatarUltimoAcesso(item.ultimoAcesso)}
+                    </span>
                   </p>
                   <span
                     className={`mt-2 inline-block rounded-full px-2.5 py-1 text-xs font-semibold ${item.status === "ATIVO" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}

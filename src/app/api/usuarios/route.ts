@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { exigirAdministrador } from "@/lib/auth/admin-request";
 import { resolverParoquiaDaRequisicao } from "@/lib/supabase/tenant";
 import { usuarioSchema } from "@/modules/usuarios/schemas/usuario.schema";
+import { mapearUltimosAcessos } from "@/lib/auth/admin-users";
 
 function erro(error: unknown) {
   const mensagem = error instanceof Error ? error.message : "Erro interno.";
@@ -17,7 +18,8 @@ export async function GET(request: NextRequest) {
     const { supabase, paroquiaId, paroquia } = await resolverParoquiaDaRequisicao(request, administrador);
     const { data, error } = await supabase.from("perfis").select("id,nome,email,telefone,perfil,status,observacoes,created_at,updated_at").eq("paroquia_id", paroquiaId).neq("perfil", "admin_plataforma").order("nome");
     if (error) throw error;
-    return NextResponse.json((data ?? []).map((item) => ({ id: item.id, nome: item.nome, email: item.email, telefone: item.telefone, role: item.perfil, paroquiaId, paroquiaNome: paroquia.nome, status: item.status, observacoes: item.observacoes, createdAt: item.created_at, updatedAt: item.updated_at })));
+    const acessos = await mapearUltimosAcessos(supabase, (data ?? []).map((item) => item.id));
+    return NextResponse.json((data ?? []).map((item) => ({ id: item.id, nome: item.nome, email: item.email, telefone: item.telefone, role: item.perfil, paroquiaId, paroquiaNome: paroquia.nome, status: item.status, observacoes: item.observacoes, createdAt: item.created_at, updatedAt: item.updated_at, ultimoAcesso: acessos.get(item.id) ?? null })));
   } catch (error) { return erro(error); }
 }
 

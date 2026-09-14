@@ -20,6 +20,7 @@ import { enviarRecuperacaoSenha } from "@/lib/auth/client-session";
 import { useUsuarios } from "@/modules/usuarios/hooks/useUsuarios";
 import { UsuarioDocumento, UsuarioFormData } from "@/modules/usuarios/types/usuario-documento";
 import { maskTelefone } from "@/lib/formatters/masks";
+import { formatarUltimoAcesso } from "@/lib/formatters/ultimo-acesso";
 import { useParoquia } from "@/modules/paroquias/hooks/useParoquia";
 import { ParoquiaDocumento } from "@/modules/paroquias/types/paroquia-documento";
 
@@ -178,6 +179,17 @@ export default function UsuariosPage() {
     },
     { key: "perfil", title: "Perfil", render: (item) => roleLabels[item.role] },
     { key: "paroquia", title: "Paroquia", render: (item) => item.paroquiaNome },
+    {
+      key: "ultimoAcesso",
+      title: "Último acesso",
+      render: (item) => (
+        <span
+          className={`text-sm ${item.ultimoAcesso ? "text-slate-700" : "font-medium text-amber-700"}`}
+        >
+          {formatarUltimoAcesso(item.ultimoAcesso)}
+        </span>
+      ),
+    },
     {
       key: "status",
       title: "Status",
