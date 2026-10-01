@@ -83,6 +83,9 @@ const equipesEcc = [
   ["Secretaria", "Impressões, crachás de mesa e apoio documental"],
 ] as const;
 
+type AbaEcc = "secretaria" | "visitas" | "mapa" | "cronograma" | "tarefas" | "equipes" | "credenciamento" | "qr" | "circulos" | "arrecadacao" | "gestao" | "pos_encontro";
+const abasEcc: AbaEcc[] = ["secretaria", "visitas", "mapa", "cronograma", "tarefas", "equipes", "credenciamento", "qr", "circulos", "arrecadacao", "gestao", "pos_encontro"];
+
 function Metrica({ icon: Icon, titulo, valor, apoio }: { icon: typeof Users; titulo: string; valor: number; apoio: string }) {
   return <article className="rounded-2xl border bg-white p-5 shadow-sm"><div className="flex items-center gap-4"><span className="grid h-11 w-11 place-items-center rounded-xl bg-blue-50 text-blue-700"><Icon size={22} /></span><div><p className="text-xs font-black uppercase tracking-wider text-slate-500">{titulo}</p><strong className="text-3xl text-slate-900">{valor}</strong></div></div><p className="mt-3 text-sm text-slate-500">{apoio}</p></article>;
 }
@@ -93,7 +96,7 @@ export default function EccPage() {
   const [dados, setDados] = useState(vazio);
   const [carregando, setCarregando] = useState(true);
   const [salvando, setSalvando] = useState("");
-  const [aba, setAba] = useState<"secretaria" | "visitas" | "mapa" | "cronograma" | "tarefas" | "equipes" | "credenciamento" | "qr" | "circulos" | "arrecadacao" | "gestao" | "pos_encontro">("secretaria");
+  const [aba, setAba] = useState<AbaEcc>("secretaria");
   const [formulario, setFormulario] = useState<"encontro" | "casal" | "equipe" | "programacao" | "tarefa" | "voluntario" | null>(null);
   const [encontroId, setEncontroId] = useState("");
   const [encontro, setEncontro] = useState(encontroInicial);
@@ -123,6 +126,10 @@ export default function EccPage() {
   }, [listar]);
 
   useEffect(() => { void carregar(); }, [carregar]);
+  useEffect(() => {
+    const solicitada = new URLSearchParams(window.location.search).get("aba") as AbaEcc | null;
+    if (solicitada && abasEcc.includes(solicitada)) setAba(solicitada);
+  }, []);
   useEffect(() => {
     if (!formulario) return;
     const quadro = window.requestAnimationFrame(() => formularioRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
