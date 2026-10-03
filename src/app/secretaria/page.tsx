@@ -1,5 +1,6 @@
 "use client";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Minus, Plus, Search, ShoppingBag, ShoppingCart, PackagePlus, ReceiptText, Wallet } from "lucide-react";
 import toast from "react-hot-toast";
 import { ProtectedArea } from "@/components/auth/ProtectedArea";
@@ -11,10 +12,15 @@ import { formatMoeda as moeda, maskMoeda, parseMoeda } from "@/lib/formatters/ma
 async function api<T>(url: string, init?: RequestInit): Promise<T> { const token = await obterTokenAcesso(); const resposta = await fetch(url, { ...init, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}`, ...init?.headers } }); const dados = await resposta.json(); if (!resposta.ok) throw new Error(dados.erro || "Não foi possível concluir a operação."); return dados as T; }
 type CaixaResposta={contas:Array<{id:string;nome:string}>;caixa:null|{id:string;atendente_nome:string;aberto_em:string;fundo_abertura:number;vendasDinheiro:number;reforcos:number;sangrias:number;valorEsperado:number;tesouraria_contas:{nome:string}}};
 function SecretariaConteudo() {
+  const searchParams = useSearchParams();
   const { usuario } = useAuth(); const administrador = usuario?.role === "admin_plataforma" || usuario?.role === "admin_paroquia";
   const [produtos, setProdutos] = useState<ProdutoSecretaria[]>([]); const [categorias,setCategorias]=useState<CategoriaProduto[]>([]);const[movimentosEstoque,setMovimentosEstoque]=useState<MovimentoEstoqueSecretaria[]>([]);const[filtrosMovimento,setFiltrosMovimento]=useState({produtoId:"",tipo:"TODOS",inicio:"",fim:""}); const [vendas, setVendas] = useState<VendaSecretaria[]>([]); const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]); const [busca, setBusca] = useState(""); const [aba, setAba] = useState<"BALCAO"|"PRODUTOS"|"MOVIMENTACOES"|"HISTORICO"|"CAIXA">("BALCAO"); const [pagamento, setPagamento] = useState<FormaPagamento>("PIX"); const [recebido, setRecebido] = useState(""); const [finalizando, setFinalizando] = useState(false); const [novo, setNovo] = useState({ nome: "", categoriaId: "", preco: "", estoque: "" });const[editandoProduto,setEditandoProduto]=useState<string|null>(null);const[novaCategoria,setNovaCategoria]=useState("");const[caixa,setCaixa]=useState<CaixaResposta>({contas:[],caixa:null});const[abertura,setAbertura]=useState({contaId:"",fundo:""});const[operacao,setOperacao]=useState({tipo:"REFORCO",valor:"",descricao:""});const[fechamento,setFechamento]=useState({valorContado:"",observacao:""});
   const carregar = useCallback(async () => { try { const [catalogo, categoriasAtuais,movimentos,historico,caixaAtual] = await Promise.all([api<ProdutoSecretaria[]>("/api/secretaria/produtos"),api<CategoriaProduto[]>("/api/secretaria/categorias"),api<MovimentoEstoqueSecretaria[]>("/api/secretaria/produtos/estoque"), api<VendaSecretaria[]>("/api/secretaria/vendas"),api<CaixaResposta>("/api/secretaria/caixa")]); setProdutos(catalogo);setCategorias(categoriasAtuais);setMovimentosEstoque(movimentos); setVendas(historico);setCaixa(caixaAtual);setNovo(atual=>({...atual,categoriaId:atual.categoriaId||categoriasAtuais.find(c=>c.ativa)?.id||""}));if(!caixaAtual.caixa)setAba("CAIXA"); } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível carregar o balcão."); } }, []);
   useEffect(() => { void carregar(); }, [carregar]);
+  useEffect(() => {
+    const abaSolicitada = searchParams.get("aba");
+    if (abaSolicitada === "BALCAO" || abaSolicitada === "CAIXA") setAba(abaSolicitada);
+  }, [searchParams]);
   const total = carrinho.reduce((soma, item) => soma + item.produto.preco * item.quantidade, 0); const valorRecebido = parseMoeda(recebido); const troco = pagamento === "DINHEIRO" ? Math.max(0, valorRecebido - total) : 0;
   const filtrados = useMemo(() => { const termo = busca.trim().toLowerCase(); return produtos.filter((item) => item.ativo && item.estoque > 0 && (!termo || `${item.nome} ${item.categoria}`.toLowerCase().includes(termo))); }, [busca, produtos]);
   const movimentosFiltrados=useMemo(()=>movimentosEstoque.filter(m=>(!filtrosMovimento.produtoId||m.produtoId===filtrosMovimento.produtoId)&&(filtrosMovimento.tipo==="TODOS"||m.tipo===filtrosMovimento.tipo)&&(!filtrosMovimento.inicio||m.createdAt>=`${filtrosMovimento.inicio}T00:00:00`)&&(!filtrosMovimento.fim||m.createdAt<=`${filtrosMovimento.fim}T23:59:59.999`)),[movimentosEstoque,filtrosMovimento]);

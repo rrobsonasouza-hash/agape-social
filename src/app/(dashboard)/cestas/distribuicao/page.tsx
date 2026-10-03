@@ -17,6 +17,7 @@ import toast from "react-hot-toast";
 import { FormSection } from "@/components/forms/FormSection";
 import { TextField } from "@/components/forms/TextField";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { CestasModuleNav } from "@/modules/cestas/components/CestasModuleNav";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useCestas } from "@/modules/cestas/hooks/useCestas";
 import { CampanhaCestas } from "@/modules/cestas/types/cestas.types";
@@ -386,6 +387,7 @@ export default function DistribuicaoCestasPage() {
 
   return (
     <div className="space-y-6">
+      <CestasModuleNav />
       <PageHeader
         title="Distribuição de Cestas"
         description="Lista rápida de retirada e entrega por data."
@@ -407,7 +409,7 @@ export default function DistribuicaoCestasPage() {
       </section>
 
       {datasDistribuicao.length > 0 && (
-        <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="flex items-center gap-2 font-semibold text-slate-900">
@@ -419,7 +421,7 @@ export default function DistribuicaoCestasPage() {
               <select
                 value={datasDistribuicao.some((item) => item.data === data) ? data : ""}
                 onChange={(event) => event.target.value && setData(event.target.value)}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 sm:w-auto"
                 aria-label="Consultar todas as datas de distribuição"
               >
                 <option value="">Consultar outra data</option>
@@ -529,20 +531,20 @@ export default function DistribuicaoCestasPage() {
           <button
             type="button"
             onClick={adicionar}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white sm:w-auto"
           >
             <Plus size={18} /> Adicionar selecionada
           </button>
           <button
             type="button"
             onClick={adicionarTodas}
-            className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 font-semibold text-blue-700 hover:bg-blue-100"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 font-semibold text-blue-700 hover:bg-blue-100 sm:w-auto"
           >
             <Plus size={18} /> Adicionar todas as elegíveis
           </button>
         </div>
         <div className="mt-5 flex flex-wrap items-end gap-3 border-t border-slate-200 pt-4">
-          <div className="mr-2">
+          <div className="w-full sm:mr-2 sm:w-auto sm:flex-1">
             <p className="text-sm font-semibold text-slate-800">
               Remarcar famílias agendadas
             </p>
@@ -551,7 +553,7 @@ export default function DistribuicaoCestasPage() {
               lista.
             </p>
           </div>
-          <label className="flex flex-col gap-1 text-sm font-medium text-slate-700">
+          <label className="flex w-full flex-col gap-1 text-sm font-medium text-slate-700 sm:w-auto">
             Nova data para remarcação
             <input
               type="date"
@@ -563,7 +565,7 @@ export default function DistribuicaoCestasPage() {
           <button
             type="button"
             onClick={() => void moverAgendadas()}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 hover:bg-slate-50"
+            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto"
           >
             Remarcar agendadas
           </button>
@@ -584,7 +586,7 @@ export default function DistribuicaoCestasPage() {
           <button
             type="button"
             onClick={() => void excluirListaAgendada()}
-            className="rounded-lg border border-red-300 bg-white px-4 py-3 font-semibold text-red-700 hover:bg-red-100"
+            className="w-full rounded-lg border border-red-300 bg-white px-4 py-3 font-semibold text-red-700 hover:bg-red-100 sm:w-auto"
           >
             Excluir agendadas
           </button>
@@ -648,14 +650,14 @@ export default function DistribuicaoCestasPage() {
         {listaFiltrada.map((item) => (
           <div
             key={item.id}
-            className="flex flex-col gap-4 rounded-xl border bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between"
+            className="flex min-w-0 flex-col gap-4 rounded-xl border bg-white p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between"
           >
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-50 font-bold text-blue-700">
+            <div className="flex min-w-0 items-start gap-3 sm:items-center">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-50 font-bold text-blue-700">
                 {item.familiaNome.slice(0, 2).toUpperCase()}
               </div>
-              <div>
-                <p className="font-semibold text-slate-900">
+              <div className="min-w-0">
+                <p className="break-words font-semibold text-slate-900">
                   {item.familiaNome}
                 </p>
                 <div className="mt-1 grid gap-x-5 gap-y-1 text-xs text-slate-600 sm:grid-cols-3">

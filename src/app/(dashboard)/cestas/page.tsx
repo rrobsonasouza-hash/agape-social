@@ -19,6 +19,7 @@ import { DoadorDocumento } from "@/modules/doadores/types/doador-documento";
 import { useFamilias } from "@/modules/familias/hooks/useFamilias";
 import { FamiliaDocumento } from "@/modules/familias/types/familia-documento";
 import { maskMoeda, parseMoeda } from "@/lib/formatters/masks";
+import { CestasModuleNav } from "@/modules/cestas/components/CestasModuleNav";
 
 const hoje = new Date().toISOString().slice(0, 10);
 
@@ -244,13 +245,14 @@ export default function CestasPage() {
 
   return (
     <div className="space-y-6">
+      <CestasModuleNav />
       <PageHeader
         title="Campanhas e Cestas"
         description="Acompanhe metas, doações, estoque para montagem e compras da paróquia."
         actions={
           <Link
             href="/cestas/distribuicao"
-            className="rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white"
+            className="w-full rounded-lg bg-blue-600 px-4 py-3 text-center font-semibold text-white sm:w-auto"
           >
             Abrir lista de distribuição
           </Link>
@@ -382,7 +384,7 @@ export default function CestasPage() {
                 setNovaCampanha({ ...novaCampanha, nome: e.target.value })
               }
             />
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <TextField
                 label="Meta de cestas"
                 type="number"
@@ -461,7 +463,7 @@ export default function CestasPage() {
                 </button>
               </div>
             ))}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid gap-2 sm:grid-cols-3">
               <TextField
                 label="Item"
                 value={novoItem.nome}
@@ -596,8 +598,8 @@ export default function CestasPage() {
           title="Montar cestas"
           description={`O estoque atual permite montar ${resumo.cestasMontaveis} cesta(s).`}
         >
-          <div className="flex items-end gap-3">
-            <div className="flex-1">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="w-full flex-1">
               <TextField
                 label="Quantidade a montar"
                 type="number"
@@ -611,6 +613,7 @@ export default function CestasPage() {
               type="button"
               onClick={montarCestas}
               disabled={resumo.cestasMontaveis === 0}
+              className="w-full sm:w-auto"
             >
               Confirmar montagem
             </Button>
@@ -635,8 +638,8 @@ export default function CestasPage() {
                 </option>
               ))}
             </select>
-            <div className="flex items-end gap-3">
-              <div className="flex-1">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <div className="w-full flex-1">
                 <TextField
                   label="Quantidade"
                   type="number"
@@ -655,6 +658,7 @@ export default function CestasPage() {
                 type="button"
                 onClick={entregarCestas}
                 disabled={resumo.cestasProntas <= 0}
+                className="w-full sm:w-auto"
               >
                 Registrar entrega
               </Button>
