@@ -62,6 +62,9 @@ export const metadata: Metadata = {
       "max-video-preview": -1,
     },
   },
+  verification: {
+    google: "FKQcIGTDgmgpcVMCBhwTotP5Jpd4QJbphrHF8beV0mA",
+  },
   manifest: "/manifest.webmanifest",
   icons: { icon: "/agape-icon.svg", apple: "/agape-icon.svg" },
   appleWebApp: { capable: true, title: "Ágape" },
