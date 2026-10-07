@@ -4,14 +4,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
-  ArrowRight,
   BookOpen,
   ChartNoAxesCombined,
   CheckCircle2,
   FileCheck2,
   HeartHandshake,
   MapPinned,
+  MessageCircle,
   PackageCheck,
+  Phone,
   Route,
   ShieldCheck,
   Sparkles,
@@ -93,10 +94,11 @@ export default function HomePage() {
     <main className="min-h-screen overflow-hidden bg-slate-50 text-slate-950">
       <section className="mx-auto grid min-h-screen max-w-7xl items-center gap-12 px-6 py-16 lg:grid-cols-[1.04fr_.96fr]">
         <div>
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-4 py-2 text-xs font-bold text-blue-700 shadow-sm"><HeartHandshake size={16}/>Tecnologia a serviço da Caridade</div>
-          <h1 className="mt-6 max-w-3xl text-4xl font-black leading-tight tracking-tight sm:text-6xl">Gestão social com <span className="text-blue-600">clareza, cuidado e continuidade.</span></h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">{siteConfig.descricao} O Ágape organiza a operação social, a secretaria e a administração financeira para que a missão da paróquia ganhe escala sem perder o cuidado humano.</p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row"><Button asChild className="min-h-12 rounded-xl px-6 text-base"><Link href="/login">Entrar no Ágape</Link></Button><Button variant="outline" asChild className="min-h-12 rounded-xl px-6 text-base"><Link href="#diferenciais">Conhecer diferenciais</Link></Button></div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-4 py-2 text-xs font-bold text-blue-700 shadow-sm"><HeartHandshake size={16}/>Sistema para a Igreja Católica</div>
+          <h1 className="mt-6 max-w-3xl text-4xl font-black leading-tight tracking-tight sm:text-6xl">Gestão paroquial com <span className="text-blue-600">clareza, cuidado e continuidade.</span></h1>
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">{siteConfig.descricao} O Ágape organiza a operação pastoral, a secretaria e a administração financeira para que a missão da Igreja Católica ganhe escala sem perder o cuidado humano.</p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap"><Button asChild className="min-h-12 rounded-xl px-6 text-base"><a href={siteConfig.whatsapp} target="_blank" rel="noreferrer"><MessageCircle size={18}/>Solicitar demonstração</a></Button><Button variant="outline" asChild className="min-h-12 rounded-xl px-6 text-base"><Link href="/sistema-para-igreja-catolica">Conhecer a solução</Link></Button><Button variant="ghost" asChild className="min-h-12 rounded-xl px-5 text-base text-blue-700"><Link href="/login">Entrar no Ágape</Link></Button></div>
+          <a href={`tel:${siteConfig.telefoneLink}`} className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-blue-700"><Phone size={17} className="text-blue-600"/>Fale conosco: {siteConfig.telefone}</a>
           <div className="mt-8 flex flex-wrap gap-x-5 gap-y-3 text-sm font-medium text-slate-600"><span className="inline-flex items-center gap-2"><CheckCircle2 size={17} className="text-emerald-600"/>Dados por paróquia</span><span className="inline-flex items-center gap-2"><CheckCircle2 size={17} className="text-emerald-600"/>Acesso por perfil</span><span className="inline-flex items-center gap-2"><CheckCircle2 size={17} className="text-emerald-600"/>Histórico preservado</span></div>
         </div>
         <div className="relative"><div className="absolute -inset-8 rounded-[3rem] bg-blue-200/45 blur-3xl"/>
@@ -124,7 +126,9 @@ export default function HomePage() {
 
       <section className="mx-auto grid max-w-7xl gap-8 px-6 py-20 lg:grid-cols-[1fr_.9fr] lg:items-center"><div><p className="text-xs font-black tracking-[.16em] text-blue-600">DIFERENCIAL EXCLUSIVO</p><h2 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Manual vivo e ilustrado para a equipe trabalhar com segurança.</h2><p className="mt-4 max-w-2xl text-lg leading-8 text-slate-600">O Ágape explica cada rotina com telas em HTML, passo a passo, dicas e links diretos para a ação. E o guia evolui junto com cada melhoria do sistema.</p><div className="mt-7 flex flex-wrap gap-4"><Button asChild className="min-h-12 rounded-xl px-5"><Link href="/manual"><BookOpen size={18}/>Abrir Manual do sistema</Link></Button><span className="inline-flex items-center gap-2 self-center text-sm font-medium text-slate-600"><Sparkles size={17} className="text-blue-600"/>Atualizado junto com a plataforma</span></div></div><section className="rounded-3xl border bg-slate-950 p-6 text-white shadow-xl sm:p-8"><div className="flex items-center justify-between border-b border-white/15 pb-4"><div className="flex items-center gap-2"><i className="h-2 w-2 rounded-full bg-blue-300"/><i className="h-2 w-2 rounded-full bg-emerald-300"/><span className="text-xs text-slate-300">Guia de distribuição</span></div><BookOpen className="text-blue-300" size={22}/></div><p className="mt-6 text-[10px] font-black tracking-[.15em] text-blue-300">PASSO A PASSO</p><div className="mt-4 grid gap-3">{["Selecione a campanha e a data", "Inclua as famílias elegíveis", "Registre retirada, ausência ou entrega", "Acompanhe o estoque atualizado"].map((item,index)=><div key={item} className="flex items-center gap-3 rounded-xl bg-white/8 p-3 text-sm text-slate-100"><span className="grid h-6 w-6 place-items-center rounded-full bg-blue-400/20 text-xs font-bold text-blue-200">{index+1}</span>{item}</div>)}</div><p className="mt-5 text-xs leading-5 text-slate-300">Uma orientação clara para cada pessoa da equipe, sem depender de treinamento informal ou anotações paralelas.</p></section></section>
 
-      <section className="bg-blue-700 px-6 py-20 text-center text-white"><p className="text-xs font-black tracking-[.17em] text-blue-100">ÁGAPE SOCIAL</p><h2 className="mx-auto mt-3 max-w-3xl text-3xl font-black tracking-tight sm:text-4xl">Mais tempo para servir. Mais clareza para decidir.</h2><p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-blue-100">Centralize a rotina da paróquia e transforme dados do dia a dia em continuidade para toda a Pastoral Social.</p><Button asChild variant="secondary" className="mt-8 min-h-12 rounded-xl px-6 text-base text-blue-700"><Link href="/login">Conhecer o Ágape <ArrowRight size={18}/></Link></Button></section>
+      <section className="bg-blue-700 px-6 py-20 text-center text-white"><p className="text-xs font-black tracking-[.17em] text-blue-100">ÁGAPE SOCIAL · IGREJA CATÓLICA</p><h2 className="mx-auto mt-3 max-w-3xl text-3xl font-black tracking-tight sm:text-4xl">Mais tempo para acolher, evangelizar e servir.</h2><p className="mx-auto mt-4 max-w-2xl text-lg leading-8 text-blue-100">Centralize a rotina da paróquia e transforme os dados do dia a dia em continuidade para a missão pastoral.</p><div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row"><Button asChild variant="secondary" className="min-h-12 rounded-xl px-6 text-base text-blue-700"><a href={siteConfig.whatsapp} target="_blank" rel="noreferrer"><MessageCircle size={18}/>Solicitar demonstração</a></Button><a href={`tel:${siteConfig.telefoneLink}`} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-white/40 px-6 font-bold"><Phone size={18}/>{siteConfig.telefone}</a></div></section>
+
+      <footer className="bg-slate-950 px-6 py-8 text-slate-300"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-6 sm:flex-row sm:items-center"><div><strong className="text-white">Ágape Social</strong><p className="mt-1 text-xs">Sistema de gestão para igrejas e paróquias católicas.</p></div><div className="flex flex-wrap gap-5 text-sm"><Link href="/sistema-para-igreja-catolica">Solução para a Igreja Católica</Link><a href={siteConfig.whatsapp} target="_blank" rel="noreferrer">WhatsApp</a><a href={`tel:${siteConfig.telefoneLink}`}>{siteConfig.telefone}</a></div></div></footer>
     </main>
   );
 }
