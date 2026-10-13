@@ -19,6 +19,7 @@ import type {
   EccArrecadacaoFormData,
   EccNecessidadeFormData,
   EccDespesaFormData,
+  EccRefeicaoFormData,
   EccPosEncontroFormData,
 } from "../schemas/ecc.schema";
 import type { EccComunicacaoStatus, EccDocumentoStatus, EccProgramacaoStatus, EccTarefaStatus } from "../types/ecc.types";
@@ -54,6 +55,8 @@ export function useEcc() {
     atualizarNecessidade: useCallback((id: string, dados: EccNecessidadeFormData) => service.atualizarNecessidade(id, dados), []),
     criarDespesa: useCallback((dados: EccDespesaFormData) => service.criarDespesa(dados), []),
     atualizarDespesa: useCallback((id: string, dados: EccDespesaFormData) => service.atualizarDespesa(id, dados), []),
+    criarRefeicao: useCallback((dados: EccRefeicaoFormData) => service.criarRefeicao(dados), []),
+    atualizarRefeicao: useCallback((id: string, dados: EccRefeicaoFormData) => service.atualizarRefeicao(id, dados), []),
     salvarPosEncontro: useCallback((dados: EccPosEncontroFormData) => service.salvarPosEncontro(dados), []),
     encerrarEdicao: useCallback((encontroId: string) => service.encerrarEdicao(encontroId), []),
     atualizarVisita: useCallback((id: string, dados: EccVisitaFormData) => service.atualizarVisita(id, dados), []),

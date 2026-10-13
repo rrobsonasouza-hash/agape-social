@@ -46,3 +46,6 @@ storage-debug.log
 
 # vercel
 .vercel
+
+# Supabase CLI local state
+/supabase/.temp/

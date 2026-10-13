@@ -26,6 +26,7 @@ import {
   eccArrecadacaoSchema,
   eccNecessidadeSchema,
   eccDespesaSchema,
+  eccRefeicaoSchema,
   eccEncerramentoSchema,
   eccPosEncontroSchema,
 } from "@/modules/ecc/schemas/ecc.schema";
@@ -76,7 +77,7 @@ function erro(error: unknown) {
 export async function GET(request: NextRequest) {
   try {
     const { supabase, paroquiaId, paroquia, usuario } = await contexto(request);
-    const [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, credenciamentos, presencasDiarias, arrecadacoes, necessidades, despesas, voluntarios] =
+    const [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, credenciamentos, presencasDiarias, arrecadacoes, necessidades, despesas, refeicoes, voluntarios] =
       await Promise.all([
         supabase.from("ecc_encontros").select("*").eq("paroquia_id", paroquiaId).order("data_inicio", { ascending: false }),
         supabase.from("ecc_casais").select("*").eq("paroquia_id", paroquiaId).order("conjuge_um_nome"),
@@ -92,9 +93,10 @@ export async function GET(request: NextRequest) {
         supabase.from("ecc_arrecadacoes").select("*").eq("paroquia_id", paroquiaId).order("created_at", { ascending: false }),
         supabase.from("ecc_necessidades").select("*").eq("paroquia_id", paroquiaId).order("item"),
         supabase.from("ecc_despesas").select("*").eq("paroquia_id", paroquiaId).order("data", { ascending: false }),
+        supabase.from("ecc_refeicoes").select("*").eq("paroquia_id", paroquiaId).order("data").order("hora"),
         supabase.from("voluntarios").select("id,dados").eq("paroquia_id", paroquiaId).order("created_at", { ascending: false }),
       ]);
-    for (const resultado of [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, credenciamentos, presencasDiarias, arrecadacoes, necessidades, despesas, voluntarios])
+    for (const resultado of [encontros, casais, participacoes, equipes, programacao, tarefas, visitas, comunicacoes, documentos, credenciamentos, presencasDiarias, arrecadacoes, necessidades, despesas, refeicoes, voluntarios])
       if (resultado.error) throw resultado.error;
     const equipePresencas = await supabase.from("ecc_equipe_presencas").select("*").eq("paroquia_id", paroquiaId).order("data", { ascending: false });
     if (equipePresencas.error && !["42P01", "PGRST205"].includes(equipePresencas.error.code ?? "")) throw equipePresencas.error;
@@ -237,6 +239,13 @@ export async function GET(request: NextRequest) {
       despesas: (despesas.data ?? []).map((item) => ({
         id: item.id, encontroId: item.encontro_id, descricao: item.descricao, fornecedor: item.fornecedor ?? "",
         valor: Number(item.valor), data: item.data, status: item.status, observacoes: item.observacoes ?? "", criadoEm: item.created_at,
+      })),
+      refeicoes: (refeicoes.data ?? []).map((item) => ({
+        id: item.id, encontroId: item.encontro_id, tipo: item.tipo, titulo: item.titulo,
+        data: item.data, hora: String(item.hora).slice(0, 5), local: item.local ?? "",
+        publico: item.publico, quantidadePrevista: Number(item.quantidade_prevista ?? 0),
+        cardapio: item.cardapio, responsavel: item.responsavel ?? "", status: item.status,
+        observacoes: item.observacoes ?? "", criadoEm: item.created_at,
       })),
       posEncontro: (PERFIS_ESCRITA.includes(usuario.role) ? posEncontro.data ?? [] : []).map((item) => ({
         id: item.id, encontroId: item.encontro_id, casalId: item.casal_id,
@@ -490,6 +499,21 @@ export async function POST(request: NextRequest) {
       const { data, error } = await supabase.from("ecc_despesas").insert({
         paroquia_id: paroquiaId, encontro_id: dados.encontroId, descricao: dados.descricao,
         fornecedor: dados.fornecedor, valor: dados.valor, data: dados.data, status: dados.status,
+        observacoes: dados.observacoes, criado_por: usuario.uid,
+      }).select("id").single();
+      if (error) throw error;
+      return NextResponse.json({ id: data.id }, { status: 201 });
+    }
+    if (entrada.tipo === "refeicao") {
+      const dados = eccRefeicaoSchema.parse(entrada.dados);
+      const encontro = await validarEncontro(supabase, paroquiaId, dados.encontroId);
+      if (dados.data < encontro.data_inicio || dados.data > encontro.data_fim)
+        throw new Error("A refeição precisa ocorrer dentro do período desta edição.");
+      const { data, error } = await supabase.from("ecc_refeicoes").insert({
+        paroquia_id: paroquiaId, encontro_id: dados.encontroId, tipo: dados.tipo,
+        titulo: dados.titulo, data: dados.data, hora: dados.hora, local: dados.local,
+        publico: dados.publico, quantidade_prevista: dados.quantidadePrevista,
+        cardapio: dados.cardapio, responsavel: dados.responsavel, status: dados.status,
         observacoes: dados.observacoes, criado_por: usuario.uid,
       }).select("id").single();
       if (error) throw error;
@@ -756,6 +780,18 @@ export async function PATCH(request: NextRequest) {
       alteracoes = {
         encontro_id: dados.encontroId, descricao: dados.descricao, fornecedor: dados.fornecedor,
         valor: dados.valor, data: dados.data, status: dados.status, observacoes: dados.observacoes,
+      };
+    } else if (entrada.tipo === "refeicao") {
+      const dados = eccRefeicaoSchema.parse(entrada.dados);
+      const encontro = await validarEncontro(supabase, paroquiaId, dados.encontroId);
+      if (dados.data < encontro.data_inicio || dados.data > encontro.data_fim)
+        throw new Error("A refeição precisa ocorrer dentro do período desta edição.");
+      tabela = "ecc_refeicoes";
+      alteracoes = {
+        encontro_id: dados.encontroId, tipo: dados.tipo, titulo: dados.titulo,
+        data: dados.data, hora: dados.hora, local: dados.local, publico: dados.publico,
+        quantidade_prevista: dados.quantidadePrevista, cardapio: dados.cardapio,
+        responsavel: dados.responsavel, status: dados.status, observacoes: dados.observacoes,
       };
     } else {
       return NextResponse.json({ erro: "Tipo de atualização do ECC inválido." }, { status: 400 });

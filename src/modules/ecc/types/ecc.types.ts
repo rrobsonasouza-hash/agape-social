@@ -11,6 +11,9 @@ export type EccDocumentoStatus = "PENDENTE" | "DISPONIVEL" | "ARQUIVADO";
 export type EccCredenciamentoStatus = "AGUARDANDO" | "CREDENCIADO" | "AUSENTE" | "CANCELADO";
 export type EccArrecadacaoStatus = "PENDENTE" | "PARCIAL" | "RECEBIDO" | "CANCELADO";
 export type EccDespesaStatus = "PENDENTE" | "PAGA" | "CANCELADA";
+export type EccRefeicaoTipo = "CAFE_MANHA" | "ALMOCO" | "CAFE_TARDE" | "JANTAR" | "CEIA" | "OUTRO";
+export type EccRefeicaoPublico = "TODOS" | "PARTICIPANTES" | "EQUIPE";
+export type EccRefeicaoStatus = "PLANEJADA" | "CONFIRMADA" | "SERVIDA" | "CANCELADA";
 export type EccPosEncontroStatus = "PENDENTE" | "RESPONDIDO" | "EM_ACOMPANHAMENTO" | "ENCAMINHADO_VOLUNTARIADO" | "CONCLUIDO";
 
 export type EccEncontro = {
@@ -115,6 +118,12 @@ export type EccDespesa = {
   status: EccDespesaStatus; observacoes: string; criadoEm: string;
 };
 
+export type EccRefeicao = {
+  id: string; encontroId: string; tipo: EccRefeicaoTipo; titulo: string; data: string; hora: string;
+  local: string; publico: EccRefeicaoPublico; quantidadePrevista: number; cardapio: string;
+  responsavel: string; status: EccRefeicaoStatus; observacoes: string; criadoEm: string;
+};
+
 export type EccPosEncontro = {
   id: string; encontroId: string; casalId: string; casalNome: string; avaliacao: number | null;
   testemunho: string; acompanhamentoNecessario: boolean; acompanhamentoObservacoes: string;
@@ -125,7 +134,7 @@ export type EccPosEncontro = {
 export type EccPainel = {
   encontros: EccEncontro[]; casais: EccCasal[]; participacoes: EccParticipacao[]; equipe: EccEquipe[]; equipePresencas: EccEquipePresenca[];
   programacao: EccProgramacao[]; tarefas: EccTarefa[]; visitas: EccVisita[]; comunicacoes: EccComunicacao[];
-  documentos: EccDocumento[]; credenciamentos: EccCredenciamento[]; presencasDiarias: EccPresencaDia[]; arrecadacoes: EccArrecadacao[]; necessidades: EccNecessidade[]; despesas: EccDespesa[]; posEncontro: EccPosEncontro[];
+  documentos: EccDocumento[]; credenciamentos: EccCredenciamento[]; presencasDiarias: EccPresencaDia[]; arrecadacoes: EccArrecadacao[]; necessidades: EccNecessidade[]; despesas: EccDespesa[]; refeicoes: EccRefeicao[]; posEncontro: EccPosEncontro[];
   voluntarios: EccVoluntarioResumo[]; casaisDoadores: EccCasalDoador[];
   paroquia: { nome: string; latitude: number | null; longitude: number | null };
   podeGerenciarVisitas: boolean;

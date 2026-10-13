@@ -214,6 +214,21 @@ export const eccDespesaSchema = z.object({
   observacoes: textoOpcional,
 });
 
+export const eccRefeicaoSchema = z.object({
+  encontroId: z.string().uuid("Selecione uma edição do ECC."),
+  tipo: z.enum(["CAFE_MANHA", "ALMOCO", "CAFE_TARDE", "JANTAR", "CEIA", "OUTRO"]).default("ALMOCO"),
+  titulo: z.string().trim().min(3, "Informe o nome da refeição.").max(160),
+  data: z.string().date("Informe a data da refeição."),
+  hora: z.string().regex(/^\d{2}:\d{2}$/, "Informe o horário da refeição."),
+  local: z.string().trim().max(160).default(""),
+  publico: z.enum(["TODOS", "PARTICIPANTES", "EQUIPE"]).default("TODOS"),
+  quantidadePrevista: z.coerce.number().int().min(0).default(0),
+  cardapio: z.string().trim().min(3, "Descreva o cardápio.").max(4000),
+  responsavel: z.string().trim().max(160).default(""),
+  status: z.enum(["PLANEJADA", "CONFIRMADA", "SERVIDA", "CANCELADA"]).default("PLANEJADA"),
+  observacoes: textoOpcional,
+});
+
 export const eccEncerramentoSchema = z.object({ encontroId: z.string().uuid("Selecione uma edição do ECC.") });
 
 export const eccPosEncontroSchema = z.object({
@@ -260,5 +275,6 @@ export type EccPresencaDiaFormData = z.infer<typeof eccPresencaDiaSchema>;
 export type EccArrecadacaoFormData = z.infer<typeof eccArrecadacaoSchema>;
 export type EccNecessidadeFormData = z.infer<typeof eccNecessidadeSchema>;
 export type EccDespesaFormData = z.infer<typeof eccDespesaSchema>;
+export type EccRefeicaoFormData = z.infer<typeof eccRefeicaoSchema>;
 export type EccPosEncontroFormData = z.infer<typeof eccPosEncontroSchema>;
 export type EccAvaliacaoPublicaFormData = z.infer<typeof eccAvaliacaoPublicaSchema>;

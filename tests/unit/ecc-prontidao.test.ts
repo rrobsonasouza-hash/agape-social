@@ -6,7 +6,7 @@ import type { EccPainel } from "../../src/modules/ecc/types/ecc.types.ts";
 function painelBase(): EccPainel {
   return {
     encontros: [{ id: "encontro", numero: 1, nome: "ECC", tema: "", lema: "", dataInicio: "2026-09-05", dataFim: "2026-09-06", prazoInscricao: "", local: "", capacidadeCasais: 20, status: "PREPARACAO", observacoes: "" }],
-    casais: [], participacoes: [], equipe: [], equipePresencas: [], programacao: [], tarefas: [], visitas: [], comunicacoes: [], documentos: [], credenciamentos: [], presencasDiarias: [], arrecadacoes: [], necessidades: [], despesas: [], posEncontro: [], voluntarios: [], casaisDoadores: [],
+    casais: [], participacoes: [], equipe: [], equipePresencas: [], programacao: [], tarefas: [], visitas: [], comunicacoes: [], documentos: [], credenciamentos: [], presencasDiarias: [], arrecadacoes: [], necessidades: [], despesas: [], refeicoes: [], posEncontro: [], voluntarios: [], casaisDoadores: [],
     paroquia: { nome: "Paróquia", latitude: null, longitude: null }, podeGerenciarVisitas: true, podeGerenciarPosEncontro: true,
   };
 }

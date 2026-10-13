@@ -11,6 +11,7 @@ import {
   eccPresencaDiaSchema,
   eccArrecadacaoSchema,
   eccDespesaSchema,
+  eccRefeicaoSchema,
   eccPosEncontroSchema,
   eccAvaliacaoPublicaSchema,
 } from "../../src/modules/ecc/schemas/ecc.schema.ts";
@@ -132,6 +133,12 @@ describe("ECC", () => {
     const despesa = eccDespesaSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", descricao: "Compra de alimentos", valor: 350, data: "2026-10-09", status: "PAGA" });
     assert.equal(despesa.status, "PAGA");
     assert.equal(despesa.valor, 350);
+  });
+  it("planeja refeicao com publico, quantidade e cardapio", () => {
+    const refeicao = eccRefeicaoSchema.parse({ encontroId: "11111111-1111-4111-8111-111111111111", tipo: "JANTAR", titulo: "Jantar de sábado", data: "2026-10-10", hora: "19:30", publico: "TODOS", quantidadePrevista: 80, cardapio: "Arroz, frango, salada e sobremesa" });
+    assert.equal(refeicao.status, "PLANEJADA");
+    assert.equal(refeicao.quantidadePrevista, 80);
+    assert.throws(() => eccRefeicaoSchema.parse({ ...refeicao, cardapio: "" }));
   });
   it("registra o retorno e o interesse do casal no pos-encontro", () => {
     const retorno = eccPosEncontroSchema.parse({
