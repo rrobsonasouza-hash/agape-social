@@ -55,5 +55,6 @@ Nunca publique a chave `SUPABASE_SERVICE_ROLE_KEY`, arquivos `.env.local` ou bac
 
 - Diário: observar falhas da Vercel e disponibilidade do sistema.
 - Semanal: gerar e validar backup, guardando-o em local protegido.
+- Semanal: confirmar também a cópia externa criptografada em `Agape - Backups/database` no Google Drive; consulte `docs/backup-google-drive.md`.
 - Mensal: revisar usuários, perfis, auditoria e cadastros inativos.
 - Antes de cada entrega: testes, build, migration e backup quando aplicável.
